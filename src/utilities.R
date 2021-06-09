@@ -2,14 +2,14 @@ library(mgcv)
 library(ff)
 
 fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = ""){
-  # data: A `data.frame` with containing the response and predictor variables
-  #   as columns. The order of rows is important when determining
-  # models: A `data.frame` with the following columns: `id` (character),
-  #   `response` (character) for the response variable, `predictor` (character)
-  #   for the predictor side of the R model formula, `link` (character) for the
-  #   link function to be used, and `select` (boolean) for the corresponsing
-  #   argument in `bam()`.
-  n <- nrow(models)
+  # data: A `data.frame` containing the response and predictor variables
+  #   as columns. 
+  # models: A `list` with the following elements: `id` (character), `response`
+  #   (character) for the response variable, `predictor` (character) for the
+  #   predictor side of the R model formula, `link` (character) for the link
+  #   function to be used. `select` (boolean), `drop.intercept` (boolean),
+  #   `paraPen` (list) correspond to the respective arguments to `bam()`.
+  n <- length(models[[1]])
   # List to hold basic information to be returned by function call
   modres <- vector(mode = "list", length = n)
   withCallingHandlers({
@@ -30,9 +30,10 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
                       discrete = TRUE,
                       nthreads = c(2,1),
                       chunk.size = chunk.size,
-                      # drop.intercept = !models$intercept[i],
+                      drop.intercept = models$drop.intercept[i],
                       # gamma = models$gamma[i],
-                      select = models$select[i]
+                      select = models$select[i],
+                      paraPen = models$paraPen[[i]]
         )
         t.e <- as.numeric(Sys.time())
         modfit$elapsed <- t.e - t.s
