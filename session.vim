@@ -9,23 +9,16 @@ endif
 set shortmess=aoO
 badd +46 utilities.R
 badd +65 test_grouping.R
-badd +2 term://.//14259:/bin/bash;\#neoterm-1
 argglobal
 %argdel
 set stal=2
 edit test_grouping.R
 set splitbelow splitright
-wincmd _ | wincmd |
-vsplit
-1wincmd h
-wincmd w
 wincmd t
 set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe 'vert 1resize ' . ((&columns * 106 + 106) / 213)
-exe 'vert 2resize ' . ((&columns * 106 + 106) / 213)
 argglobal
 setlocal fdm=manual
 setlocal fde=0
@@ -36,32 +29,12 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 182 - ((45 * winheight(0) + 26) / 53)
+let s:l = 34 - ((33 * winheight(0) + 24) / 49)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-182
-normal! 084|
-wincmd w
-argglobal
-if bufexists("term://.//14259:/bin/bash;\#neoterm-1") | buffer term://.//14259:/bin/bash;\#neoterm-1 | else | edit term://.//14259:/bin/bash;\#neoterm-1 | endif
-setlocal fdm=manual
-setlocal fde=0
-setlocal fmr={{{,}}}
-setlocal fdi=#
-setlocal fdl=0
-setlocal fml=1
-setlocal fdn=20
-setlocal fen
-let s:l = 10052 - ((40 * winheight(0) + 26) / 53)
-if s:l < 1 | let s:l = 1 | endif
-exe s:l
-normal! zt
-10052
-normal! 030|
-wincmd w
-exe 'vert 1resize ' . ((&columns * 106 + 106) / 213)
-exe 'vert 2resize ' . ((&columns * 106 + 106) / 213)
+34
+normal! 046|
 tabedit utilities.R
 set splitbelow splitright
 wincmd t
@@ -79,12 +52,12 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 4 - ((1 * winheight(0) + 26) / 53)
+let s:l = 33 - ((11 * winheight(0) + 24) / 49)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-4
-normal! 03|
+33
+normal! 064|
 tabnext 1
 set stal=1
 if exists('s:wipebuf') && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'

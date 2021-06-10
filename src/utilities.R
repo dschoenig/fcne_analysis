@@ -1,7 +1,7 @@
 library(mgcv)
 library(ff)
 
-fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = ""){
+fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", summary = FALSE){
   # data: A `data.frame` containing the response and predictor variables
   #   as columns. 
   # models: A `list` with the following elements: `id` (character), `response`
@@ -44,6 +44,11 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
         modres[[i]]$aic <- AIC(modfit)
         modres[[i]]$warnings <- length(fit_warnings)
         modres[[i]]$time <- modfit$elapsed 
+        if(summary) {
+          print("Calculating summary …")
+          modsum <- summary(modfit)
+          saveRDS(modsum, paste0(path, prefix, models$id[i], ".sum.rds"))
+        }
         rm(modfit)
       }
     }, 
@@ -54,21 +59,46 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
   return(modres)
 }
 
-load_models <- function(models, path = "results/models/", prefix = "", summaries = TRUE, env = .GlobalEnv){
+load_models <- function(models, path = "results/models/", prefix = "", summary = TRUE, env = .GlobalEnv){
   # models: Character vector containing the names of the models to be loaded.
   for(i in 1:length(models)) {
     mname <- paste0(prefix, models[i])
     assign(mname,
            readRDS(paste0(path, mname, ".rds")),
            pos = env)
-    if(summaries) {
-      assign(paste0(mname, ".sum"),
-             summary(get(mname, envir = env)),
-             pos = env)
-    }
-  }
+    if(summary) {
+      if(file.exists(paste0(path, mname, ".sum.rds"))) {
+        assign(paste0(mname, ".sum"),
+               readRDS(paste0(path, mname, ".sum.rds")),
+               pos = env)
+      } else {
+        assign(paste0(mname, ".sum"),
+               summary(get(mname, envir = env)),
+               pos = env)
+        saveRDS(get(paste0(mname, ".sum")), paste0(path, mname, ".sum.rds"))
+      }
+    } # end summary
+  } # end loop
 }
 
+load_summaries <- function(models, path = "results/models/", prefix = "", env = .GlobalEnv){
+  # models: Character vector containing the names of the models to be loaded.
+  for(i in 1:length(models)) {
+    mname <- paste0(prefix, models[i])
+    if(file.exists(paste0(path, mname, ".sum.rds"))) {
+      assign(paste0(mname, ".sum"),
+             readRDS(paste0(path, mname, ".sum.rds")),
+             pos = env)
+    } else {
+      mod <- readRDS(paste0(path, mname, ".rds"))
+      assign(paste0(mname, ".sum"),
+             summary(mod),
+             pos = env)
+      saveRDS(get(paste0(mname, ".sum")), paste0(path, mname, ".sum.rds"))
+      rm(mod)
+    }
+  } # end loop
+}
 
 unload_models <- function(models, prefix = "", env = .GlobalEnv){
   obj <- ls(name = env)
