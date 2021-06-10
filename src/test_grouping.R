@@ -10,7 +10,7 @@ options("ffbatchsize" = 100, "ffbatchbytes" = 16 * 2^30)
 res.path.1e5 <- "../results/tests/grouping/1e5/"
 dir.create(res.path.1e5, recursive = TRUE)
 
-res.path.1e6 <- "results/tests/grouping/1e6/"
+res.path.1e6 <- "../results/tests/grouping/1e6/"
 dir.create(res.path.1e6, recursive = TRUE)
 
 mod.1e5 <- list(id = 0:8,
@@ -152,12 +152,12 @@ rm(amz)
 
 set.seed(123)
 amz.mod.1e5 <- amz.mod[sample(1:nrow(amz.mod), 1e5),]
-fm.amz.1e5 <- fit_models(mod.1e5, amz.mod.1e5, 5e4, res.path.1e5, "amz.m")
+fm.amz.1e5 <- fit_models(mod.1e5, amz.mod.1e5, 5e3, res.path.1e5, "amz.m")
 saveRDS(rbindlist(fm.amz.1e5), paste0(res.path.1e5, "fm.amz.1e5.rds"))
 
 set.seed(123)
 amz.mod.1e6 <- amz.mod[sample(1:nrow(amz.mod), 1e6),]
-fm.amz.1e6 <- fit_models(mod.1e6, amz.mod.1e6, 5e4, res.path.1e6, "amz.m")
+fm.amz.1e6 <- fit_models(mod.1e6, amz.mod.1e6, 5e3, res.path.1e6, "amz.m")
 saveRDS(rbindlist(fm.amz.1e6), "fm.amz.1e6.rds")
 
 rm(amz.mod)
@@ -192,7 +192,7 @@ rm(cam)
 set.seed(123)
 cam.mod.1e5 <- cam.mod[sample(1:nrow(cam.mod), 1e5),]
 fm.cam.1e5 <- fit_models(mod.1e5, cam.mod.1e5, 5e4, res.path.1e5, "cam.m")
-saveRDS(fm.cam.1e5, paste0(res.path.1e5, "fm.cam.1e5.rds"))
+saveRDS(rbindlist(fm.cam.1e5), paste0(res.path.1e5, "fm.cam.1e5.rds"))
 
 set.seed(123)
 cam.mod.1e6 <- cam.mod[sample(1:nrow(cam.mod), 1e6),]
