@@ -14,7 +14,8 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
   modres <- vector(mode = "list", length = n)
   withCallingHandlers({
       for (i in 1:n) {
-        print(paste0("Fitting model ", models$id[i], " (", i, " of ", n, ")"))
+        print(paste0("[", Sys.time(), "] ",
+                     "Fitting model ", models$id[i], " (", i, " of ", n, ")"))
         fit_warnings <- character(0)
         modres[[i]]$id <- models$id[i]
         modres[[i]]$fitted <- FALSE
@@ -45,7 +46,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
         modres[[i]]$warnings <- length(fit_warnings)
         modres[[i]]$time <- modfit$elapsed 
         if(summary) {
-          print("Calculating summary …")
+          print(paste0("[", Sys.time(), "] ","Calculating summary …"))
           modsum <- summary(modfit)
           saveRDS(modsum, paste0(path, prefix, models$id[i], ".sum.rds"))
         }
