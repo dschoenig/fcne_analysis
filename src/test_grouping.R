@@ -13,8 +13,8 @@ dir.create(res.path.1e5, recursive = TRUE)
 res.path.1e6 <- "../results/tests/grouping/1e6/"
 dir.create(res.path.1e6, recursive = TRUE)
 
-mod.1e5 <- list(id = 0:8,
-               response = rep("forestloss", 9),
+mod.1e5 <- list(id = 0:10,
+               response = rep("forestloss", 11),
                predictor = c(
                              "P",
                              paste("P",
@@ -59,18 +59,30 @@ mod.1e5 <- list(id = 0:8,
                                    "s(ed_east, ed_north, bs = 'gp', k = 100)",
                                    "s(parea, pa_id, bs = 're')",
                                    "s(indter, it_id, bs = 're')",
+                                   sep = " + "),
+                             paste("P",
+                                   "ti(som.x, som.y, d = 2, bs = 'gp', k = 100)",
+                                   "ti(som.x, som.y, adm0, d = c(2, 1), bs = c('gp', 're'), k = c(100, 9))",
+                                   "ti(adm0, bs = 're')",
+                                   sep = " + "),
+                             paste("P",
+                                   "ti(som.x, som.y, d = 2, bs = 'gp', k = 100)",
+                                   "ti(som.x, som.y, adm0, d = c(2, 1), bs = c('gp', 're'), k = c(100, 9))",
+                                   "ti(adm0, bs = 're')",
+                                   "s(ed_east, ed_north, bs = 'gp', k = 100)",
                                    sep = " + ")
                             ),
-               paraPen = rep(list(P = list(rank(9), diag(9))), 9),
-               drop.intercept = rep(TRUE, 9),
-               link = rep("cloglog", 9),
-               select = rep(TRUE, 9)
+               paraPen = rep(list(P = list(rank(9), diag(9))), 11),
+               drop.intercept = rep(TRUE, 11),
+               link = rep("cloglog", 11),
+               select = rep(TRUE, 11)
                )
+
 
 ## 1e6 OBSERVATIONS
 
-mod.1e6 <- list(id = 0:8,
-               response = rep("forestloss", 9),
+mod.1e6 <- list(id = 0:10,
+               response = rep("forestloss", 11),
                predictor = c(
                              "P",
                              paste("P",
@@ -115,12 +127,23 @@ mod.1e6 <- list(id = 0:8,
                                    "s(ed_east, ed_north, bs = 'gp', k = 500)",
                                    "s(parea, pa_id, bs = 're')",
                                    "s(indter, it_id, bs = 're')",
+                                   sep = " + "),
+                             paste("P",
+                                   "ti(som.x, som.y, d = 2, bs = 'gp', k = 500)",
+                                   "ti(som.x, som.y, adm0, d = c(2,1), bs = c('gp', 're'), k = c(500, 9))",
+                                   "ti(adm0, bs = 're')",
+                                   sep = " + "),
+                             paste("P",
+                                   "ti(som.x, som.y, d = 2, bs = 'gp', k = 500)",
+                                   "ti(som.x, som.y, adm0, d = c(2,1) bs = c('gp', 're'), k = c(500, 9)",
+                                   "ti(adm0, bs = 're')",
+                                   "s(ed_east, ed_north, bs = 'gp', k = 500)",
                                    sep = " + ")
                             ),
-               paraPen = rep(list(P = list(rank(9), diag(9))), 9),
-               drop.intercept = rep(TRUE, 9),
-               link = rep("cloglog", 9),
-               select = rep(TRUE, 9)
+               paraPen = rep(list(P = list(rank(9), diag(9))), 11),
+               drop.intercept = rep(TRUE, 11),
+               link = rep("cloglog", 11),
+               select = rep(TRUE, 11)
                )
 
 
@@ -161,7 +184,6 @@ fm.amz.1e6 <- fit_models(mod.1e6, amz.mod.1e6, 5e3, res.path.1e6, "amz.m")
 saveRDS(rbindlist(fm.amz.1e6), "fm.amz.1e6.rds")
 
 rm(amz.mod)
-
 
 ## CENTRAL AMERICA
 
