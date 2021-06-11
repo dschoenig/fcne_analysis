@@ -1,7 +1,7 @@
 library(mgcv)
 library(ff)
 
-fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", summary = FALSE, gc.level = 0){
+fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", subset = NULL, summary = FALSE, gc.level = 0){
   # data: A `data.frame` containing the response and predictor variables
   #   as columns. 
   # models: A `list` with the following elements: `id` (character), `response`
@@ -10,12 +10,16 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
   #   function to be used. `select` (boolean), `drop.intercept` (boolean),
   #   `paraPen` (list) correspond to the respective arguments to `bam()`.
   n <- length(models[[1]])
+  m <- ifelse(is.null(subset), n, length(subset))
+  cm <- 1
   # List to hold basic information to be returned by function call
   modres <- vector(mode = "list", length = n)
   withCallingHandlers({
       for (i in 1:n) {
+        if(! models$id[i] %in% subset) next
         print(paste0("[", Sys.time(), "] ",
-                     "Fitting model ", models$id[i], " (", i, " of ", n, ")"))
+                     "Fitting model ", models$id[i], " (", cm, " of ", m, ")"))
+        cm <- cm + 1
         fit_warnings <- character(0)
         modres[[i]]$id <- models$id[i]
         modres[[i]]$fitted <- FALSE
@@ -101,6 +105,25 @@ load_summaries <- function(models, path = "results/models/", prefix = "", env = 
     }
   } # end loop
 }
+
+model_overview <- function(models, path = "results/models/", prefix = "") {
+  # models: Character vector containing the names of the models to be loaded.
+  n <- length(models)
+  modres <- vector(mode = "list", length = n)
+  for(i in 1:n) {
+    fname <- paste0(path, prefix, models[i], ".rds")
+    mod <- readRDS(fname)
+    modres[[i]]$id <- models[i]
+    modres[[i]]$df <- nobs(mod) - df.residual(mod)
+    modres[[i]]$aic <- AIC(mod)
+    modres[[i]]$warnings <- length(mod$fit_warnings)
+    modres[[i]]$time <- mod$elapsed 
+    modres[[i]]$file <- fname
+    rm(mod)
+  }
+  return(rbindlist(modres))
+}
+
 
 unload_models <- function(models, prefix = "", env = .GlobalEnv){
   obj <- ls(name = env)
