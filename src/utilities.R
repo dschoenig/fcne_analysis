@@ -1,7 +1,7 @@
 library(mgcv)
 library(ff)
 
-fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", summary = FALSE){
+fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", summary = FALSE, gc.level = 0){
   # data: A `data.frame` containing the response and predictor variables
   #   as columns. 
   # models: A `list` with the following elements: `id` (character), `response`
@@ -28,13 +28,14 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
         modfit <- bam(as.formula(paste0(models$response[i], " ~ ", models$predictor[i])),
                       family = binomial(link = models$link[i]),
                       data = data,
-                      discrete = TRUE,
-                      nthreads = c(2,1),
-                      chunk.size = chunk.size,
                       drop.intercept = models$drop.intercept[i],
                       # gamma = models$gamma[i],
                       select = models$select[i],
-                      paraPen = models$paraPen[[i]]
+                      paraPen = models$paraPen[[i]],
+                      chunk.size = chunk.size,
+                      discrete = TRUE,
+                      nthreads = c(2,1),
+                      gc.level = gc.level
         )
         t.e <- as.numeric(Sys.time())
         modfit$elapsed <- t.e - t.s

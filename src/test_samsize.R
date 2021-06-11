@@ -134,7 +134,7 @@ fm.amz.5e5 <- fit_models(mod.sam.5e5, amz.mod.5e5, 5e3, res.path, "amz.5e5.m")
 fm.amz.1e6 <- fit_models(mod.sam.1e6, amz.mod.1e6, 5e3, res.path, "amz.1e6.m")
 fm.amz.2e6 <- fit_models(mod.sam.2e6, amz.mod.2e6, 5e3, res.path, "amz.2e6.m")
 fm.amz.5e6 <- fit_models(mod.sam.5e6, amz.mod.5e6, 5e3, res.path, "amz.5e6.m")
-fm.amz.1e7 <- fit_models(mod.sam.1e7, amz.mod, 5e3, res.path, "amz.1e7.m")
+fm.amz.1e7 <- fit_models(mod.sam.1e7, amz.mod, 5e3, res.path, "amz.1e7.m", gc.level = 1)
 
 fm.amz.sam <- rbindlist(c(fm.amz.5e5, fm.amz.1e6, fm.amz.2e6, fm.amz.5e6, fm.amz.1e7))
 fm.amz.sam$sample_size <- rep(c(5e5, 1e6, 2e6, 5e5, 1e7), each = 3)
