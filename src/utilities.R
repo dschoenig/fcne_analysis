@@ -16,7 +16,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
   modres <- vector(mode = "list", length = n)
   withCallingHandlers({
       for (i in 1:n) {
-        if(! models$id[i] %in% subset) next
+        if(!models$id[i] %in% subset & !is.null(subset)) next
         print(paste0("[", Sys.time(), "] ",
                      "Fitting model ", models$id[i], " (", cm, " of ", m, ")"))
         cm <- cm + 1
@@ -35,7 +35,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
                       drop.intercept = models$drop.intercept[i],
                       # gamma = models$gamma[i],
                       select = models$select[i],
-                      paraPen = models$paraPen[[i]],
+                      paraPen = models$paraPen[i],
                       chunk.size = chunk.size,
                       discrete = TRUE,
                       nthreads = c(2,1),
@@ -56,6 +56,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
           saveRDS(modsum, paste0(path, prefix, models$id[i], ".sum.rds"))
         }
         rm(modfit)
+        gc()
       }
     }, 
     warning = function(x) {

@@ -72,7 +72,7 @@ mod.1e5 <- list(id = 0:10,
                                    "s(ed_east, ed_north, bs = 'gp', k = 100)",
                                    sep = " + ")
                             ),
-               paraPen = rep(list(P = list(rank(9), diag(9))), 11),
+               paraPen = rep(list(P = list(diag(9))), 11),
                drop.intercept = rep(TRUE, 11),
                link = rep("cloglog", 11),
                select = rep(TRUE, 11)
@@ -140,7 +140,7 @@ mod.1e6 <- list(id = 0:10,
                                    "s(ed_east, ed_north, bs = 'gp', k = 500)",
                                    sep = " + ")
                             ),
-               paraPen = rep(list(P = list(rank(9), diag(9))), 11),
+               paraPen = rep(list(P = list(diag(9))), 11),
                drop.intercept = rep(TRUE, 11),
                link = rep("cloglog", 11),
                select = rep(TRUE, 11)
@@ -184,6 +184,7 @@ fm.amz.1e6 <- fit_models(mod.1e6, amz.mod.1e6, 5e3, res.path.1e6, "amz.m")
 saveRDS(rbindlist(fm.amz.1e6), "fm.amz.1e6.rds")
 
 rm(amz.mod)
+
 
 ## CENTRAL AMERICA
 
