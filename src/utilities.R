@@ -1,5 +1,6 @@
 library(mgcv)
 library(ff)
+library(data.table)
 
 fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", subset = NULL, summary = FALSE, gc.level = 0){
   # data: A `data.frame` containing the response and predictor variables
@@ -66,23 +67,34 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
   return(modres)
 }
 
-load_models <- function(models, path = "results/models/", prefix = "", summary = TRUE, env = .GlobalEnv){
+load_models <- function(models, 
+                        path = "results/models/",
+                        prefix = "",
+                        rename = NULL,
+                        summary = TRUE,
+                        env = .GlobalEnv)
+  {
   # models: Character vector containing the names of the models to be loaded.
+  mname <- paste0(prefix, models)
+  if(is.null(rename)) {
+    mname_assign <- mname
+  } else {
+    mname_assign <- rename
+  }
   for(i in 1:length(models)) {
-    mname <- paste0(prefix, models[i])
-    assign(mname,
-           readRDS(paste0(path, mname, ".rds")),
+    assign(mname_assign[i],
+           readRDS(paste0(path, mname[i], ".rds")),
            pos = env)
     if(summary) {
-      if(file.exists(paste0(path, mname, ".sum.rds"))) {
-        assign(paste0(mname, ".sum"),
-               readRDS(paste0(path, mname, ".sum.rds")),
+      if(file.exists(paste0(path, mname[i], ".sum.rds"))) {
+        assign(paste0(mname_assign[i], ".sum"),
+               readRDS(paste0(path, mname[i], ".sum.rds")),
                pos = env)
       } else {
-        assign(paste0(mname, ".sum"),
-               summary(get(mname, envir = env)),
+        assign(paste0(mname_assign[i], ".sum"),
+               summary(get(mname[i], envir = env)),
                pos = env)
-        saveRDS(get(paste0(mname, ".sum")), paste0(path, mname, ".sum.rds"))
+        saveRDS(get(paste0(mname[i], ".sum")), paste0(path, mname[i], ".sum.rds"))
       }
     } # end summary
   } # end loop
@@ -158,10 +170,18 @@ sim_residuals <- function(models, path = "results/models/", prefix = "", ...){
   return(simulated)
 }
 
-quantile_residuals <- function(model, n.sim = 1000, seed = NULL) {
-
-  n <- nobs(model)
-  observed.response <- model.frame(model)[,1] 
+quantile_residuals <- function(model,
+                               data, 
+                               n.sim = 1000, 
+                               posterior = FALSE, 
+                               obs = "all",
+                               row.chunk = 1e3, 
+                               post.chunk = 200,
+                               on.disk = TRUE,
+                               n.threads = 1,
+                               seed = NULL,
+                               progress = TRUE
+                               ) {
 
   # Set RNG
   if (!is.null(seed)) {
@@ -173,42 +193,96 @@ quantile_residuals <- function(model, n.sim = 1000, seed = NULL) {
     set.seed(seed)
   }
 
-
-
-  # Break up simulation matrix if R integer limit is surpassed
-  if (length(n.sim) == 1 && prod(n * n.sim) > .Machine$integer.max) {
-    nelements <- prod(n * n.sim)
-    nodes <- ceiling(nelements / .Machine$integer.max)
-    breaks <- ceiling(seq(1, n.sim, length.out = nodes+1))
-    n.sim <- breaks[2:length(breaks)] - breaks[1:(length(breaks)-1)]
+  if(is.numeric(obs)) {
+    n <- length(obs)
+    observed.response <- model.frame(model)[obs,1] 
+  } else {
+    n <- nobs(model)
+    observed.response <- model.frame(model)[,1] 
   }
-
-  # Construct simulation matrices
-  simulations <- list()
-  for (i in 1:length(n.sim)){
-    simulations[[i]] <- ff(dim = c(n, n.sim[i]), vmode = vmode(fitted(model)), 
-                           pattern = paste0(tempdir(), "/qres"), finalizer = "delete")
+  
+  if(n.sim < post.chunk) post.chunk <- n.sim
+ 
+  post.from <- seq(1, n.sim, post.chunk)
+  if(length(post.from) > 1) {
+    post.to <- c(post.from[2:length(post.from)]-1, n.sim)
+  } else {
+    post.to <- n.sim
   }
+  post.chunks <- post.to - c(0, post.to[-length(post.to)])
 
   # Simulate response and fill matrices
-  for (m in 1:length(n.sim)) {
-    for (i in 1:ncol(simulations[[m]])) {
-      simulations[[m]][,i] <- as.matrix(simulate(model, 1))
+  if(all(posterior == TRUE) | is.matrix(posterior)) {
+    if(is.matrix(posterior)) {
+      post <- posterior
+    } else {
+      post <- mvnfast::rmvn(n = n.sim, mu = coefficients(model), 
+                            sigma = vcov(model, unconditional = TRUE),
+                            ncores = n.threads)
+      if(progress) print(paste0("Generated ", n.sim, " random draws from model posterior."))
     }
+    if(progress) print("Simulating response ...")
+    simulations <- simulate_post(model = model,
+                                 posterior = post,
+                                 obs = obs,
+                                 row.chunk = row.chunk,
+                                 post.chunk = post.chunk, 
+                                 progress = progress, 
+                                 on.disk = on.disk, 
+                                 n.threads = n.threads)
+  } else {
+    simulations <- list()
+    if(progress) {
+      print("Simulating response ...")
+      prog <- txtProgressBar(min = 0, max = n.sim, initial = 0,
+                            char = "=", width = NA, title = "Progress", style = 3)
+    }
+    for (s in 1:length(post.from)) {
+      if(on.disk) {
+        simulations[[s]] <- ff(dim = c(n, post.chunks[s]), vmode = vmode(fitted(model)), 
+                                   pattern = paste0(tempdir(), "/qres"), finalizer = "delete")
+      } else {
+        simulations[[s]] <- matrix(nrow = n, ncol = post.chunks[s])
+      }
+      for (i in 1:post.chunks[s]) {
+        if(is.numeric(obs)) {
+          simulations[[s]][,i] <- as.matrix(simulate(model, 1)[obs,])
+        } else {
+          simulations[[s]][,i] <- as.matrix(simulate(model, 1))
+        }
+        if(progress) {
+          setTxtProgressBar(prog, post.from[s] -1 + i)
+        }
+      }
+    }
+    if(progress) close(prog)
   }
 
+
+  if(progress) print("Calculating residuals ...")
+    
   sim.lower <- sim.upper <- quantile.residuals <- rep(0, n)
-
+  
   # Compute quantile residuals based on probability integral transform
-
-  for (m in 1:length(n.sim)) {
-    sims <- simulations[[m]]
-    sim.lower <- sim.lower +
-      ffcolapply(rowSums(sims[,i1:i2] < observed.response),
-                            X=sims, RETURN = TRUE, CFUN = "csum") / sum(n.sim)
-    sim.upper <- sim.upper + 
-      ffcolapply(rowSums(sims[,i1:i2] <= observed.response),
-                             X=sims, RETURN = TRUE, CFUN = "csum") / sum(n.sim)
+  # Same method (but different implementations) as in the DHARMa package
+  if(on.disk) {
+    for (m in 1:length(simulations)) {
+      sims <- simulations[[m]]
+      sim.lower <- sim.lower +
+        ffcolapply(rowSums(sims[,i1:i2] < observed.response),
+                              X=sims, RETURN = TRUE, CFUN = "csum") / n.sim
+      sim.upper <- sim.upper + 
+        ffcolapply(rowSums(sims[,i1:i2] <= observed.response),
+                               X=sims, RETURN = TRUE, CFUN = "csum") / n.sim
+    }
+  } else {
+    for (m in 1:length(simulations)) {
+     sims <- simulations[[m]]
+     sim.lower <- sim.lower + rowSums(apply(sims, MARGIN = 2,
+                                            function(x) x < observed.response)) / n.sim
+     sim.upper <- sim.upper + rowSums(apply(sims, MARGIN = 2,
+                                            function(x) x <= observed.response)) / n.sim
+    }
   }
 
   quantile_residuals <- mapply(function(lower, upper) { 
@@ -220,20 +294,14 @@ quantile_residuals <- function(model, n.sim = 1000, seed = NULL) {
     .Random.seed <- prev.random.state
   }
 
-
-
-
   res <- list(n = n, seed = seed, simulations = simulations, quantile_residuals = quantile_residuals)
   return(res)
 }
-
 
 save_residuals <- function(residuals, file, rootpath = getOption("fftempdir")) {
   ffsave_list(residuals$simulations, file = paste0(file, ".sim"), rootpath = rootpath)
   saveRDS(residuals, file = paste0(file, ".rds"))
 }
-
-
 
 load_residuals <- function(models, path = "results/models/", prefix = "", simulations = TRUE, overwrite = FALSE, env = .GlobalEnv){
   # models: Character vector containing the names of the models for which
@@ -286,6 +354,84 @@ ffload_list <- function(file, overwrite = FALSE, rootpath = getOption("fftempdir
   loaded <- as.list(loadsims)
   rm(loadsims)
   return(loaded)
+}
+
+simulate_post <- function(model, 
+                          posterior, 
+                          newdata = NULL,
+                          obs = "all",
+                          row.chunk = 1e3,
+                          post.chunk = 200,
+                          on.disk = FALSE,
+                          n.threads = 1,
+                          discrete = FALSE,
+                          progress = TRUE
+                          ) {
+  if(is.null(dim(posterior))) {
+    posterior <- matrix(posterior, ncol = length(posterior))
+  } 
+  if(is.null(newdata)) {
+    data <- model.frame(model)
+  } else {
+    data <- newdata
+  }
+  if(is.numeric(obs)) {
+    data <- data[obs,]
+  }
+  n <- nrow(data)
+  m <- nrow(posterior)
+  fam <- fix.family.rd(model$family)
+  weights <- model$prior.weights
+  scale <- model$sig2
+  row.from <- seq(1, n, row.chunk)
+  if(length(row.from) > 1) {
+    row.to <- c(row.from[2:length(row.from)]-1, n)
+  } else {
+    row.to <- n
+  }
+  post.from <- seq(1, m, post.chunk)
+  if(length(post.from) > 1) {
+    post.to <- c(post.from[2:length(post.from)]-1, m)
+  } else {
+    post.to <- m
+  }
+  post.chunks <- post.to - c(0, post.to[-length(post.to)])
+  simulations <- list()
+  for(s in 1:length(post.from)) {
+    if(on.disk) {
+      simulations[[s]] <- ff(dim = c(n, post.chunks[s]), vmode = vmode(fitted(model)), 
+                                 pattern = paste0(tempdir(), "/qres"), finalizer = "delete")
+    } else {
+      simulations[[s]] <- matrix(nrow = n, ncol = post.chunks[s])
+    }
+  }
+  if(progress) {
+    prog <- txtProgressBar(min = 0, max = length(row.from), initial = 0,
+                          char = "=", width = NA, title = "Progress", style = 3)
+  }
+  for(i in 1:length(row.from)) {
+    Xp <- predict(model, 
+                  data[row.from[i]:row.to[i],],
+                  type = "lpmatrix",
+                  block.size = row.chunk,
+                  newdata.guaranteed = TRUE,
+                  n.threads = n.threads,
+                  discrete = discrete)
+    for(j in 1:length(post.from)) {
+      lp <- Xp %*% t(posterior[post.from[j]:post.to[j],])
+      simulations[[j]][row.from[i]:row.to[i],] <- 
+        apply(fam$linkinv(lp), 2, fam$rd, 
+            wt = weights[row.from[i]:row.to[i]],  scale = scale)
+      rm(lp)
+    }
+    rm(Xp)
+    gc()
+    if(progress) {
+      setTxtProgressBar(prog, i)
+    }
+  }
+  if(progress) close(prog)
+  return(simulations)
 }
 
 
@@ -403,3 +549,120 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, appen
   }
   return(bins.l)
 }
+
+diag_residuals <- function(model, 
+                           residuals,
+                           sample = NULL,
+                           hist.bins = 100,
+                           trend.res = 1000,
+                           trend.k = 10,
+                           col.empirical = palette.colors(palette = "Set 1")[1],
+                           col.theoretical = palette.colors(palette = "Set 1")[2],
+                           qq.point.size = 1.5,
+                           line.size = 0.8,
+                           plot.theme = theme_classic()
+                           ) 
+  {
+  # Extract residuals and fitted values
+  if(is.null(sample)){
+    qres <- data.table(residuals = residuals$quantile_residuals,
+                       linpred = predict(model, type = "link",
+                                         newdata.guaranteed = TRUE),
+                       response =  model$model[,1])
+  } else {
+    qres <- data.table(residuals = residuals$quantile_residuals[sample],
+                       linpred = predict(model, newdata = model$model[sample,],
+                                         type = "link",
+                                         newdata.guaranteed = TRUE),
+                       response =  model$model[sample, 1],
+    fitted = fitted(model)[sample])
+  }
+
+  # Preparatory calculations
+  # Histogram
+  qres[, bin := cut(residuals, seq(0, 1, 1/hist.bins), labels = FALSE)]
+
+  # Residuals vs. linear predictor
+  qres[, linpred_r := frank(linpred)]
+
+  # Model for smooth trend
+  # m_res_linpred <- gam(residuals ~ s(predicted), data = qres, select = TRUE)
+  m_res_linpred <- bam(residuals ~ s(linpred, k = trend.k), 
+                    data = qres, 
+                    select = TRUE, 
+                    discrete = TRUE)
+
+  # Trend for untransformed predictor
+  t_res_linpred <- data.table(linpred = seq(from = min(qres$linpred), 
+                                         to = max(qres$linpred), 
+                                         length.out = trend.res))
+  t_res_linpred[,trend := predict(m_res_linpred, t_res_linpred)]
+
+  # Trend for rank-transformed predictor
+  quantiles <- (1:(trend.res -1)) / (trend.res - 1)
+  t_res_linpred_r <- data.table(linpred = c(min(qres$linpred), 
+                                       quantile(qres$linpred, quantiles)),
+                           linpred_r = (0:(trend.res - 1) / (trend.res - 1) * 
+                                    (length(qres$linpred)  - 1)) + 1
+                           )
+  t_res_linpred_r[,trend := predict(m_res_linpred, t_res_linpred_r)]
+
+  # Plots
+  p_qq <- ggplot(qres, aes(sample = residuals)) +
+          geom_qq(distribution = qunif, pch = 16, size = qq.point.size) +
+          geom_abline(slope = 1, intercept = 0, 
+                      size = line.size,
+                      col = col.theoretical) +
+          labs(title = "Uniform Q-Q",
+               x = "Theoretical quantiles",
+               y = "Quantile residuals") +
+          plot.theme
+  p_hist <- ggplot(qres, aes(x = bin/hist.bins - 1/(2*hist.bins), y = ..count..)) +
+            geom_hline(yintercept = nrow(qres) / hist.bins, 
+                       size = line.size,
+                       col = col.theoretical) +
+            geom_bar(width = 1/hist.bins) +
+            labs(title = paste0("Histogram of residuals (",
+                                hist.bins, " bins)"),
+                 x = "Quantile residuals",
+                 y = "Frequency") +
+            plot.theme
+  p_res_linpred <- ggplot(qres, aes(x = linpred, y = residuals)) +
+              geom_bin2d(bins = sqrt(1e5), show.legend = FALSE) +
+              #geom_hex(bins = sqrt(1e5), show.legend = FALSE) +
+              geom_hline(yintercept = 0.5, 
+                         size = line.size,
+                         col = col.theoretical) +
+              geom_line(data = t_res_linpred, 
+                        mapping = aes(y = trend), 
+                        linetype = "dashed",
+                        size = line.size,
+                        col = col.empirical) +
+              scale_fill_gradient(low = "grey90", high = "grey10", na.value = "grey90") +
+              labs(title = "Residuals vs. linear predictor",
+                   x = "Linear predictor",
+                   y = "Quantile residuals") +
+              plot.theme 
+  p_res_linpred_r <- ggplot(qres, aes(x = linpred_r, y = residuals)) +
+                     #geom_hex(bins = sqrt(1e5), show.legend = FALSE) +
+                     geom_bin2d(bins = sqrt(1e5), show.legend = FALSE) +
+                     geom_hline(yintercept = 0.5, 
+                                size = line.size,
+                                col = col.theoretical) +
+                     geom_line(data = t_res_linpred_r, 
+                               mapping = aes(y = trend),
+                               linetype = "dashed",
+                               size = line.size,
+                               col = col.empirical) +
+                     scale_fill_gradient2(low = "grey90", high = "grey10", na.value = "grey90") +
+                     #scale_fill_viridis_c()+
+                     labs(title = "Residuals vs. linear predictor (rank)",
+                          x = "Linear predictor (rank transformed)",
+                          y = "Quantile residuals") +
+                     plot.theme
+
+  # Arrange using `patchwork` package
+  p_arranged <- p_qq + p_hist + p_res_linpred  + p_res_linpred_r
+  return(p_arranged)
+  }
+
