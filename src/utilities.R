@@ -4,7 +4,7 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 
-fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", subset = NULL, summary = FALSE, gc.level = 0){
+fit_models <- function(models, data, chunk.size = 1e6, path = "../results/models/", prefix = "", subset = NULL, summary = FALSE, gc.level = 0){
   # data: A `data.frame` containing the response and predictor variables
   #   as columns. 
   # models: A `list` with the following elements: `id` (character), `response`
@@ -70,7 +70,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/",
 }
 
 load_models <- function(models, 
-                        path = "results/models/",
+                        path = "../results/models/",
                         prefix = "",
                         rename = NULL,
                         summary = TRUE,
@@ -102,7 +102,7 @@ load_models <- function(models,
   } # end loop
 }
 
-load_summaries <- function(models, path = "results/models/", prefix = "", env = .GlobalEnv){
+load_summaries <- function(models, path = "../results/models/", prefix = "", env = .GlobalEnv){
   # models: Character vector containing the names of the models to be loaded.
   for(i in 1:length(models)) {
     mname <- paste0(prefix, models[i])
@@ -121,7 +121,7 @@ load_summaries <- function(models, path = "results/models/", prefix = "", env = 
   } # end loop
 }
 
-model_overview <- function(models, path = "results/models/", prefix = "") {
+model_overview <- function(models, path = "../results/models/", prefix = "") {
   # models: Character vector containing the names of the models to be loaded.
   n <- length(models)
   modres <- vector(mode = "list", length = n)
@@ -150,7 +150,7 @@ unload_models <- function(models, prefix = "", env = .GlobalEnv){
 }
 
 
-sim_residuals <- function(models, path = "results/models/", prefix = "", ...){
+sim_residuals <- function(models, path = "../results/models/", prefix = "", ...){
   # models: Character vector containing the names of the models for which
   #   residuals are to be simulated.
   simulated <- vector(mode = "list", length = length(models))
@@ -168,6 +168,7 @@ sim_residuals <- function(models, path = "results/models/", prefix = "", ...){
       delete(modres$simulations[[i]])
     }
     rm(modfit, modres)
+    gc()
   }
   return(simulated)
 }
@@ -175,7 +176,7 @@ sim_residuals <- function(models, path = "results/models/", prefix = "", ...){
 
 quantile_residuals <- function(model,
                                n.sim = 1000, 
-                               posterior = FALSE, 
+                               posterior = TRUE, 
                                obs = "all",
                                row.chunk = 1e3, 
                                post.chunk = 200,
@@ -300,11 +301,13 @@ quantile_residuals <- function(model,
 }
 
 save_residuals <- function(residuals, file, rootpath = getOption("fftempdir")) {
-  ffsave_list(residuals$simulations, file = paste0(file, ".sim"), rootpath = rootpath)
+  if(is.ff(residuals$simulations[[1]])){
+    ffsave_list(residuals$simulations, file = paste0(file, ".sim"), rootpath = rootpath)
+  }
   saveRDS(residuals, file = paste0(file, ".rds"))
 }
 
-load_residuals <- function(models, path = "results/models/", prefix = "", simulations = TRUE, overwrite = FALSE, env = .GlobalEnv){
+load_residuals <- function(models, path = "../results/models/", prefix = "", simulations = TRUE, overwrite = FALSE, env = .GlobalEnv){
   # models: Character vector containing the names of the models for which
   #   residuals are to be loaded.
   for(i in 1:length(models)) {
