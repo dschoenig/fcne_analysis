@@ -1,6 +1,8 @@
 library(mgcv)
 library(ff)
 library(data.table)
+library(ggplot2)
+library(patchwork)
 
 fit_models <- function(models, data, chunk.size = 1e6, path = "results/models/", prefix = "", subset = NULL, summary = FALSE, gc.level = 0){
   # data: A `data.frame` containing the response and predictor variables
@@ -170,8 +172,8 @@ sim_residuals <- function(models, path = "results/models/", prefix = "", ...){
   return(simulated)
 }
 
+
 quantile_residuals <- function(model,
-                               data, 
                                n.sim = 1000, 
                                posterior = FALSE, 
                                obs = "all",
@@ -222,7 +224,7 @@ quantile_residuals <- function(model,
       if(progress) print(paste0("Generated ", n.sim, " random draws from model posterior."))
     }
     if(progress) print("Simulating response ...")
-    simulations <- simulate_post(model = model,
+    simulations <- sim_post(model = model,
                                  posterior = post,
                                  obs = obs,
                                  row.chunk = row.chunk,
@@ -257,7 +259,6 @@ quantile_residuals <- function(model,
     }
     if(progress) close(prog)
   }
-
 
   if(progress) print("Calculating residuals ...")
     
@@ -356,17 +357,20 @@ ffload_list <- function(file, overwrite = FALSE, rootpath = getOption("fftempdir
   return(loaded)
 }
 
-simulate_post <- function(model, 
-                          posterior, 
-                          newdata = NULL,
-                          obs = "all",
-                          row.chunk = 1e3,
-                          post.chunk = 200,
-                          on.disk = FALSE,
-                          n.threads = 1,
-                          discrete = FALSE,
-                          progress = TRUE
-                          ) {
+sim_post <- function(model, 
+                     posterior, 
+                     newdata = NULL,
+                     obs = "all",
+                     coef = "all",
+                     row.chunk = 1e3,
+                     post.chunk = 200,
+                     on.disk = FALSE,
+                     n.threads = 1,
+                     discrete = FALSE,
+                     progress = TRUE
+                     ) {
+  # Same as eval_post, but simulation is done *before* ff matrix is
+  # filled to reduce disk writes.
   if(is.null(dim(posterior))) {
     posterior <- matrix(posterior, ncol = length(posterior))
   } 
@@ -396,6 +400,10 @@ simulate_post <- function(model,
     post.to <- m
   }
   post.chunks <- post.to - c(0, post.to[-length(post.to)])
+  # Set excluded coefficients to 0
+    if(is.numeric(coef)) {
+      posterior[,-coef] <- 0
+    }
   simulations <- list()
   for(s in 1:length(post.from)) {
     if(on.disk) {
@@ -434,6 +442,93 @@ simulate_post <- function(model,
   return(simulations)
 }
 
+
+eval_post <- function(
+                      model, 
+                      posterior,
+                      newdata = NULL,
+                      type = "link",
+                      obs = "all",
+                      coef = "all",
+                      row.chunk = 1e3,
+                      post.chunk = 200,
+                      on.disk = FALSE,
+                      n.threads = 1,
+                      discrete = FALSE,
+                      progress = TRUE
+                      ) {
+  if(is.null(dim(posterior))) {
+    posterior <- matrix(posterior, ncol = length(posterior))
+  }
+  if(is.null(newdata)) {
+    data <- model.frame(model)
+  } else {
+    data <- newdata
+  }
+  if(is.numeric(obs)) {
+    data <- data[obs,]
+  }
+  n <- nrow(data)
+  m <- nrow(posterior)
+  weights <- model$prior.weights
+  scale <- model$sig2
+  row.from <- seq(1, n, row.chunk)
+  if(length(row.from) > 1) {
+    row.to <- c(row.from[2:length(row.from)]-1, n)
+  } else {
+    row.to <- n
+  }
+  post.from <- seq(1, m, post.chunk)
+  if(length(post.from) > 1) {
+    post.to <- c(post.from[2:length(post.from)]-1, m)
+  } else {
+    post.to <- m
+  }
+  post.chunks <- post.to - c(0, post.to[-length(post.to)])
+  # Set excluded coefficients to 0
+  if(is.numeric(coef)) {
+    posterior[,-coef] <- 0
+  }
+  evaluated <- list()
+  for(node in 1:length(post.from)) {
+    if(on.disk) {
+      evaluated[[node]] <- ff(dim = c(n, post.chunks[node]), vmode = vmode(fitted(model)), 
+                                 pattern = paste0(tempdir(), "/epos"), finalizer = "delete")
+    } else {
+      evaluated[[node]] <- matrix(nrow = n, ncol = post.chunks[node])
+    }
+  }
+  if(progress) {
+    prog <- txtProgressBar(min = 0, max = length(row.from), initial = 0,
+                          char = "=", width = NA, title = "Progress", style = 3)
+  }
+  for(i in 1:length(row.from)) {
+    Xp <- predict(model, 
+                  data[row.from[i]:row.to[i],],
+                  type = "lpmatrix",
+                  block.size = row.chunk,
+                  newdata.guaranteed = TRUE,
+                  n.threads = n.threads,
+                  discrete = discrete)
+    for(j in 1:length(post.from)) {
+      lp <- Xp %*% t(posterior[post.from[j]:post.to[j],])
+      if(type == "response") {
+        fam <- fix.family.rd(model$family)
+        evaluated[[j]][row.from[i]:row.to[i],] <- fam$linkinv(lp)
+      } else {
+        evaluated[[j]][row.from[i]:row.to[i],] <- lp
+      }
+      rm(lp)
+    }
+    rm(Xp)
+    gc()
+    if(progress) {
+      setTxtProgressBar(prog, i)
+    }
+  }
+  if(progress) close(prog)
+  return(evaluated)
+}
 
 hratio <- function(model, type = "joint", unconditional = TRUE, ci = TRUE) {
   # Calculates the hazard ratio for parametric effects.
