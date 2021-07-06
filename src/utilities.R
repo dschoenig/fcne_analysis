@@ -74,6 +74,7 @@ load_models <- function(models,
                         prefix = "",
                         rename = NULL,
                         summary = TRUE,
+                        posterior = TRUE,
                         env = .GlobalEnv)
   {
   # models: Character vector containing the names of the models to be loaded.
@@ -176,11 +177,12 @@ sim_residuals <- function(models, path = "../results/models/", prefix = "", ...)
 
 quantile_residuals <- function(model,
                                n.sim = 1000, 
-                               posterior = TRUE, 
+                               sim.chunk = 200,
                                obs = "all",
+                               posterior = TRUE, 
                                row.chunk = 1e3, 
-                               post.chunk = 200,
                                on.disk = TRUE,
+                               storage.mode = "double",
                                n.threads = 1,
                                seed = NULL,
                                progress = TRUE
@@ -204,20 +206,20 @@ quantile_residuals <- function(model,
     observed.response <- model.frame(model)[,1] 
   }
   
-  if(n.sim < post.chunk) post.chunk <- n.sim
+  if(n.sim < sim.chunk) sim.chunk <- n.sim
  
-  post.from <- seq(1, n.sim, post.chunk)
-  if(length(post.from) > 1) {
-    post.to <- c(post.from[2:length(post.from)]-1, n.sim)
+  sim.from <- seq(1, n.sim, sim.chunk)
+  if(length(sim.from) > 1) {
+    sim.to <- c(sim.from[2:length(sim.from)]-1, n.sim)
   } else {
-    post.to <- n.sim
+    sim.to <- n.sim
   }
-  post.chunks <- post.to - c(0, post.to[-length(post.to)])
+  sim.chunks <- sim.to - c(0, sim.to[-length(sim.to)])
 
   # Simulate response and fill matrices
   if(all(posterior == TRUE) | is.matrix(posterior)) {
     if(is.matrix(posterior)) {
-      post <- posterior
+      post <- posterior[1:n.sim,]
     } else {
       post <- mvnfast::rmvn(n = n.sim, mu = coefficients(model), 
                             sigma = vcov(model, unconditional = TRUE),
@@ -229,9 +231,10 @@ quantile_residuals <- function(model,
                                  posterior = post,
                                  obs = obs,
                                  row.chunk = row.chunk,
-                                 post.chunk = post.chunk, 
+                                 post.chunk = sim.chunk, 
                                  progress = progress, 
-                                 on.disk = on.disk, 
+                                 on.disk = on.disk,
+                                 storage.mode = storage.mode,
                                  n.threads = n.threads)
   } else {
     simulations <- list()
@@ -240,24 +243,36 @@ quantile_residuals <- function(model,
       prog <- txtProgressBar(min = 0, max = n.sim, initial = 0,
                             char = "=", width = NA, title = "Progress", style = 3)
     }
-    for (s in 1:length(post.from)) {
-      if(on.disk) {
-        simulations[[s]] <- ff(dim = c(n, post.chunks[s]), vmode = vmode(fitted(model)), 
-                                   pattern = paste0(tempdir(), "/qres"), finalizer = "delete")
-      } else {
-        simulations[[s]] <- matrix(nrow = n, ncol = post.chunks[s])
-      }
-      for (i in 1:post.chunks[s]) {
-        if(is.numeric(obs)) {
-          simulations[[s]][,i] <- as.matrix(simulate(model, 1)[obs,])
-        } else {
-          simulations[[s]][,i] <- as.matrix(simulate(model, 1))
-        }
-        if(progress) {
-          setTxtProgressBar(prog, post.from[s] -1 + i)
-        }
-      }
+    fam <- fix.family.rd(model$family)
+    wt <- model$prior.weights
+    scale <- model$sig2
+    fv <- fitted(model)
+    if(is.numeric(obs)) {
+      fv <- fv[obs]
+      wt <- wt[obs]
     }
+    for (s in 1:length(sim.from)) {
+      if(on.disk) {
+        if(is.null(storage.mode)) storage.mode <- vmode(fitted(model))
+        simulations[[s]] <- ff(dim = c(n, sim.chunks[s]), vmode = storage.mode, 
+                                   pattern = paste0(tempdir(), "/qres"), finalizer = "delete")
+        for (i in 1:sim.chunks[s]) {
+          simulations[[s]][,i] <- fam$rd(fv, wt, scale)
+          if(progress) {
+            setTxtProgressBar(prog, sim.from[s] -1 + i)
+          }
+        } # end loop over columns
+      } else {
+        if(is.null(storage.mode)) storage.mode <- class(fitted(model))[1]
+        simulations[[s]] <- matrix(nrow = n, ncol = sim.chunks[s])
+        for (i in 1:sim.chunks[s]) {
+          simulations[[s]][,i] <- as(fam$rd(fv, wt, scale), storage.mode)
+          if(progress) {
+            setTxtProgressBar(prog, sim.from[s] -1 + i)
+          }
+        } # end loop over columns
+      } # end on.disk == FALSE
+    } # end loop over nodes
     if(progress) close(prog)
   }
 
@@ -368,6 +383,7 @@ sim_post <- function(model,
                      row.chunk = 1e3,
                      post.chunk = 200,
                      on.disk = FALSE,
+                     storage.mode = NULL,
                      n.threads = 1,
                      discrete = FALSE,
                      progress = TRUE
@@ -410,10 +426,12 @@ sim_post <- function(model,
   simulations <- list()
   for(s in 1:length(post.from)) {
     if(on.disk) {
-      simulations[[s]] <- ff(dim = c(n, post.chunks[s]), vmode = vmode(fitted(model)), 
+      if(is.null(storage.mode)) storage.mode <- vmode(fitted(model))
+      simulations[[s]] <- ff(dim = c(n, post.chunks[s]), vmode = storage.mode, 
                                  pattern = paste0(tempdir(), "/qres"), finalizer = "delete")
     } else {
-      simulations[[s]] <- matrix(nrow = n, ncol = post.chunks[s])
+      if(is.null(storage.mode)) storage.mode <- class(fitted(model))[1]
+      simulations[[s]] <- matrix(as(0, storage.mode), nrow = n, ncol = post.chunks[s])
     }
   }
   if(progress) {
@@ -430,9 +448,18 @@ sim_post <- function(model,
                   discrete = discrete)
     for(j in 1:length(post.from)) {
       lp <- Xp %*% t(posterior[post.from[j]:post.to[j],])
-      simulations[[j]][row.from[i]:row.to[i],] <- 
-        apply(fam$linkinv(lp), 2, fam$rd, 
-            wt = weights[row.from[i]:row.to[i]],  scale = scale)
+      if(on.disk) {
+        simulations[[j]][row.from[i]:row.to[i],] <- 
+          apply(fam$linkinv(lp), 2, fam$rd, 
+                wt = weights[row.from[i]:row.to[i]],  
+                scale = scale)
+      } else {
+        simulations[[j]][row.from[i]:row.to[i],] <- 
+          as(apply(fam$linkinv(lp), 2, fam$rd, 
+                   wt = weights[row.from[i]:row.to[i]],  
+                   scale = scale),
+             storage.mode)
+      }
       rm(lp)
     }
     rm(Xp)
