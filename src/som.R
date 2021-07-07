@@ -27,17 +27,22 @@ amz.grid <- somgrid(xdim = xdim, ydim = ydim,
                     topo = "rectangular", 
                     neighbourhood.fct = "gaussian")
 
+system.time({
 amz.som.1e4 <- som(amz.train.1e4, grid = amz.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = init_som(amz.train.1e4, xdim, ydim),
                    normalizeDataLayers = FALSE)
+saveRDS(amz.som.1e4, paste0(path.som, "amz.som.1e4.rds"))
+})
 
+system.time({
 amz.som.1e5 <- som(amz.train.1e5, grid = amz.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = amz.som.1e4$codes,
                    normalizeDataLayers = FALSE)
 saveRDS(amz.som.1e5, paste0(path.som, "amz.som.1e5.rds"))
 
+system.time({
 amz.som.1e6 <- som(amz.train.1e6, grid = amz.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = amz.som.1e5$codes,
@@ -70,22 +75,29 @@ cam.grid <- somgrid(xdim = xdim, ydim = ydim,
                     topo = "rectangular", 
                     neighbourhood.fct = "gaussian")
 
+system.time({
 cam.som.1e4 <- som(cam.train.1e4, grid = cam.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = init_som(cam.train.1e4, xdim, ydim),
                    normalizeDataLayers = FALSE)
+saveRDS(cam.som.1e4, paste0(path.som, "cam.som.1e4.rds"))
+})
 
+system.time({
 cam.som.1e5 <- som(cam.train.1e5, grid = cam.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = cam.som.1e4$codes,
                    normalizeDataLayers = FALSE)
 saveRDS(cam.som.1e5, paste0(path.som, "cam.som.1e5.rds"))
+})
 
+system.time({
 cam.som.1e6 <- som(cam.train.1e6, grid = cam.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = cam.som.1e5$codes,
                    normalizeDataLayers = FALSE)
 saveRDS(cam.som.1e6, paste0(path.som, "cam.som.1e6"))
+})
 
 # cam.som.1e6.dir <- som(cam.train.1e6, grid = cam.grid, 
 #                    rlen = 1000, mode = "pbatch", 
