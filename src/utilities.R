@@ -791,3 +791,21 @@ diag_residuals <- function(model,
   return(p_arranged)
   }
 
+
+init_som <- function(data, xdim, ydim) {
+# Calculate principal components
+init_pca <- prcomp(x = data, center = FALSE, scale = FALSE)
+init_max <- apply(init_pca$x[, 1:2], 2, max)
+init_min <- apply(init_pca$x[, 1:2], 2, min)
+# Distribute nodes along first two PC
+init_coord_pc <- matrix(NA, nrow = xdim * ydim, ncol = 2)
+init_coord_pc[, 1] <-  rep(seq(init_min[1], init_max[1], 
+                                length.out = xdim),
+                            times = ydim)
+init_coord_pc[, 2] <-  rep(seq(init_min[2], init_max[2], 
+                                length.out = ydim),
+                            each = ydim)
+# Map to covariate space
+init_coord_cov <- init_coord_pc %*% t(init_pca$rotation[,1:2])
+return(init_coord_cov)
+}
