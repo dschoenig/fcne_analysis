@@ -1,6 +1,5 @@
 library(data.table)
 library(kohonen)
-library(aweSOM)
 source("utilities.R")
 
 ## Paths
@@ -16,6 +15,7 @@ amz.data <- readRDS(paste0(path.data, "amz.data.rds"))
 
 amz.cov.z <- scale(amz.data[, c("dist_set", "dist_roads", "dist_rivers", "slope")],
                    center = TRUE, scale = TRUE)
+rm(amz.data)
 
 set.seed(19120623)
 sam <- sample(1:nrow(amz.cov.z), 1e6)
@@ -28,7 +28,7 @@ amz.grid <- somgrid(xdim = xdim, ydim = ydim,
                     neighbourhood.fct = "gaussian")
 
 amz.som.1e4 <- som(amz.train.1e4, grid = amz.grid, 
-                   rlen = 10, mode = "pbatch", 
+                   rlen = 1000, mode = "pbatch", 
                    init = init_som(amz.train.1e4, xdim, ydim),
                    normalizeDataLayers = FALSE)
 
@@ -44,11 +44,11 @@ amz.som.1e6 <- som(amz.train.1e6, grid = amz.grid,
                    normalizeDataLayers = FALSE)
 saveRDS(amz.som.1e6, paste0(path.som, "amz.som.1e6"))
 
-amz.som.1e6.dir <- som(amz.train.1e6, grid = amz.grid, 
-                   rlen = 1000, mode = "pbatch", 
-                   init = init_som(amz.train.1e6, xdim, ydim),
-                   normalizeDataLayers = FALSE)
-saveRDS(amz.som.1e6.dir, paste0(path.som, "amz.som.1e6"))
+# amz.som.1e6.dir <- som(amz.train.1e6, grid = amz.grid, 
+#                    rlen = 1000, mode = "pbatch", 
+#                    init = init_som(amz.train.1e6, xdim, ydim),
+#                    normalizeDataLayers = FALSE)
+# saveRDS(amz.som.1e6.dir, paste0(path.som, "amz.som.1e6"))
 
 rm(list = grep("amz", ls(), value = TRUE))
 
@@ -58,6 +58,7 @@ cam.data <- readRDS(paste0(path.data, "cam.data.rds"))
 
 cam.cov.z <- scale(cam.data[, c("dist_set", "dist_roads", "dist_rivers", "slope")],
                    center = TRUE, scale = TRUE)
+rm(cam.data)
 
 set.seed(19120623)
 sam <- sample(1:nrow(cam.cov.z), 1e6)
@@ -70,7 +71,7 @@ cam.grid <- somgrid(xdim = xdim, ydim = ydim,
                     neighbourhood.fct = "gaussian")
 
 cam.som.1e4 <- som(cam.train.1e4, grid = cam.grid, 
-                   rlen = 10, mode = "pbatch", 
+                   rlen = 1000, mode = "pbatch", 
                    init = init_som(cam.train.1e4, xdim, ydim),
                    normalizeDataLayers = FALSE)
 
@@ -86,17 +87,18 @@ cam.som.1e6 <- som(cam.train.1e6, grid = cam.grid,
                    normalizeDataLayers = FALSE)
 saveRDS(cam.som.1e6, paste0(path.som, "cam.som.1e6"))
 
-cam.som.1e6.dir <- som(cam.train.1e6, grid = cam.grid, 
-                   rlen = 1000, mode = "pbatch", 
-                   init = init_som(cam.train.1e6, xdim, ydim),
-                   normalizeDataLayers = FALSE)
-saveRDS(cam.som.1e6.dir, paste0(path.som, "cam.som.1e6"))
+# cam.som.1e6.dir <- som(cam.train.1e6, grid = cam.grid, 
+#                    rlen = 1000, mode = "pbatch", 
+#                    init = init_som(cam.train.1e6, xdim, ydim),
+#                    normalizeDataLayers = FALSE)
+# saveRDS(cam.som.1e6.dir, paste0(path.som, "cam.som.1e6"))
 
 rm(list = grep("cam", ls(), value = TRUE))
 
 
 ## QUALITY MEASURES ############################################################
 
+# library(aweSOM)
 # system.time({
 #   amz.qual <- somQuality(amz.som.1e6)
 # })
