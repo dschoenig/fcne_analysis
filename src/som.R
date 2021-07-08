@@ -41,6 +41,7 @@ amz.som.1e5 <- som(amz.train.1e5, grid = amz.grid,
                    init = amz.som.1e4$codes,
                    normalizeDataLayers = FALSE)
 saveRDS(amz.som.1e5, paste0(path.som, "amz.som.1e5.rds"))
+})
 
 system.time({
 amz.som.1e6 <- som(amz.train.1e6, grid = amz.grid, 
@@ -48,6 +49,7 @@ amz.som.1e6 <- som(amz.train.1e6, grid = amz.grid,
                    init = amz.som.1e5$codes,
                    normalizeDataLayers = FALSE)
 saveRDS(amz.som.1e6, paste0(path.som, "amz.som.1e6"))
+})
 
 # amz.som.1e6.dir <- som(amz.train.1e6, grid = amz.grid, 
 #                    rlen = 1000, mode = "pbatch", 
