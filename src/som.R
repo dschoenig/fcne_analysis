@@ -5,6 +5,8 @@ source("utilities.R")
 ## Paths
 path.data <- "../processed/data/"
 path.som <- "../processed/som/"
+dir.create(path.data, recursive = TRUE)
+dir.create(path.som, recursive = TRUE)
 
 xdim <- 100
 ydim <- 100
@@ -27,35 +29,27 @@ amz.grid <- somgrid(xdim = xdim, ydim = ydim,
                     topo = "rectangular", 
                     neighbourhood.fct = "gaussian")
 
-system.time({
 amz.som.1e4 <- som(amz.train.1e4, grid = amz.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = init_som(amz.train.1e4, xdim, ydim),
                    normalizeDataLayers = FALSE)
 saveRDS(amz.som.1e4, paste0(path.som, "amz.som.1e4.rds"))
-})
 
-system.time({
 amz.som.1e5 <- som(amz.train.1e5, grid = amz.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = amz.som.1e4$codes,
                    normalizeDataLayers = FALSE)
 saveRDS(amz.som.1e5, paste0(path.som, "amz.som.1e5.rds"))
-})
 
-system.time({
 amz.som.1e6 <- som(amz.train.1e6, grid = amz.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = amz.som.1e5$codes,
                    normalizeDataLayers = FALSE)
-saveRDS(amz.som.1e6, paste0(path.som, "amz.som.1e6"))
-})
+saveRDS(amz.som.1e6.rds, paste0(path.som, "amz.som.1e6"))
 
-# amz.som.1e6.dir <- som(amz.train.1e6, grid = amz.grid, 
-#                    rlen = 1000, mode = "pbatch", 
-#                    init = init_som(amz.train.1e6, xdim, ydim),
-#                    normalizeDataLayers = FALSE)
-# saveRDS(amz.som.1e6.dir, paste0(path.som, "amz.som.1e6"))
+amz.som.mapped <- map(amz.som.1e6, 
+                      amz.cov.z)
+saveRDS(amz.som.mapped, paste0(path.som, "amz.som.mapped"))
 
 rm(list = grep("amz", ls(), value = TRUE))
 
@@ -77,35 +71,27 @@ cam.grid <- somgrid(xdim = xdim, ydim = ydim,
                     topo = "rectangular", 
                     neighbourhood.fct = "gaussian")
 
-system.time({
 cam.som.1e4 <- som(cam.train.1e4, grid = cam.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = init_som(cam.train.1e4, xdim, ydim),
                    normalizeDataLayers = FALSE)
 saveRDS(cam.som.1e4, paste0(path.som, "cam.som.1e4.rds"))
-})
 
-system.time({
 cam.som.1e5 <- som(cam.train.1e5, grid = cam.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = cam.som.1e4$codes,
                    normalizeDataLayers = FALSE)
 saveRDS(cam.som.1e5, paste0(path.som, "cam.som.1e5.rds"))
-})
 
-system.time({
 cam.som.1e6 <- som(cam.train.1e6, grid = cam.grid, 
                    rlen = 1000, mode = "pbatch", 
                    init = cam.som.1e5$codes,
                    normalizeDataLayers = FALSE)
-saveRDS(cam.som.1e6, paste0(path.som, "cam.som.1e6"))
-})
+saveRDS(cam.som.1e6.rds, paste0(path.som, "cam.som.1e6"))
 
-# cam.som.1e6.dir <- som(cam.train.1e6, grid = cam.grid, 
-#                    rlen = 1000, mode = "pbatch", 
-#                    init = init_som(cam.train.1e6, xdim, ydim),
-#                    normalizeDataLayers = FALSE)
-# saveRDS(cam.som.1e6.dir, paste0(path.som, "cam.som.1e6"))
+cam.som.mapped <- map(cam.som.1e6, 
+                      cam.cov.z)
+saveRDS(cam.som.mapped, paste0(path.som, "cam.som.mapped"))
 
 rm(list = grep("cam", ls(), value = TRUE))
 

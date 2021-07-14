@@ -18,13 +18,14 @@ amz.vars[,
               it = ifelse(it == "t", TRUE, FALSE),
               it_type = factor(it_type, levels = c("none", "recognized", "not_recognized")),
               pa = ifelse(pa == "t", TRUE, FALSE),
-              pa_type = factor(pa_type, levels = c("none", "indirect_use", "direct_use"))
+              pa_type = factor(pa_type, levels = c("none", "indirect_use", "direct_use")),
+              adm0 = factor(adm0)
               )
          ]
 amz.vars[is.na(it_type), it_type := "none"]
 amz.vars[is.na(pa_type), pa_type := "none"]
 
-amz.data <- na.omit(amz.vars, cols = c("dist_set", "dist_roads", "dist_rivers", "slope"))
+amz.data <- na.omit(amz.vars, cols = c("dist_set", "dist_roads", "dist_rivers", "slope", "adm0"))
 saveRDS(amz.data, paste0(path.proc, "amz.data.rds"))
 
 
@@ -41,11 +42,12 @@ cam.vars[,
               it = ifelse(it == "t", TRUE, FALSE),
               it_type = factor(it_type, levels = c("none", "recognized", "not_recognized")),
               pa = ifelse(pa == "t", TRUE, FALSE),
-              pa_type = factor(pa_type, levels = c("none", "indirect_use", "direct_use"))
+              pa_type = factor(pa_type, levels = c("none", "indirect_use", "direct_use")),
+              adm0 = factor(adm0)
               )
          ]
 cam.vars[is.na(it_type), it_type := "none"]
 cam.vars[is.na(pa_type), pa_type := "none"]
 
-cam.data <- na.omit(cam.vars, cols = c("dist_set", "dist_roads", "dist_rivers", "slope"))
+cam.data <- na.omit(cam.vars, cols = c("dist_set", "dist_roads", "dist_rivers", "slope", "adm0"))
 saveRDS(cam.data, paste0(path.proc, "cam.data.rds"))

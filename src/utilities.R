@@ -14,6 +14,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "../results/models
   #   `paraPen` (list) correspond to the respective arguments to `bam()`.
   n <- length(models[[1]])
   m <- ifelse(is.null(subset), n, length(subset))
+  # Counter
   cm <- 1
   # List to hold basic information to be returned by function call
   modres <- vector(mode = "list", length = n)
@@ -29,7 +30,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "../results/models
         modres[[i]]$df <- 0
         modres[[i]]$aic <- 0
         modres[[i]]$warnings <- 0
-        modres[[i]]$time <- 0
+        modres[[i]]$ctime <- 0
         modres[[i]]$file <- paste0(path, prefix, models$id[i], ".rds")
         t.s <- as.numeric(Sys.time())
         modfit <- bam(as.formula(paste0(models$response[i], " ~ ", models$predictor[i])),
@@ -52,7 +53,7 @@ fit_models <- function(models, data, chunk.size = 1e6, path = "../results/models
         modres[[i]]$df <- nobs(modfit) - df.residual(modfit)
         modres[[i]]$aic <- AIC(modfit)
         modres[[i]]$warnings <- length(fit_warnings)
-        modres[[i]]$time <- modfit$elapsed 
+        modres[[i]]$ctime <- modfit$elapsed 
         if(summary) {
           print(paste0("[", Sys.time(), "] ","Calculating summary …"))
           modsum <- summary(modfit)
@@ -133,7 +134,7 @@ model_overview <- function(models, path = "../results/models/", prefix = "") {
     modres[[i]]$df <- nobs(mod) - df.residual(mod)
     modres[[i]]$aic <- AIC(mod)
     modres[[i]]$warnings <- length(mod$fit_warnings)
-    modres[[i]]$time <- mod$elapsed 
+    modres[[i]]$ctime <- mod$elapsed 
     modres[[i]]$file <- fname
     rm(mod)
   }
