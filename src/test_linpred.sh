@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=def-cricrime 
-#SBATCH --ntasks-per-node=2
-#SBATCH --ntasks=4
+#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks=2
 #SBATCH --mem-per-cpu=20G
 #SBATCH --time=01:00:00
 #SBATCH --mail-user=schonig.daniel@courrier.uqam.ca

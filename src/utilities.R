@@ -845,7 +845,16 @@ evaluate_posterior_par <-
   model$model <- NA
   evaluated.l <- 
     foreach(i = 1:length(row.from), .packages = "ff") %dopar% {
-      options(fftempdir = storage.path)
+      if(on.disk) {
+        evaluated <- ff(dim = c(row.chunks[i], m), vmode = storage.mode, 
+                                finalizer = ff.finalizer,
+                                pattern = storage.path)
+      } else {
+        evaluated <- matrix(nrow = row.chunks[i], ncol = m)
+      }
+      if(!is.null(id.col)) { 
+        rownames(evaluated) <- row.ids[row.from[i]:row.to[i]]
+      }
       print(paste0(Sys.time(),
                    " Processing row chunk ", i, " of ", length(row.from), "."))
       predict.from <- seq(row.from[i], row.to[i], predict.chunk)

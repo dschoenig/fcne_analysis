@@ -11,7 +11,8 @@ options("ffbatchsize" = 1, "ffbatchbytes" = 2 * 2^30)
 
 path.gam <- "../models/gam/"
 path.data.proc <- "../data/processed/"
-
+pattern.ff <- "/home/schoed/scratch/ff/epos"
+file.log <- "/home/schoed/scratch/foreach.log"
 
 ## AMAZON ######################################################################
 
@@ -28,10 +29,10 @@ amz.pred <- as.data.frame(amz.data[,
 amz.pred$b0 <- model.matrix(~ 1, amz.pred)
 
 set.seed(1234)
-sam <- sample(1:nrow(amz.pred), 1e5)
+sam <- sample(1:nrow(amz.pred), 4e3)
 
 nodeslist <- unlist(strsplit(Sys.getenv("NODESLIST"), split=" "))
-cl <- makeCluster(nodeslist, type = "PSOCK") 
+cl <- makeCluster(nodeslist, type = "PSOCK", outfile = file.log) 
 
 a <- Sys.time()
 ffl <-
@@ -40,17 +41,18 @@ ffl <-
                          posterior = amz.post, 
                          newdata = amz.pred[sam,],
                          id.col = "id", 
-                         row.chunk = 2500,
+                         row.chunk = 1000,
                          predict.chunk = 500,
                          # post.chunk = 200,
                          on.disk = TRUE, 
                          type = "link",
+                         storage.path = pattern.ff
                          cluster = cl,
                          ff.finalizer = "close"
   )
 b <- Sys.time()
 b-a
 
-fflist_save(ffl, paste0(path.gam, "amz.lp.nc"), rootpath = path.ff.tmp)
+fflist_save(ffl, paste0(path.gam, "amz.lp.nc"))
 
 

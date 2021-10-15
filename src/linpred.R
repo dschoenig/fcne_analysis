@@ -63,6 +63,8 @@ rm(ffl)
 
 
 
+
+
 fam <- fix.family.rd(amz.gam$family)
 plot(density(fam$linkinv(colMeans(ffl[,]))))
 
