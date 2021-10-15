@@ -1,12 +1,17 @@
 library(data.table)
 library(mgcv)
+library(ff)
 library(posterior)
+library(parallel)
+library(doParallel)
+library(foreach)
 
 source("utilities.R")
 options("ffbatchsize" = 1, "ffbatchbytes" = 2 * 2^30)
 
 path.gam <- "../models/gam/"
 path.data.proc <- "../data/processed/"
+path.ff.tmp <- getOption("fftempdir")
 
 ## AMAZON ######################################################################
 
@@ -22,7 +27,10 @@ amz.pred <- as.data.frame(amz.data[,
                                    ])
 amz.pred$b0 <- model.matrix(~ 1, amz.pred)
 
-cl <- makeCluster(2, outfile = "log.txt")
+set.seed(1234)
+sam <- sample(1:nrow(amz.pred), 5e4)
+
+cl <- makeCluster(2, outfile = "../log/linpred.log")
 
 system.time({
 ffl <-
@@ -36,29 +44,21 @@ ffl <-
                          # post.chunk = 200,
                          on.disk = TRUE, 
                          type = "link",
-                         storage.path = ".",
+                         storage.path = path.ff.tmp,
                          cluster = cl,
-                         n.cores = 2,
+                         # n.cores = 2,
                          ff.finalizer = "close"
   )
 })
 
-gc()
-fflist_delete(ffl)
-rm(ffl)
-stopCluster(cl)
-gc()
+fflist_save(ffl, "./models/gam/amz.lp.nc", rootpath = path.ff.tmp)
 
-fflist_save(ffl, "ffl", rootpath = ".")
-ff2 <- fflist_load("ffl", overwrite = TRUE, rootpath = ".", join_by = "row")
+
 
 fam <- fix.family.rd(amz.gam$family)
 plot(density(fam$linkinv(colMeans(ffl[,]))))
 
 
-library(parallel)
-library(doParallel)
-library(foreach)
 
 cl <- makeCluster(2, outfile = "log.txt")
 registerDoParallel(cl, cores = 2)

@@ -507,8 +507,6 @@ print.fflist <- function(x, maxdim = c(10, 5), ...) {
   }
 }
 
-`[.fflist` <- function(x, i, j, id = TRUE)
-
 # ffsave_list <- function(list, file, rootpath = getOption("fftempdir")) {
 #   savesims <- new.env()
 #   for(i in 1:length(list)){
@@ -777,7 +775,7 @@ evaluate_posterior_par <-
            post.chunk = NULL,
            on.disk = FALSE,
            cluster,
-           n.cores = 1,
+           # n.cores = 1,
            storage.mode = "double",
            storage.path = getOption("fftempdir"),
            ff.finalizer = "delete"
@@ -823,7 +821,7 @@ evaluate_posterior_par <-
   if(!is.null(id.col)) {
     row.ids <- data[[id.col]]
   }
-  registerDoParallel(cl = cluster, cores = n.cores)
+  registerDoParallel(cl = cluster)
   # Reduce data transfer
   model$model <- NA
   evaluated.l <- 
