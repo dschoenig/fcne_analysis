@@ -1,5 +1,7 @@
-log/*.log
+log/
 results/
 data/
 models/
 session.vim
+**/slurm*
+

@@ -4,6 +4,7 @@ library(data.table)
 library(ggplot2)
 library(patchwork)
 library(doParallel)
+library(foreach)
 
 fit_models <- function(models, data, chunk.size = 1e6, path = "../results/models/", prefix = "", subset = NULL, summary = FALSE, gc.level = 0){
   # data: A `data.frame` containing the response and predictor variables
@@ -674,7 +675,7 @@ evaluate_posterior <-
            cluster = NULL,
            progress = TRUE,
            storage.mode = "double",
-           storage.path = getOption("fftempdir"),
+           storage.path = NULL,
            ff.finalizer = "delete"
            ) {
   if(is.null(dim(posterior))) {
@@ -712,6 +713,9 @@ evaluate_posterior <-
   evaluated <- list()
   if(!is.null(id.col)) {
     row.ids <- data[[id.col]]
+  }
+  if(is.null(storage.path)) {
+    storage.path <- getOption("fftempdir")
   }
   for(node in 1:length(post.from)) {
     if(on.disk) {

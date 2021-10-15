@@ -11,7 +11,6 @@ options("ffbatchsize" = 1, "ffbatchbytes" = 2 * 2^30)
 
 path.gam <- "../models/gam/"
 path.data.proc <- "../data/processed/"
-path.ff.tmp <- getOption("fftempdir")
 
 
 ## AMAZON ######################################################################
@@ -29,10 +28,10 @@ amz.pred <- as.data.frame(amz.data[,
 amz.pred$b0 <- model.matrix(~ 1, amz.pred)
 
 set.seed(1234)
-sam <- sample(1:nrow(amz.pred), 1e4)
+sam <- sample(1:nrow(amz.pred), 1e5)
 
 nodeslist <- unlist(strsplit(Sys.getenv("NODESLIST"), split=" "))
-cl <- makeCluster(nodeslist, type = "PSOCK", outfile = "../log/linpred.log") 
+cl <- makeCluster(nodeslist, type = "PSOCK") 
 
 a <- Sys.time()
 ffl <-
@@ -46,7 +45,6 @@ ffl <-
                          # post.chunk = 200,
                          on.disk = TRUE, 
                          type = "link",
-                         storage.path = path.ff.tmp,
                          cluster = cl,
                          ff.finalizer = "close"
   )
