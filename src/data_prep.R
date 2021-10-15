@@ -2,14 +2,13 @@ library(RPostgres)
 library(DBI)
 library(data.table)
 
-## Output folder
-path.proc <- "../processed/data/"
+## Folders
+path.raw <- "../data/raw/"
+path.int <- "../data/intermediate/"
 
 ## AMAZON ######################################################################
 
-## Get data
-
-amz.vars <- fread("../data/amz.vars.csv", 
+amz.vars <- fread(paste0(path.raw, "amz.vars.csv"), 
                   na.strings = "",
                   key = "id")
 
@@ -26,14 +25,12 @@ amz.vars[is.na(it_type), it_type := "none"]
 amz.vars[is.na(pa_type), pa_type := "none"]
 
 amz.data <- na.omit(amz.vars, cols = c("dist_set", "dist_roads", "dist_rivers", "slope", "adm0"))
-saveRDS(amz.data, paste0(path.proc, "amz.data.rds"))
-
+saveRDS(amz.data, paste0(path.int, "amz.data.rds"))
+rm(amz.data, amz.vars)
 
 ## CENTRAL AMERICA #############################################################
 
-## Get data
-
-cam.vars <- fread("../data/cam.vars.csv", 
+cam.vars <- fread(paste0(path.raw, "cam.vars.csv"), 
                   na.strings = "",
                   key = "id")
 
@@ -50,4 +47,5 @@ cam.vars[is.na(it_type), it_type := "none"]
 cam.vars[is.na(pa_type), pa_type := "none"]
 
 cam.data <- na.omit(cam.vars, cols = c("dist_set", "dist_roads", "dist_rivers", "slope", "adm0"))
-saveRDS(cam.data, paste0(path.proc, "cam.data.rds"))
+saveRDS(cam.data, paste0(path.int, "cam.data.rds"))
+rm(cam.data, cam.vars)

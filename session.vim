@@ -7,12 +7,16 @@ if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
   let s:wipebuf = bufnr('%')
 endif
 set shortmess=aoO
-badd +46 utilities.R
-badd +65 test_grouping.R
+badd +36 scratch.R
+badd +31 fit_models.R
+badd +29 som.R
+badd +35 data_prep.R
+badd +27 test_samsize.R
+badd +0 utilities.R
 argglobal
 %argdel
 set stal=2
-edit test_grouping.R
+edit fit_models.R
 set splitbelow splitright
 wincmd t
 set winminheight=0
@@ -29,12 +33,12 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 34 - ((33 * winheight(0) + 24) / 49)
+let s:l = 67 - ((36 * winheight(0) + 24) / 48)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-34
-normal! 046|
+67
+normal! 035|
 tabedit utilities.R
 set splitbelow splitright
 wincmd t
@@ -52,12 +56,35 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-let s:l = 33 - ((11 * winheight(0) + 24) / 49)
+let s:l = 25 - ((20 * winheight(0) + 24) / 48)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-33
-normal! 064|
+25
+normal! 054|
+tabedit data_prep.R
+set splitbelow splitright
+wincmd t
+set winminheight=0
+set winheight=1
+set winminwidth=0
+set winwidth=1
+argglobal
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let s:l = 26 - ((17 * winheight(0) + 24) / 48)
+if s:l < 1 | let s:l = 1 | endif
+exe s:l
+normal! zt
+26
+normal! 043|
 tabnext 1
 set stal=1
 if exists('s:wipebuf') && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'

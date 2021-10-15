@@ -3,8 +3,8 @@ library(kohonen)
 source("utilities.R")
 
 ## Paths
-path.data <- "../processed/data/"
-path.som <- "../processed/som/"
+path.data <- "../data/intermediate/"
+path.som <- "../models/som/"
 dir.create(path.data, recursive = TRUE)
 dir.create(path.som, recursive = TRUE)
 
@@ -49,7 +49,7 @@ saveRDS(amz.som.1e6.rds, paste0(path.som, "amz.som.1e6"))
 
 amz.som.mapped <- map(amz.som.1e6, 
                       amz.cov.z)
-saveRDS(amz.som.mapped, paste0(path.som, "amz.som.mapped"))
+saveRDS(amz.som.mapped, paste0(path.data, "amz.som.mapped"))
 
 rm(list = grep("amz", ls(), value = TRUE))
 
@@ -91,7 +91,7 @@ saveRDS(cam.som.1e6.rds, paste0(path.som, "cam.som.1e6"))
 
 cam.som.mapped <- map(cam.som.1e6, 
                       cam.cov.z)
-saveRDS(cam.som.mapped, paste0(path.som, "cam.som.mapped"))
+saveRDS(cam.som.mapped, paste0(path.data, "cam.som.mapped"))
 
 rm(list = grep("cam", ls(), value = TRUE))
 
