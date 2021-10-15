@@ -46,7 +46,7 @@ ffl <-
                          # post.chunk = 200,
                          on.disk = TRUE, 
                          type = "link",
-                         storage.path = pattern.ff
+                         storage.path = pattern.ff,
                          cluster = cl,
                          ff.finalizer = "close"
   )
