@@ -27,8 +27,8 @@ amz.pred <- as.data.frame(amz.data[,
                                    ])
 amz.pred$b0 <- model.matrix(~ 1, amz.pred)
 
-set.seed(1234)
-sam <- sample(1:nrow(amz.pred), 5e4)
+# set.seed(1234)
+# sam <- sample(1:nrow(amz.pred), 5e4)
 
 cl <- makeCluster(2, outfile = "../log/linpred.log")
 
@@ -37,21 +37,29 @@ ffl <-
   evaluate_posterior_par(
                          model = amz.gam, 
                          posterior = amz.post, 
-                         newdata = amz.pred[sample(1:1e6, 1000),],
+                         newdata = amz.pred[sample(1:1e6, 2000),],
                          id.col = "id", 
                          row.chunk = 500,
-                         predict.chunk = 500,
+                         predict.chunk = 250,
                          # post.chunk = 200,
                          on.disk = TRUE, 
                          type = "link",
-                         storage.path = path.ff.tmp,
+                         storage.path = NULL,
                          cluster = cl,
                          # n.cores = 2,
                          ff.finalizer = "close"
   )
 })
 
-fflist_save(ffl, "./models/gam/amz.lp.nc", rootpath = path.ff.tmp)
+stopCluster(cl)
+
+ffl
+
+fflist_save(ffl, "ffl")
+
+fflist_delete(ffl)
+rm(ffl)
+
 
 
 

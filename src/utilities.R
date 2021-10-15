@@ -781,7 +781,7 @@ evaluate_posterior_par <-
            cluster,
            # n.cores = 1,
            storage.mode = "double",
-           storage.path = getOption("fftempdir"),
+           storage.path = NULL,
            ff.finalizer = "delete"
            # gc = TRUE
            ) {
@@ -825,20 +825,29 @@ evaluate_posterior_par <-
   if(!is.null(id.col)) {
     row.ids <- data[[id.col]]
   }
+  if(is.null(storage.path)) {
+    storage.path <- getOption("fftempdir")
+  } 
+  evaluated <- list()
+  for(node in 1:length(row.from)) {
+    if(on.disk) {
+      evaluated[[node]] <- ff(dim = c(row.chunks[node], m), vmode = storage.mode, 
+                                   finalizer = ff.finalizer)
+    } else {
+      evaluated[[node]] <- matrix(nrow = row.chunks[node], ncol = m)
+    }
+    if(!is.null(id.col)) { 
+      rownames(evaluated[[node]]) <- row.ids[row.from[node]:row.to[node]]
+    }
+  }
   registerDoParallel(cl = cluster)
   # Reduce data transfer
   model$model <- NA
   evaluated.l <- 
     foreach(i = 1:length(row.from), .packages = "ff") %dopar% {
+      options(fftempdir = storage.path)
       print(paste0(Sys.time(),
                    " Processing row chunk ", i, " of ", length(row.from), "."))
-      if(on.disk) {
-        evaluated <- ff(dim = c(row.chunks[i], m), vmode = storage.mode, 
-                                   pattern = paste0(storage.path, "/epos"),
-                                   finalizer = ff.finalizer)
-      } else {
-        evaluated <- matrix(nrow = row.chunks[i], ncol = m)
-      }
       predict.from <- seq(row.from[i], row.to[i], predict.chunk)
       if(length(predict.from) > 1) {
         predict.to <- c(predict.from[2:length(predict.from)]-1, row.to[i])
@@ -868,17 +877,17 @@ evaluate_posterior_par <-
           }
           rm(lp)
         }
-        evaluated[(predict.from[j]:predict.to[j]) - (row.from[i] - 1), ] <- 
+        evaluated[[i]][(predict.from[j]:predict.to[j]) - (row.from[i] - 1), ] <- 
           m.predict.chunk
         rm(Xp)
       }
       gc()
-      return(evaluated)
+      return(TRUE)
     }
   if(on.disk) {
-    return(fflist(evaluated.l, join_by = "row", ids = row.ids))
+    return(fflist(evaluated, join_by = "row", ids = row.ids))
   } else {
-    return(evaluated.l)
+    return(evaluated)
   }
 }
 
