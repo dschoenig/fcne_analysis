@@ -828,18 +828,6 @@ evaluate_posterior_par <-
   if(is.null(storage.path)) {
     storage.path <- getOption("fftempdir")
   } 
-  evaluated <- list()
-  for(node in 1:length(row.from)) {
-    if(on.disk) {
-      evaluated[[node]] <- ff(dim = c(row.chunks[node], m), vmode = storage.mode, 
-                                   finalizer = ff.finalizer)
-    } else {
-      evaluated[[node]] <- matrix(nrow = row.chunks[node], ncol = m)
-    }
-    if(!is.null(id.col)) { 
-      rownames(evaluated[[node]]) <- row.ids[row.from[node]:row.to[node]]
-    }
-  }
   registerDoParallel(cl = cluster)
   # Reduce data transfer
   model$model <- NA
@@ -868,7 +856,7 @@ evaluate_posterior_par <-
         print(paste0(Sys.time(),
                      " Prediction chunk ", j, " of ", length(predict.chunks),
                      " (row chunk ", i, ")."))
-        m.predict.chunk <- matrix(nrow = predict.to[j] - (predict.from[j] - 1),
+        m.predict.chunk <- matrix(nrow = predict.chunks[j],
                                   ncol = m)
         Xp <- predict(model, 
                       data[predict.from[j]:predict.to[j],],
@@ -886,17 +874,17 @@ evaluate_posterior_par <-
           }
           rm(lp)
         }
-        evaluated[[i]][(predict.from[j]:predict.to[j]) - (row.from[i] - 1), ] <- 
+        evaluated[(predict.from[j]:predict.to[j]) - (row.from[i] - 1), ] <- 
           m.predict.chunk
         rm(Xp)
       }
       gc()
-      return(TRUE)
+      return(evaluated)
     }
   if(on.disk) {
-    return(fflist(evaluated, join_by = "row", ids = row.ids))
+    return(fflist(evaluated.l, join_by = "row", ids = row.ids))
   } else {
-    return(evaluated)
+    return(evaluated.l)
   }
 }
 

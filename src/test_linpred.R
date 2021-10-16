@@ -31,8 +31,8 @@ amz.pred$b0 <- model.matrix(~ 1, amz.pred)
 set.seed(1234)
 sam <- sample(1:nrow(amz.pred), 4e3)
 
-nodeslist <- unlist(strsplit(Sys.getenv("NODESLIST"), split=" "))
-cl <- makeCluster(nodeslist, type = "PSOCK", outfile = file.log) 
+# nodeslist <- unlist(strsplit(Sys.getenv("NODESLIST"), split=" "))
+# cl <- makeCluster(nodeslist, type = "PSOCK", outfile = file.log) 
 
 a <- Sys.time()
 ffl <-
@@ -43,7 +43,7 @@ ffl <-
                          id.col = "id", 
                          row.chunk = 1000,
                          predict.chunk = 500,
-                         # post.chunk = 200,
+                         post.chunk = 200,
                          on.disk = TRUE, 
                          type = "link",
                          storage.path = pattern.ff,
@@ -52,6 +52,7 @@ ffl <-
   )
 b <- Sys.time()
 b-a
+stopCluster(cl)
 
 fflist_save(ffl, paste0(path.gam, "amz.lp.nc"))
 

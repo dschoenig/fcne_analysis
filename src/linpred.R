@@ -37,16 +37,15 @@ ffl <-
   evaluate_posterior_par(
                          model = amz.gam, 
                          posterior = amz.post, 
-                         newdata = amz.pred[sample(1:1e6, 2000),],
+                         newdata = amz.pred[sample(1:1e6, 250),],
                          id.col = "id", 
-                         row.chunk = 500,
+                         row.chunk = 250,
                          predict.chunk = 250,
-                         # post.chunk = 200,
+                         post.chunk = 200,
                          on.disk = TRUE, 
                          type = "link",
                          storage.path = NULL,
                          cluster = cl,
-                         # n.cores = 2,
                          ff.finalizer = "close"
   )
 })
@@ -63,7 +62,19 @@ rm(ffl)
 
 
 
-
+                         model = amz.gam 
+                         posterior = amz.post 
+                         newdata = amz.pred[sample(1:1e6, 250),]
+                         id.col = "id" 
+                         row.chunk = 250
+                         predict.chunk = 250
+                         post.chunk = 200
+                         on.disk = TRUE 
+                         type = "link"
+                         storage.path = NULL
+                         cluster = cl
+                         ff.finalizer = "close"
+                         storage.mode = "double"
 
 fam <- fix.family.rd(amz.gam$family)
 plot(density(fam$linkinv(colMeans(ffl[,]))))
