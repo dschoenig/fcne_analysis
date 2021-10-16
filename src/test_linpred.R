@@ -56,4 +56,5 @@ stopCluster(cl)
 
 fflist_save(ffl, paste0(path.gam, "amz.lp.nc"), rootpath = path.ff)
 
-
+fflist_delete(ffl)
+rm(ffl)
