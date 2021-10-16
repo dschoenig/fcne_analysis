@@ -517,7 +517,7 @@ print.fflist <- function(x, maxdim = c(10, 5), ...) {
 #   rm(savesims)
 # }
 
-fflist_save <- function(fflist, file, rootpath = getOption("fftempdir")) {
+fflist_save <- function(fflist, file, rootpath = NULL) {
   stopifnot("Object must be an `fflist`." = inherits(fflist, "fflist"))
   saveff <- new.env()
   for(i in 1:length(fflist)){
@@ -528,7 +528,7 @@ fflist_save <- function(fflist, file, rootpath = getOption("fftempdir")) {
 }
 
 fflist_load <- function(file, join_by = "row",
-                        overwrite = FALSE, rootpath = getOption("fftempdir")) {
+                        overwrite = FALSE, rootpath = NULL) {
   loadff <- new.env()
   ffload(file, envir = loadff, overwrite = overwrite, rootpath = rootpath)
   loaded <- as.list(loadff)
@@ -836,7 +836,7 @@ evaluate_posterior_par <-
       if(on.disk) {
         evaluated <- ff(dim = c(row.chunks[i], m), vmode = storage.mode, 
                                 finalizer = ff.finalizer,
-                                pattern = storage.path)
+                                pattern = paste0(storage.path, "epos"))
       } else {
         evaluated <- matrix(nrow = row.chunks[i], ncol = m)
       }
