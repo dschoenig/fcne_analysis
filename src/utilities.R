@@ -5,6 +5,7 @@ library(ggplot2)
 library(patchwork)
 library(doParallel)
 library(foreach)
+library(posterior)
 
 fit_models <- function(models, data, chunk.size = 1e6, path = "../results/models/", prefix = "", subset = NULL, summary = FALSE, gc.level = 0){
   # data: A `data.frame` containing the response and predictor variables
@@ -659,6 +660,18 @@ sim_post <- function(model,
   return(simulations)
 }
 
+chunk_seq <- function(from, to, size = to) {
+  chunk.from <- seq(from, to, size)
+  if(length(chunk.from) > 1) {
+    chunk.to <- c(chunk.from[2:length(chunk.from)]-1, to)
+  } else {
+    chunk.to <- to
+  }
+  chunk.size <- chunk.to - c(0, chunk.to[-length(chunk.to)])
+  return(list(from = chunk.from,
+              to = chunk.to,
+              size = chunk.size))
+}
 
 evaluate_posterior <- 
   function(
@@ -669,14 +682,10 @@ evaluate_posterior <-
            type = "link",
            obs = NULL,
            coef = NULL,
-           row.chunk = 1e3,
-           post.chunk = 200,
-           on.disk = FALSE,
-           cluster = NULL,
-           progress = TRUE,
-           storage.mode = "double",
-           storage.path = NULL,
-           ff.finalizer = "delete"
+           row.chunk = NULL,
+           predict.chunk = NULL,
+           post.chunk = NULL,
+           progress = TRUE
            ) {
   if(is.null(dim(posterior))) {
     posterior <- matrix(posterior, ncol = length(posterior))
@@ -691,64 +700,42 @@ evaluate_posterior <-
   }
   n <- nrow(data)
   m <- nrow(posterior)
-  weights <- model$prior.weights
-  scale <- model$sig2
-  row.from <- seq(1, n, row.chunk)
-  if(length(row.from) > 1) {
-    row.to <- c(row.from[2:length(row.from)]-1, n)
-  } else {
-    row.to <- n
-  }
-  post.from <- seq(1, m, post.chunk)
-  if(length(post.from) > 1) {
-    post.to <- c(post.from[2:length(post.from)]-1, m)
-  } else {
-    post.to <- m
-  }
-  post.chunks <- post.to - c(0, post.to[-length(post.to)])
+  if(is.null(predict.chunk)) predict.chunk <- n
+  if(is.null(post.chunk)) post.chunk <- m
+  predict.chunks <- chunk_seq(1, n, predict.chunk)
+  post.chunks <- chunk_seq(1, m, post.chunk)
   # Set excluded coefficients to 0
   if(is.numeric(coef)) {
     posterior[,-coef] <- 0
   }
-  evaluated <- list()
+  evaluated <- matrix(nrow = n, ncol = m)
   if(!is.null(id.col)) {
-    row.ids <- data[[id.col]]
-  }
-  if(is.null(storage.path)) {
-    storage.path <- getOption("fftempdir")
-  }
-  for(node in 1:length(post.from)) {
-    if(on.disk) {
-      evaluated[[node]] <- ff(dim = c(n, post.chunks[node]), vmode = storage.mode, 
-                                 pattern = paste0(storage.path, "/epos"), finalizer = ff.finalizer)
-    } else {
-      evaluated[[node]] <- matrix(nrow = n, ncol = post.chunks[node])
-    }
-    if(!is.null(id.col)) { 
-      rownames(evaluated[[node]]) <- row.ids
-    }
+    rownames(evaluated) <- data[[id.col]]
   }
   if(progress) {
-    prog <- txtProgressBar(min = 0, max = length(row.from), initial = 0,
-                          char = "=", width = NA, title = "Progress", style = 3)
+    prog <- txtProgressBar(min = 0, max = length(predict.chunks$from), initial = 0,
+                           char = "=", width = NA, title = "Progress", style = 3)
   }
-  for(i in 1:length(row.from)) {
+  for(i in 1:length(predict.chunks$from)) {
+    m.predict.chunk <- matrix(nrow = predict.chunks$size[i],
+                              ncol = m)
     Xp <- predict(model, 
-                  data[row.from[i]:row.to[i],],
+                  data[predict.chunks$from[i]:predict.chunks$to[i],],
                   type = "lpmatrix",
-                  block.size = row.chunk,
+                  block.size = predict.chunks$size[i],
                   newdata.guaranteed = TRUE,
-                  cluster = cluster)
-    for(j in 1:length(post.from)) {
-      lp <- Xp %*% t(posterior[post.from[j]:post.to[j],])
+                  cluster = NULL)
+    for(j in 1:length(post.chunks$from)) {
+      lp <- Xp %*% t(posterior[post.chunks$from[j]:post.chunks$to[j],])
       if(type == "response") {
         fam <- fix.family.rd(model$family)
-        evaluated[[j]][row.from[i]:row.to[i],] <- fam$linkinv(lp)
+        m.predict.chunk[, post.chunks$from[j]:post.chunks$to[j]] <- fam$linkinv(lp)
       } else {
-        evaluated[[j]][row.from[i]:row.to[i],] <- lp
+        m.predict.chunk[, post.chunks$from[j]:post.chunks$to[j]] <- lp
       }
       rm(lp)
     }
+    evaluated[(predict.chunks$from[i]:predict.chunks$to[i]), ] <- m.predict.chunk
     rm(Xp)
     gc()
     if(progress) {
@@ -756,11 +743,7 @@ evaluate_posterior <-
     }
   }
   if(progress) close(prog)
-  if(on.disk) {
-    return(fflist(evaluated, join_by = "col"))
-  } else {
-    return(evaluated)
-  }
+  return(as_draws_matrix(t(evaluated)))
 }
 
 
