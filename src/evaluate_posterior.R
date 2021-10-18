@@ -14,8 +14,6 @@ path.lp <- "/home/schoed/scratch/lp/"
 
 task_id <- as.integer(args[1])
 task_count <- as.integer(args[2])
-# task_id <- 3
-# task_count <- 10
 
 ## AMAZON ######################################################################
 
@@ -36,13 +34,6 @@ sam <- sample(1:nrow(amz.pred), 5e4)
 amz.pred <- amz.pred[sam,]
 
 
-# amz.pred <- gamSim(n = 1e5)
-# amz.pred$id <- sample(1:1e5, 1e5)
-# amz.gam <- gam(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = amz.pred)
-# amz.post <- rmvn(n = 1000, mu = coef(amz.gam), V = vcov(amz.gam, unconditional = TRUE))
-# amz.post <- as_draws(amz.post)
-
-
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(amz.pred), ceiling(nrow(amz.pred) / task_count))
 
@@ -50,6 +41,7 @@ print(paste0("Processing rows ", row.chunks$from[task_id],
              " to ", row.chunks$to[task_id],
              " (chunk ", task_id, " / ", task_count, ")"))
 
+# Evaluate posterior, calculate linear predictor
 a <- Sys.time()
 lpe <-
   evaluate_posterior(model = amz.gam,
@@ -64,14 +56,15 @@ lpe <-
 b <- Sys.time()
 b-a
 
+# Prepare export
 lpe.dt <- as.data.table(t(lpe))
 colnames(lpe.dt) <- paste0("draw.", colnames(lpe.dt))
 lpe.dt$id <- as.integer(colnames(lpe))
 setcolorder(lpe.dt, "id")
 
+# Export
 if(!dir.exists(paste0(path.lp, "amz.lp"))) {
   dir.create(paste0(path.lp, "amz.lp"))
 }
-
 write_parquet(lpe.dt, paste0(path.lp, "amz.lp/amz.lp-", task_id, ".parquet"))
 
