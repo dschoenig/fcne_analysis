@@ -32,7 +32,7 @@ amz.pred$b0 <- model.matrix(~ 1, amz.pred)
 
 # Reduce data for testing, 1e5 is size of final block
 set.seed(1234)
-sam <- sample(1:nrow(amz.pred), 1e5)
+sam <- sample(1:nrow(amz.pred), 5e4)
 amz.pred <- amz.pred[sam,]
 
 
