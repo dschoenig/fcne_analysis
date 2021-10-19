@@ -4,6 +4,17 @@ library(posterior)
 # library(ggplot2)
 # library(patchwork)
 
+
+link_cll <- function(mu) {
+  log(-log(1 - mu))
+}
+
+
+invlink_cll <- function(eta) {
+  pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
+}
+
+
 # model_overview <- function(models, path = "../results/models/", prefix = "") {
 #   # models: Character vector containing the names of the models to be loaded.
 #   n <- length(models)

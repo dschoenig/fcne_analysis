@@ -15,35 +15,40 @@ path.lp <- "/home/schoed/scratch/lp/"
 task_id <- as.integer(args[1])
 task_count <- as.integer(args[2])
 
-## AMAZON ######################################################################
+## CENTRAL AMERICA #############################################################
 
 # Load model, posterior draws, and data
-amz.gam <- readRDS(paste0(path.gam, "amz.m2.rds"))
-amz.post <- readRDS(paste0(path.gam, "amz.m2.post.rds"))
-amz.data <- readRDS(paste0(path.data.proc, "amz.data.proc.rds"))
+cam.gam <- readRDS(paste0(path.gam, "cam.m2.rds"))
+cam.post <- readRDS(paste0(path.gam, "cam.m2.post.rds"))
+cam.data <- readRDS(paste0(path.data.proc, "cam.data.proc.rds"))
 
 # Data for predict function
-amz.pred <- as.data.frame(amz.data[, 
+cam.pred <- as.data.frame(cam.data[, 
                                    .(id, forestloss, som_x, som_y, ed_east, ed_north, adm0)
                                    ])
-amz.pred$b0 <- model.matrix(~ 1, amz.pred)
+cam.pred$b0 <- model.matrix(~ 1, cam.pred)
 
 # Reduce data for test
-amz.pred <- amz.pred[1:5e4,]
+cam.pred <- cam.pred[1:5e4,]
 
 # Construct chunk overview
-row.chunks <- chunk_seq(1, nrow(amz.pred), ceiling(nrow(amz.pred) / task_count))
+row.chunks <- chunk_seq(1, nrow(cam.pred), ceiling(nrow(cam.pred) / task_count))
 
 print(paste0("Processing rows ", row.chunks$from[task_id],
              " to ", row.chunks$to[task_id],
              " (chunk ", task_id, " / ", task_count, ")"))
 
+# Marginalize posterior over covariate effects
+cam.post.mar <- cam.post
+cam.post.mar[, grep("som", colnames(cam.post.mar))] <- 0
+rm(cam.post)
+
 # Evaluate posterior, calculate linear predictor
 a <- Sys.time()
-lpe <-
-  evaluate_posterior(model = amz.gam,
-                     posterior = amz.post,
-                     newdata = amz.pred,
+lpe.mar <-
+  evaluate_posterior(model = cam.gam,
+                     posterior = cam.post.mar,
+                     newdata = cam.pred,
                      obs = row.chunks$from[task_id]:row.chunks$to[task_id],
                      id.col = "id",
                      predict.chunk = 1000,
@@ -54,14 +59,14 @@ b <- Sys.time()
 b-a
 
 # Prepare export
-lpe.dt <- as.data.table(t(lpe))
-colnames(lpe.dt) <- paste0("draw.", colnames(lpe.dt))
-lpe.dt$id <- as.integer(colnames(lpe))
-setcolorder(lpe.dt, "id")
+lpe.mar.dt <- as.data.table(t(lpe.mar))
+colnames(lpe.mar.dt) <- paste0("draw.", colnames(lpe.mar.dt))
+lpe.mar.dt$id <- as.integer(colnames(lpe.mar))
+setcolorder(lpe.mar.dt, "id")
 
 # Export
-if(!dir.exists(paste0(path.lp, "amz.lp"))) {
-  dir.create(paste0(path.lp, "amz.lp"))
+if(!dir.exists(paste0(path.lp, "cam.lp.mar"))) {
+  dir.create(paste0(path.lp, "cam.lp.mar"))
 }
-write_parquet(lpe.dt, paste0(path.lp, "amz.lp/amz.lp-", task_id, ".parquet"))
+write_parquet(lpe.mar.dt, paste0(path.lp, "cam.lp.mar/cam.lp.mar-", task_id, ".parquet"))
 

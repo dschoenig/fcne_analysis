@@ -15,7 +15,7 @@ path.lp <- "/home/schoed/scratch/lp/"
 task_id <- as.integer(args[1])
 task_count <- as.integer(args[2])
 
-## AMAZON ######################################################################
+## CENTRAL AMERICA #############################################################
 
 # Load model, posterior draws, and data
 amz.gam <- readRDS(paste0(path.gam, "amz.m2.rds"))
@@ -38,11 +38,16 @@ print(paste0("Processing rows ", row.chunks$from[task_id],
              " to ", row.chunks$to[task_id],
              " (chunk ", task_id, " / ", task_count, ")"))
 
+# Marginalize posterior over covariate effects
+amz.post.mar <- amz.post
+amz.post.mar[, grep("som", colnames(amz.post.mar))] <- 0
+rm(amz.post)
+
 # Evaluate posterior, calculate linear predictor
 a <- Sys.time()
-lpe <-
+lpe.mar <-
   evaluate_posterior(model = amz.gam,
-                     posterior = amz.post,
+                     posterior = amz.post.mar,
                      newdata = amz.pred,
                      obs = row.chunks$from[task_id]:row.chunks$to[task_id],
                      id.col = "id",
@@ -54,14 +59,14 @@ b <- Sys.time()
 b-a
 
 # Prepare export
-lpe.dt <- as.data.table(t(lpe))
-colnames(lpe.dt) <- paste0("draw.", colnames(lpe.dt))
-lpe.dt$id <- as.integer(colnames(lpe))
-setcolorder(lpe.dt, "id")
+lpe.mar.dt <- as.data.table(t(lpe.mar))
+colnames(lpe.mar.dt) <- paste0("draw.", colnames(lpe.mar.dt))
+lpe.mar.dt$id <- as.integer(colnames(lpe.mar))
+setcolorder(lpe.mar.dt, "id")
 
 # Export
-if(!dir.exists(paste0(path.lp, "amz.lp"))) {
-  dir.create(paste0(path.lp, "amz.lp"))
+if(!dir.exists(paste0(path.lp, "amz.lp.mar"))) {
+  dir.create(paste0(path.lp, "amz.lp.mar"))
 }
-write_parquet(lpe.dt, paste0(path.lp, "amz.lp/amz.lp-", task_id, ".parquet"))
+write_parquet(lpe.mar.dt, paste0(path.lp, "amz.lp.mar/amz.lp.mar-", task_id, ".parquet"))
 
