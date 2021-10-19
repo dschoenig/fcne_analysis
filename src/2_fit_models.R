@@ -5,7 +5,6 @@ library(mgcv)
 library(kohonen)
 library(mvnfast)
 source("utilities.R")
-options("ffbatchsize" = 1, "ffbatchbytes" = 2 * 2^30)
 
 ## Paths
 path.data.int <- "../data/intermediate/"
@@ -25,7 +24,7 @@ amz.som.xy <- data.table(amz.som$grid$pts[amz.som.mapped$unit.classif,])
 amz.data[, `:=`(som_x = amz.som.xy$x, som_y = amz.som.xy$y)]
 saveRDS(amz.data, paste0(path.data.proc, "amz.data.proc.rds"))
 amz.mod <- as.data.frame(amz.data[, 
-                                  .(id, forestloss, it_type, pa_type,
+                                  .(id, forestloss,
                                   som_x, som_y, ed_east, ed_north, adm0)
                                   ])
 amz.mod$b0 <- model.matrix(~ 1, amz.mod)
@@ -67,7 +66,7 @@ cam.som.xy <- data.table(cam.som$grid$pts[cam.som.mapped$unit.classif,])
 cam.data[, `:=`(som_x = cam.som.xy$x, som_y = cam.som.xy$y)]
 saveRDS(cam.data, paste0(path.data.proc, "cam.data.proc.rds"))
 cam.mod <- as.data.frame(cam.data[, 
-                                  .(id, forestloss, it_type, pa_type,
+                                  .(id, forestloss,
                                   som_x, som_y, ed_east, ed_north, adm0)
                                   ])
 cam.mod$b0 <- model.matrix(~ 1, cam.mod)
@@ -97,6 +96,4 @@ cam.m2 <-
 })
 saveRDS(cam.m2, paste0(path.gam, "cam.m2.rds"))
 rm(cam.m2, cam.mod)
-
-
 
