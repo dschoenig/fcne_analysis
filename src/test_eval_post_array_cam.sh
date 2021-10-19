@@ -8,4 +8,4 @@
 
 module load StdEnv/2020 r/4.1.0
 
-Rscript 4a_evaluate_posterior_mar_amz.R $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_COUNT
+Rscript 4a_evaluate_posterior_mar_cam.R $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_COUNT
