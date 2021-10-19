@@ -28,8 +28,8 @@ cam.pred <- as.data.frame(cam.data[,
                                    ])
 cam.pred$b0 <- model.matrix(~ 1, cam.pred)
 
-# Reduce data for test
-cam.pred <- cam.pred[1:5e4,]
+# # Reduce data for test
+# cam.pred <- cam.pred[1:5e4,]
 
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(cam.pred), ceiling(nrow(cam.pred) / task_count))

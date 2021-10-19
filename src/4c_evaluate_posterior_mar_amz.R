@@ -28,8 +28,8 @@ amz.pred <- as.data.frame(amz.data[,
                                    ])
 amz.pred$b0 <- model.matrix(~ 1, amz.pred)
 
-# Reduce data for test
-amz.pred <- amz.pred[1:5e4,]
+# # Reduce data for test
+# amz.pred <- amz.pred[1:5e4,]
 
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(amz.pred), ceiling(nrow(amz.pred) / task_count))
