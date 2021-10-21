@@ -1,6 +1,7 @@
 library(mgcv)
 library(data.table)
 library(posterior)
+library(doParallel)
 # library(ggplot2)
 # library(patchwork)
 
