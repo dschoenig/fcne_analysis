@@ -385,6 +385,8 @@ evaluate_posterior <-
   evaluated <- matrix(nrow = n, ncol = m)
   if(!is.null(id.col)) {
     rownames(evaluated) <- data[[id.col]]
+  } else {
+    rownames(evaluated) <- 1:nrow(data)
   }
   if(progress) {
     prog <- txtProgressBar(min = 0, max = length(predict.chunks$from), initial = 0,
@@ -418,7 +420,125 @@ evaluate_posterior <-
   }
   if(progress) close(prog)
   return(as_draws_matrix(t(evaluated)))
+  # return(t(evaluated))
 }
+
+summarize_predictions <- function(x, ...) {
+  UseMethod("summarize_predictions", x)
+}
+
+summarize_predictions.draws_matrix <- 
+  function(predictions,
+           fun = mean,
+           ids = NULL,
+           draw.chunk = NULL,
+           n.cores = 1,
+           ...) {
+  if(is.null(ids)) {
+    ids <- 1:ncol(predictions)
+  }
+  idx <- which(colnames(predictions) %in% ids)
+  if(is.null(draw.chunk)) {
+    draw.chunk <- nrow(predictions)
+  }
+  draw.chunks <- chunk_seq(1, nrow(predictions), draw.chunk)
+  registerDoParallel(cores = n.cores)
+  pred_summarized <-
+    foreach(i = 1:length(draw.chunks$from),
+            .combine = c) %dopar% {
+      pred_summarized_chunk <- 
+        apply(predictions[draw.chunks$from[i]:draw.chunks$to[i],idx], 1, fun)
+    }
+  stopImplicitCluster()
+  return(rvar(pred_summarized))
+}
+
+summarize_predictions.FileSystemDataset <- 
+  function(predictions,
+           fun = mean,
+           ids = NULL,
+           id.col = NULL,
+           draw.prefix = "draw",
+           draw.chunk = NULL,
+           n.cores = 1,
+           ...) {
+  if(is.null(ids)) {
+    ids <- 1:nrow(predictions)
+  }
+  if(is.null(id.col)) {
+    source.ids <- 1:nrow(predictions)
+  } else {
+    source.ids <- as.data.frame(predictions[, id.col])[[id.col]]
+  }
+  idx <- which(source.ids %in% ids)
+  if(is.null(draw.prefix)) {
+    draw.cols <- 1:ncol(predictions)
+  } else {
+    draw.cols <- grep(draw.prefix, names(predictions))
+  }
+  if(is.null(draw.chunk)) {
+    draw.chunk <- length(draw.cols)
+  }
+  draw.chunks <- chunk_seq(1, length(draw.cols), draw.chunk)
+  registerDoParallel(cores = n.cores)
+  predictions.summarized <-
+    foreach(i = 1:length(draw.chunks$from),
+            .combine = c) %dopar% {
+      predictions.pulled <- 
+        as.data.frame(predictions[idx,
+                                  draw.cols[draw.chunks$from[i]:draw.chunks$to[i]]])
+      predictions.summarized.chunk <- 
+        apply(t(as.matrix(predictions.pulled)), 1, fun)
+      return(predictions.summarized.chunk)
+    }
+  stopImplicitCluster()
+  return(rvar(predictions.summarized))
+}
+
+
+summarize_predictions_by <- 
+  function(predictions,
+           data = NULL,
+           fun = mean,
+           id.col = NULL,
+           group.vars = NULL,
+           group.labels = NULL,
+           draw.prefix = "draw",
+           draw.chunk = NULL,
+           n.cores = 1,
+           ...) {
+  setDT(data)
+  if(is.null(id.col)) {
+    groups <- data[, .(n = .N, ids = list(.I)), group.vars]
+  } else {
+    groups <- data[, .(n = .N, ids = list(data$id[.I])), group.vars]
+  }
+  if(!is.null(group.labels)) {
+    for(i in 1:length(group.vars)) {
+      old.labels <- as.character(groups[[group.vars[i]]])
+      new.labels <- factor(group.labels[[i]][old.labels], 
+                           levels = group.labels[[i]])
+      groups[[group.vars[i]]] <- new.labels
+    }
+  }
+  summary.labels <- do.call(paste, c(groups[, 1:length(group.vars)] , sep = "."))
+  groups.summarized <- list()
+  for(i in 1:nrow(groups)) {
+    group.summary <- 
+      summarize_predictions(predictions,
+                            fun = fun,
+                            ids = unlist(groups[i, ids]),
+                            id.col = id.col,
+                            draw.prefix = draw.prefix,
+                            draw.chunk = draw.chunk,
+                            n.cores = n.cores
+                            # , ...
+                            )
+    groups.summarized[[summary.labels[i]]] <- group.summary
+  }
+  return(as_draws_matrix(groups.summarized))
+}
+
 
 bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, append = FALSE) {
   bins.l <- vector(mode = "list", length = length(columns))
