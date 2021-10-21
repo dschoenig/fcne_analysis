@@ -9,7 +9,6 @@ link_cll <- function(mu) {
   log(-log(1 - mu))
 }
 
-
 invlink_cll <- function(eta) {
   pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
 }
@@ -358,7 +357,6 @@ evaluate_posterior <-
            type = "link",
            obs = NULL,
            coef = NULL,
-           row.chunk = NULL,
            predict.chunk = NULL,
            post.chunk = NULL,
            progress = TRUE
