@@ -7,7 +7,7 @@
 
 module load StdEnv/2020 r/4.1.0
 
-Rscript 4a_evaluate_posterior_mar_amz.R 1999 5000
-Rscript 4b_evaluate_posterior_mar_amz.R 1999 5000
+Rscript 4a_evaluate_posterior_amz.R 1999 5000
+Rscript 4b_evaluate_posterior_cam.R 1999 5000
 Rscript 4c_evaluate_posterior_mar_amz.R 1999 5000
-Rscript 4d_evaluate_posterior_mar_amz.R 1999 5000
+Rscript 4d_evaluate_posterior_mar_cam.R 1999 5000
