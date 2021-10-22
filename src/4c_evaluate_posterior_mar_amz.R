@@ -11,7 +11,7 @@ path.base <- "/home/schoed/scratch/fcne_analysis/"
 # path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
-path.lp <- paste0(path.base, "models/gam/lp")
+path.lp <- paste0(path.base, "models/gam/lp/")
 
 task_id <- as.integer(args[1])
 task_count <- as.integer(args[2])
