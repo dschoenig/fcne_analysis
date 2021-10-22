@@ -522,6 +522,7 @@ summarize_predictions_by <-
       groups[[group.vars[i]]] <- new.labels
     }
   }
+  setorderv(groups, group.vars)
   summary.labels <- do.call(paste, c(groups[, 1:length(group.vars)] , sep = "."))
   groups.summarized <- list()
   for(i in 1:nrow(groups)) {
