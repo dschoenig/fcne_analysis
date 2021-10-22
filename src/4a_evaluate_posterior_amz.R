@@ -7,10 +7,11 @@ library(arrow)
 
 source("utilities.R")
 
-path.gam <- "../models/gam/"
-path.data.proc <- "../data/processed/"
-path.lp <- "/home/schoed/scratch/lp/"
-# path.lp <- "../tmp/lp/"
+path.base <- "/home/schoed/scratch/fcne_analysis/"
+# path.base <- "../"
+path.gam <- paste0(path.base, "models/gam/")
+path.data.proc <- paste0(path.base, "data/processed/")
+path.lp <- paste0(path.base, "models/gam/lp")
 
 task_id <- as.integer(args[1])
 task_count <- as.integer(args[2])
@@ -24,12 +25,13 @@ amz.data <- readRDS(paste0(path.data.proc, "amz.data.proc.rds"))
 
 # Data for predict function
 amz.pred <- as.data.frame(amz.data[, 
-                                   .(id, forestloss, som_x, som_y, ed_east, ed_north, adm0)
+                                   .(id, forestloss, it_type, pa_type,
+                                     som_x, som_y, ed_east, ed_north, adm0)
                                    ])
-amz.pred$b0 <- model.matrix(~ 1, amz.pred)
+amz.pred$P <- model.matrix(~ it_type * pa_type * adm0, amz.pred)
 
-# Reduce data for test
-amz.pred <- amz.pred[1:5e4,]
+# # Reduce data for test
+# amz.pred <- amz.pred[1:5e4,]
 
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(amz.pred), ceiling(nrow(amz.pred) / task_count))

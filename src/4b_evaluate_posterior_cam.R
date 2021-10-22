@@ -7,15 +7,16 @@ library(arrow)
 
 source("utilities.R")
 
-path.gam <- "../models/gam/"
-path.data.proc <- "../data/processed/"
-path.lp <- "/home/schoed/scratch/lp/"
-# path.lp <- "../tmp/lp/"
+path.base <- "/home/schoed/scratch/fcne_analysis/"
+# path.base <- "../"
+path.gam <- paste0(path.base, "models/gam/")
+path.data.proc <- paste0(path.base, "data/processed/")
+path.lp <- paste0(path.base, "models/gam/lp")
 
 task_id <- as.integer(args[1])
 task_count <- as.integer(args[2])
 
-## AMAZON ######################################################################
+## CENTRAL AMERICA #############################################################
 
 # Load model, posterior draws, and data
 cam.gam <- readRDS(paste0(path.gam, "cam.m2.rds"))
@@ -24,12 +25,13 @@ cam.data <- readRDS(paste0(path.data.proc, "cam.data.proc.rds"))
 
 # Data for predict function
 cam.pred <- as.data.frame(cam.data[, 
-                                   .(id, forestloss, som_x, som_y, ed_east, ed_north, adm0)
+                                   .(id, forestloss, it_type, pa_type,
+                                     som_x, som_y, ed_east, ed_north, adm0)
                                    ])
-cam.pred$b0 <- model.matrix(~ 1, cam.pred)
+cam.pred$P <- model.matrix(~ it_type * pa_type * adm0, cam.pred)
 
-# Reduce data for test
-cam.pred <- cam.pred[1:5e4,]
+# # Reduce data for test
+# cam.pred <- cam.pred[1:5e4,]
 
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(cam.pred), ceiling(nrow(cam.pred) / task_count))
