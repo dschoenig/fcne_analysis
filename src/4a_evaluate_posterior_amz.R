@@ -30,11 +30,12 @@ amz.pred <- as.data.frame(amz.data[,
                                    ])
 amz.pred$P <- model.matrix(~ it_type * pa_type * adm0, amz.pred)
 
-# # Reduce data for test
-# amz.pred <- amz.pred[1:5e4,]
-
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(amz.pred), ceiling(nrow(amz.pred) / task_count))
+
+# Subset data
+amz.pred <- amz.pred[row.chunks$from[task_id]:row.chunks$to[task_id],]
+gc()
 
 print(paste0("Processing rows ", row.chunks$from[task_id],
              " to ", row.chunks$to[task_id],
@@ -46,9 +47,9 @@ lpe <-
   evaluate_posterior(model = amz.gam,
                      posterior = amz.post,
                      newdata = amz.pred,
-                     obs = row.chunks$from[task_id]:row.chunks$to[task_id],
+                     # obs = row.chunks$from[task_id]:row.chunks$to[task_id],
                      id.col = "id",
-                     predict.chunk = 1000,
+                     predict.chunk = 500,
                      post.chunk = 200,
                      type = "link",
                      progress = TRUE)

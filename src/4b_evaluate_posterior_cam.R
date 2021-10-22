@@ -30,11 +30,12 @@ cam.pred <- as.data.frame(cam.data[,
                                    ])
 cam.pred$P <- model.matrix(~ it_type * pa_type * adm0, cam.pred)
 
-# # Reduce data for test
-# cam.pred <- cam.pred[1:5e4,]
-
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(cam.pred), ceiling(nrow(cam.pred) / task_count))
+
+# Subset data
+cam.pred <- cam.pred[row.chunks$from[task_id]:row.chunks$to[task_id],]
+gc()
 
 print(paste0("Processing rows ", row.chunks$from[task_id],
              " to ", row.chunks$to[task_id],
@@ -46,9 +47,9 @@ lpe <-
   evaluate_posterior(model = cam.gam,
                      posterior = cam.post,
                      newdata = cam.pred,
-                     obs = row.chunks$from[task_id]:row.chunks$to[task_id],
+                     # obs = row.chunks$from[task_id]:row.chunks$to[task_id],
                      id.col = "id",
-                     predict.chunk = 1000,
+                     predict.chunk = 500,
                      post.chunk = 200,
                      type = "link",
                      progress = TRUE)
