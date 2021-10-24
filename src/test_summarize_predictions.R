@@ -160,17 +160,41 @@ cam.data <- cam.data[1:1e5,]
 library(arrow)
 predictions <- open_dataset("../models/gam/lp/cam.lp.mar")
 
-sr <- summarize_predictions_by(predictions, data = cam.data[pa_type == "none",], 
+
+
+bl.cam <- summarize_predictions(predictions, 
+                                ids = cam.data[pa_type == "none" & it_type == "none", id],
+                                fun = mean, id.col = "id",
+                                draw.chunk = 250, n.cores = 4)
+bl.cam
+
+bl.pan <- summarize_predictions(predictions, 
+                                ids = cam.data[pa_type == "none" &
+                                               it_type == "none" &
+                                               adm0 == "PAN",
+                                               id],
+                                fun = mean, id.col = "id",
+                                draw.chunk = 250, n.cores = 4)
+bl.pan
+
+
+
+sr <- summarize_predictions_by(predictions,
+                               data = cam.data[it_type != "none" & adm0 == "PAN",], 
                                fun = mean, id.col = "id",
-                               group.vars = c("it_type", "adm0"),
+                               group.vars = "it_type",
                                draw.chunk = 250, n.cores = 4)
 
-base <- summarize_predictions(predictions, data = cam.data[pa_type == "none" & it_type == "none",],
-                              fun = mean, id.col = "id",
-                              draw.chunk = 250, n.cores = 4)
+summary(expm1(sr - as.numeric(draws_of(bl.pan))))
 
 
-summary(sr - as.numeric(draws_of(base)))[9:22,1:2]
+sr <- summarize_predictions_by(predictions,
+                               data = cam.data[pa_type != "none",], 
+                               fun = mean, id.col = "id",
+                               group.vars = "pa_type",
+                               draw.chunk = 250, n.cores = 4)
+sr - as.numeric(draws_of(bl.cam))
+
 
 cam.data[it_type == "none", sum(forestloss)/.N, c("pa_type", "it_type")]
 

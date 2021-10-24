@@ -50,7 +50,7 @@ cam.mod$P <- model.matrix(~ it_type * pa_type, cam.mod)
 cam.mod$P2 <- model.matrix(~ it_type * pa_type * adm0, cam.mod)
 # rm(cam.data, cam.som, cam.som.mapped)
 
-k = 500
+k = 200
 max.knots = 2000
 
 cam.m0a <-
