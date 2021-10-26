@@ -10,7 +10,7 @@ source("utilities.R")
 path.data.int <- "../data/intermediate/"
 path.data.proc <- "../data/processed/"
 path.som <- "../models/som/"
-path.gam <- "../models/gam/test/"
+path.gam <- "../models/gam/"
 
 model.reg <- tolower(as.character(args[1]))
 model.type <- as.character(args[2])
@@ -66,9 +66,34 @@ if(model.type == "int") {
         s(it_type, pa_type, adm0, bs = "re"),
         family = binomial(link = "cloglog"),
         data = data.mod,
-        drop.intercept = FALSE,
         select = TRUE,
-        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+
+if(model.type == "drop") {
+  model <-
+    bam(forestloss ~ - 1 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(it_type, pa_type, adm0, bs = "re"),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
