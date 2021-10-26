@@ -1,3 +1,5 @@
+args <- commandArgs(trailingOnly = TRUE)
+
 library(data.table)
 library(mgcv)
 library(kohonen)
@@ -9,89 +11,120 @@ path.data.int <- "../data/intermediate/"
 path.data.proc <- "../data/processed/"
 path.som <- "../models/som/"
 path.gam <- "../models/gam/"
+
+model.reg <- tolower(as.character(args[1]))
+model.id <- as.integer(args[2])
+n.threads <- ifelse(length(args) < 3, c(2,1), as.integer(args[3]))
+
 dir.create(path.gam, recursive = TRUE)
+dir.create(path.data.proc, recursive = TRUE)
+
+file.data.int <- paste0(path.data.int, model.reg, ".data.int.rds")
+file.data.proc <- paste0(path.data.proc, model.reg, ".data.proc.rds")
+file.som <- paste0(path.som, model.reg, ".som.1e6.rds")
+file.som.mapped <- paste0(path.data.int, model.reg, ".som.mapped")
+model.name <- paste0(model.reg, ".m", model.id)
+
+k.def = 1000
+max.knots.def = 10000
+# k.def = 100
+# max.knots.def = 1000
+
+## FIT MODELS ##################################################################
 
 
-## AMAZON ######################################################################
+print("Processing data ...")
+if(file.exists(file.data.proc)) {
+  data.proc <- readRDS(file.data.proc)
+} else {
+  data.proc <- readRDS(file.data.int)
+  som.fit <- readRDS(file.som)
+  som.mapped <- readRDS(file.som.mapped)
 
-amz.data <- readRDS(paste0(path.data.int, "amz.data.rds"))
-amz.som <- readRDS(paste0(path.som, "amz.som.1e6.rds"))
-amz.som.mapped <- readRDS(paste0(path.data.int, "amz.som.mapped"))
+  som.xy <- data.table(som.fit$grid$pts[som.mapped$unit.classif,])
+  data.proc[, `:=`(som_x = som.xy$x, som_y = som.xy$y)]
+  saveRDS(data.proc, file.data.proc)
+}
 
-amz.som.xy <- data.table(amz.som$grid$pts[amz.som.mapped$unit.classif,])
-amz.data[, `:=`(som_x = amz.som.xy$x, som_y = amz.som.xy$y)]
-saveRDS(amz.data, paste0(path.data.proc, "amz.data.proc.rds"))
-amz.mod <- as.data.frame(amz.data[, 
-                                  .(id, forestloss, it_type, pa_type,
-                                  som_x, som_y, ed_east, ed_north, adm0)
-                                  ])
-amz.mod$P <- model.matrix(~ it_type * pa_type * adm0, amz.mod)
-rm(amz.data, amz.som, amz.som.mapped)
+# data.proc <- data.proc[1:1e5,]
 
-k = 2000
-max.knots = 10000
-# Penalized intercept
-system.time({
-amz.m2 <-
-  bam(forestloss ~ -1 +
-      P +
-      s(ed_east, ed_north, bs = 'gp', k = k, xt = list(max.knots = max.knots)) +
-      s(som_x, som_y, bs = 'gp', k = k/2, xt = list(max.knots = max.knots)) +
-      s(som_x, som_y, bs = 'gp', by = adm0, k = k/2, xt = list(max.knots = max.knots)) +
-      s(adm0, bs = 're'),
-      family = binomial(link = "cloglog"),
-      data = amz.mod,
-      drop.intercept = FALSE,
-      select = TRUE,
-      paraPen = list(P = list(diag(81))),
-      chunk.size = 5e3,
-      discrete = TRUE,
-      nthreads = c(2,1),
-      gc.level = 0
-      )
-})
-saveRDS(amz.m2, paste0(path.gam, "amz.m2.rds"))
+data.mod <- as.data.frame(data.proc)
+data.mod$b0 <- model.matrix(~ 1, data.mod)
+rm(data.proc)
 
-rm(amz.m2, amz.mod)
-gc()
+print(paste0("Fitting model `", model.name, "` ..."))
 
-## CENTRAL AMERICA #############################################################
+if(model.id == 1) {
+  model <-
+    bam(forestloss ~ 
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = 2*k.def, xt = list(max.knots = max.knots.def)),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        drop.intercept = FALSE,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
 
-cam.data <- readRDS(paste0(path.data.int, "cam.data.rds"))
-cam.som <- readRDS(paste0(path.som, "cam.som.1e6.rds"))
-cam.som.mapped <- readRDS(paste0(path.data.int, "cam.som.mapped"))
-cam.som.xy <- data.table(cam.som$grid$pts[cam.som.mapped$unit.classif,])
-cam.data[, `:=`(som_x = cam.som.xy$x, som_y = cam.som.xy$y)]
-saveRDS(cam.data, paste0(path.data.proc, "cam.data.proc.rds"))
-cam.mod <- as.data.frame(cam.data[, 
-                                  .(id, forestloss, it_type, pa_type,
-                                  som_x, som_y, ed_east, ed_north, adm0)
-                                  ])
-cam.mod$P <- model.matrix(~ it_type * pa_type * adm0, cam.mod)
-rm(cam.data, cam.som, cam.som.mapped)
+if(model.id == 2) {
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = 2*k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(adm0, bs = "re"),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        drop.intercept = FALSE,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
 
-k = 2000
-max.knots = 10000
-# Penalized intercept
-system.time({
-cam.m2 <-
-  bam(forestloss ~ -1 +
-      P +
-      s(ed_east, ed_north, bs = 'gp', k = k, xt = list(max.knots = max.knots)) +
-      s(som_x, som_y, bs = 'gp', k = k/2, xt = list(max.knots = max.knots)) +
-      s(som_x, som_y, bs = 'gp', by = adm0, k = k/2, xt = list(max.knots = max.knots)) +
-      s(adm0, bs = 're'),
-      family = binomial(link = "cloglog"),
-      data = cam.mod,
-      drop.intercept = FALSE,
-      select = TRUE,
-      paraPen = list(P = list(diag(72))),
-      chunk.size = 5e3,
-      discrete = TRUE,
-      nthreads = c(2,1),
-      gc.level = 0
-      )
-})
-saveRDS(cam.m2, paste0(path.gam, "cam.m2.rds"))
-rm(cam.m2, cam.mod)
+if(model.id == 3) {
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(it_type, pa_type, adm0, bs = "re"),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        drop.intercept = FALSE,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+print("Saving fitted model ...")
+saveRDS(model, paste0(path.gam, model.name, ".rds"))
+
 

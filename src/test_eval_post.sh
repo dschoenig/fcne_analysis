@@ -7,4 +7,4 @@
 
 module load StdEnv/2020 r/4.1.0
 
-Rscript 4c_evaluate_posterior_mar_amz.R 1 200
+Rscript 4_evaluate_lp.R AMZ marginal 1 200

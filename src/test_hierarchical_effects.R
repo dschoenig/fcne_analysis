@@ -1,6 +1,3 @@
-library(mgcv)
-source("utilities.R")
-
 # Test with Central America model
 
 library(data.table)
@@ -29,19 +26,35 @@ cam.mod <- as.data.frame(cam.data[,
                                   som_x, som_y, ed_east, ed_north, adm0)
                                   ])
 cam.mod$b0 <- model.matrix(~ 1, cam.mod)
-cam.mod$P <- model.matrix(~ it_type * pa_type, cam.mod)
-cam.mod$P2 <- model.matrix(~ it_type * pa_type * adm0, cam.mod)
+# cam.mod$P <- model.matrix(~ it_type * pa_type, cam.mod)
+# cam.mod$P2 <- model.matrix(~ it_type * pa_type * adm0, cam.mod)
 # rm(cam.data, cam.som, cam.som.mapped)
 
-k = 200
+k = 100
 max.knots = 2000
 
-cam.m3 <-
-  bam(forestloss ~ -1 +
-      P2 +
-      s(ed_east, ed_north, bs = 'gp', k = k, xt = list(max.knots = max.knots)) +
-      s(som_x, som_y, bs = 'gp', k = k/2, xt = list(max.knots = max.knots)) +
-      s(som_x, som_y, bs = 'gp', by = adm0, k = k/2, xt = list(max.knots = max.knots)),
+cam.m1 <-
+  bam(forestloss ~ 
+      -1 + b0 +
+      s(ed_east, ed_north, bs = 'gp', k = 2*k, xt = list(max.knots = max.knots)),
+      family = binomial(link = "cloglog"),
+      data = cam.mod,
+      drop.intercept = FALSE,
+      select = TRUE,
+      paraPen = list(P2 = list(diag(72))),
+      chunk.size = 5e3,
+      discrete = TRUE,
+      nthreads = c(2,1),
+      gc.level = 0
+      )
+
+cam.m2 <-
+  bam(forestloss ~
+      -1 + b0 +
+      s(ed_east, ed_north, bs = 'gp', k = 2*k, xt = list(max.knots = max.knots)) +
+      s(som_x, som_y, bs = 'gp', k = k, xt = list(max.knots = max.knots)) +
+      s(som_x, som_y, bs = 'gp', by = adm0, k = k, xt = list(max.knots = max.knots)) +
+      s(adm0, bs = "re"),
       family = binomial(link = "cloglog"),
       data = cam.mod,
       drop.intercept = FALSE,
@@ -68,10 +81,9 @@ cam.data[,
 cam.mod2 <- as.data.frame(cam.data)
 cam.mod2$b0 <- model.matrix(~ 1, cam.mod2)
 
-k = 100
-cam.m4 <-
-  bam(forestloss ~ -1 +
-      b0 +
+cam.m3 <-
+  bam(forestloss ~
+      -1 + b0 +
       s(ed_east, ed_north, bs = 'gp', k = k, xt = list(max.knots = max.knots)) +
       s(ed_east, ed_north, bs = 'gp', by = it_type, k = k, xt = list(max.knots = max.knots)) +
       s(ed_east, ed_north, bs = 'gp', by = pa_type, k = k, xt = list(max.knots = max.knots)) +
@@ -90,8 +102,10 @@ cam.m4 <-
       gc.level = 0
       )
 
-models <- list(cam.m3 = cam.m3,
-               cam.m4 = cam.m4)
+models <- list(cam.m1 = cam.m1,
+               cam.m2 = cam.m2,
+               cam.m3 = cam.m3)
+
 
 
 summarize_effects <- function(models, evaluate_data, summarize_data) {
@@ -159,19 +173,24 @@ summarize_effects <- function(models, evaluate_data, summarize_data) {
   return(effects_overview)
 }
 
-AIC(cam.m3, cam.m4)
+AIC(cam.m1, cam.m2, cam.m3)
 
 evaluate_data <- cam.mod2
 summarize_data <- cam.data
 
 cam.eval <- as.data.frame(cam.data)
 cam.eval$b0 <- model.matrix(~ 1, cam.eval)
-cam.eval$P2 <- model.matrix(~ it_type * pa_type * adm0, cam.eval)
+# cam.eval$P2 <- model.matrix(~ it_type * pa_type * adm0, cam.eval)
 
 effects <- summarize_effects(models, cam.eval, cam.data)
 effects_pan <- summarize_effects(models, cam.eval[cam.eval$adm0 == "PAN",], cam.data[adm0 == "PAN",])
+effects_gtm <- summarize_effects(models, cam.eval[cam.eval$adm0 == "GTM",], cam.data[adm0 == "GTM",])
 
 effects
+effects_pan
+effects_gtm
 
 summary(cam.m3, re.test = FALSE)
 summary(cam.m4, re.test = FALSE)
+
+
