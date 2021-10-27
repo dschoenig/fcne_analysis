@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --account=def-cricrime 
-#SBATCH --mem-per-cpu=32G
-#SBATCH --time=04:00:00
+#SBATCH --mem-per-cpu=38G
+#SBATCH --time=07:00:00
 #SBATCH --array=1-200
 #SBATCH --mail-user=schonig.daniel@courrier.uqam.ca
 #SBATCH --mail-type=ALL
