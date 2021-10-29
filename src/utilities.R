@@ -411,6 +411,7 @@ evaluate_posterior <-
            type = "link",
            obs = NULL,
            coef = NULL,
+           marginals = NULL,
            predict.chunk = NULL,
            post.chunk = NULL,
            progress = TRUE
@@ -436,36 +437,43 @@ evaluate_posterior <-
   if(is.numeric(coef)) {
     posterior[,-coef] <- 0
   }
-  evaluated <- matrix(nrow = n, ncol = m)
+  if(is.null(marginals)) {
+    marginals <- list(1:ncol(posterior))
+  }
+  evaluated <- array(dim = c(n, m, length(marginals)))
   if(!is.null(id.col)) {
-    rownames(evaluated) <- data[[id.col]]
+    dimnames(evaluated)[1] <- list(data[[id.col]])
   } else {
-    rownames(evaluated) <- 1:nrow(data)
+    dimnames(evaluated)[1] <- list(1:nrow(data))
   }
   if(progress) {
     prog <- txtProgressBar(min = 0, max = length(predict.chunks$from), initial = 0,
                            char = "=", width = NA, title = "Progress", style = 3)
   }
   for(i in 1:length(predict.chunks$from)) {
-    m.predict.chunk <- matrix(nrow = predict.chunks$size[i],
-                              ncol = m)
     Xp <- predict(model, 
                   data[predict.chunks$from[i]:predict.chunks$to[i],],
                   type = "lpmatrix",
                   block.size = predict.chunks$size[i],
                   newdata.guaranteed = TRUE,
                   cluster = NULL)
-    for(j in 1:length(post.chunks$from)) {
-      lp <- Xp %*% t(posterior[post.chunks$from[j]:post.chunks$to[j],])
-      if(type == "response") {
-        fam <- fix.family.rd(model$family)
-        m.predict.chunk[, post.chunks$from[j]:post.chunks$to[j]] <- fam$linkinv(lp)
-      } else {
-        m.predict.chunk[, post.chunks$from[j]:post.chunks$to[j]] <- lp
+    for(j in 1:length(marginals)) {
+    m.predict.chunk <- matrix(nrow = predict.chunks$size[i],
+                              ncol = m)
+      for(k in 1:length(post.chunks$from)) {
+        lp <- Xp[, marginals[[j]]] %*% t(posterior[post.chunks$from[k]:post.chunks$to[k],
+                                               marginals[[j]]])
+        if(type == "response") {
+          fam <- fix.family.rd(model$family)
+          m.predict.chunk[, post.chunks$from[k]:post.chunks$to[k]] <- fam$linkinv(lp)
+        } else {
+          m.predict.chunk[, post.chunks$from[k]:post.chunks$to[k]] <- lp
+        }
+        rm(lp)
       }
-      rm(lp)
+    evaluated[(predict.chunks$from[i]:predict.chunks$to[i]), , j] <- m.predict.chunk
+    rm(m.predict.chunk)
     }
-    evaluated[(predict.chunks$from[i]:predict.chunks$to[i]), ] <- m.predict.chunk
     rm(Xp)
     gc()
     if(progress) {
@@ -473,8 +481,16 @@ evaluate_posterior <-
     }
   }
   if(progress) close(prog)
-  return(as_draws_matrix(t(evaluated)))
-  # return(t(evaluated))
+  evaluated <- lapply(seq(dim(evaluated)[3]),
+                        \(x) {y <- evaluated[ , , x]
+                              dimnames(y)[1:2] <- dimnames(evaluated)[1:2]
+                              return(as_draws_matrix(t(y)))})
+  if(length(marginals) == 1) {
+    return(evaluated[[1]])
+  } else {
+    names(evaluated) <- names(marginals)
+    return(evaluated)
+  }
 }
 
 summarize_predictions <- function(x, ...) {
