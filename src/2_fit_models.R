@@ -25,10 +25,10 @@ file.som <- paste0(path.som, model.reg, ".som.1e6.rds")
 file.som.mapped <- paste0(path.data.int, model.reg, ".som.mapped")
 model.name <- paste0(model.reg, ".m", model.id)
 
-k.def = 1000
-max.knots.def = 10000
-# k.def = 100
-# max.knots.def = 1000
+# k.def = 1000
+# max.knots.def = 10000
+k.def = 100
+max.knots.def = 1000
 
 ## FIT MODELS ##################################################################
 
@@ -46,7 +46,7 @@ if(file.exists(file.data.proc)) {
   saveRDS(data.proc, file.data.proc)
 }
 
-# data.proc <- data.proc[1:1e5,]
+data.proc <- data.proc[1:1e5,]
 
 data.mod <- as.data.frame(data.proc)
 data.mod$b0 <- model.matrix(~ 1, data.mod)
@@ -57,14 +57,13 @@ print(paste0("Fitting model `", model.name, "` ..."))
 if(model.id == 1) {
   model <-
     bam(forestloss ~ 
-        -1 + b0 +
+        -1 +
         s(ed_east, ed_north, bs = 'gp',
           k = 2*k.def, xt = list(max.knots = max.knots.def)),
         family = binomial(link = "cloglog"),
         data = data.mod,
         drop.intercept = FALSE,
         select = TRUE,
-        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
@@ -75,7 +74,7 @@ if(model.id == 1) {
 if(model.id == 2) {
   model <-
     bam(forestloss ~
-        -1 + b0 +
+        -1 +
         s(ed_east, ed_north, bs = 'gp',
           k = 2*k.def, xt = list(max.knots = max.knots.def)) +
         s(som_x, som_y, bs = 'gp',
@@ -87,7 +86,6 @@ if(model.id == 2) {
         data = data.mod,
         drop.intercept = FALSE,
         select = TRUE,
-        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
@@ -98,7 +96,7 @@ if(model.id == 2) {
 if(model.id == 3) {
   model <-
     bam(forestloss ~
-        -1 + b0 +
+        -1 +
         s(ed_east, ed_north, bs = 'gp',
           k = k.def, xt = list(max.knots = max.knots.def)) +
         s(ed_east, ed_north, bs = 'gp',
@@ -116,7 +114,37 @@ if(model.id == 3) {
         data = data.mod,
         drop.intercept = FALSE,
         select = TRUE,
-        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+if(model.id == 4) {
+  model <-
+    bam(forestloss ~
+        -1 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(it_type, bs = "re") +
+        s(pa_type, bs = "re") +
+        s(it_type, pa_type, bs = "re") +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(adm0, bs = "re"),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        drop.intercept = FALSE,
+        select = TRUE,
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
