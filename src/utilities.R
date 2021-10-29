@@ -502,6 +502,7 @@ summarize_predictions.draws_matrix <-
            fun = mean,
            ids = NULL,
            draw.chunk = NULL,
+           clamp = NULL,
            n.cores = 1,
            ...) {
   if(is.null(ids)) {
@@ -512,6 +513,10 @@ summarize_predictions.draws_matrix <-
     draw.chunk <- nrow(predictions)
   }
   draw.chunks <- chunk_seq(1, nrow(predictions), draw.chunk)
+  if(!is.null(clamp)) {
+    predictions[which(predictions < clamp[1])] <- clamp[1]
+    predictions[which(predictions > clamp[2])] <- clamp[2]
+  }
   registerDoParallel(cores = n.cores)
   pred_summarized <-
     foreach(i = 1:length(draw.chunks$from),
@@ -530,6 +535,7 @@ summarize_predictions.FileSystemDataset <-
            id.col = NULL,
            draw.prefix = "draw",
            draw.chunk = NULL,
+           clamp = NULL,
            n.cores = 1,
            ...) {
   if(is.null(ids)) {
@@ -557,8 +563,12 @@ summarize_predictions.FileSystemDataset <-
       predictions.pulled <- 
         as.data.frame(predictions[idx,
                                   draw.cols[draw.chunks$from[i]:draw.chunks$to[i]]])
-      predictions.summarized.chunk <- 
-        apply(t(as.matrix(predictions.pulled)), 1, fun)
+      predictions.pulled <- t(as.matrix(predictions.pulled))
+      if(!is.null(clamp)) {
+        predictions.pulled[which(predictions.pulled < clamp[1])] <- clamp[1]
+        predictions.pulled[which(predictions.pulled > clamp[2])] <- clamp[2]
+      }
+      predictions.summarized.chunk <- apply(predictions.pulled, 1, fun)
       return(predictions.summarized.chunk)
     }
   stopImplicitCluster()
