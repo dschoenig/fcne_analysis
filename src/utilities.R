@@ -349,6 +349,59 @@ chunk_seq <- function(from, to, size = to) {
               size = chunk.size))
 }
 
+lp_matrix <- 
+  function(
+           model, 
+           newdata = NULL,
+           id.col = NULL,
+           obs = NULL,
+           predict.chunk = NULL,
+           progress = TRUE,
+           ...
+           ) {
+  if(is.null(newdata)) {
+    data <- model.frame(model)
+  } else {
+    data <- newdata
+  }
+  if(is.numeric(obs)) {
+    data <- data[obs,]
+  }
+  n <- nrow(data)
+  m <- length(coef(model))
+  if(is.null(predict.chunk)) predict.chunk <- n
+  predict.chunks <- chunk_seq(1, n, predict.chunk)
+  # Set excluded coefficients to 0
+  lpmatrix <- matrix(nrow = n, ncol = m)
+  if(!is.null(id.col)) {
+    rownames(lpmatrix) <- data[[id.col]]
+  } else {
+    rownames(lpmatrix) <- 1:nrow(data)
+  }
+  colnames(lpmatrix) <- names(coef(model))
+  if(progress) {
+    prog <- txtProgressBar(min = 0, max = length(predict.chunks$from), initial = 0,
+                           char = "=", width = NA, title = "Progress", style = 3)
+  }
+  for(i in 1:length(predict.chunks$from)) {
+    Xp <- predict(model, 
+                  data[predict.chunks$from[i]:predict.chunks$to[i],],
+                  type = "lpmatrix",
+                  block.size = predict.chunks$size[i],
+                  newdata.guaranteed = TRUE,
+                  cluster = NULL,
+                  ...)
+    lpmatrix[(predict.chunks$from[i]:predict.chunks$to[i]), ] <- Xp
+    rm(Xp)
+    gc()
+    if(progress) {
+      setTxtProgressBar(prog, i)
+    }
+  }
+  if(progress) close(prog)
+  return(lpmatrix)
+}
+
 evaluate_posterior <- 
   function(
            model, 
