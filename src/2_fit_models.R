@@ -25,10 +25,10 @@ file.som <- paste0(path.som, model.reg, ".som.1e6.rds")
 file.som.mapped <- paste0(path.data.int, model.reg, ".som.mapped")
 model.name <- paste0(model.reg, ".m", model.id)
 
-# k.def = 1000
-# max.knots.def = 10000
-k.def = 100
-max.knots.def = 1000
+k.def = 1000
+max.knots.def = 10000
+# k.def = 100
+# max.knots.def = 1000
 
 ## FIT MODELS ##################################################################
 
@@ -46,7 +46,7 @@ if(file.exists(file.data.proc)) {
   saveRDS(data.proc, file.data.proc)
 }
 
-data.proc <- data.proc[1:1e5,]
+# data.proc <- data.proc[1:1e5,]
 
 data.mod <- as.data.frame(data.proc)
 data.mod$b0 <- model.matrix(~ 1, data.mod)
