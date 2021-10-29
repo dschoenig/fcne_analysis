@@ -7,8 +7,8 @@ library(arrow)
 
 source("utilities.R")
 
-path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+# path.base <- "/home/schoed/scratch/fcne_analysis/"
+path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.lp <- paste0(path.base, "models/gam/lp/")
@@ -50,13 +50,19 @@ silence <- gc()
 
 if(posterior.type == "marginal") {
   # Marginalize posterior over covariate effects
-  post[, grep("som", colnames(post))] <- 0
+  coef.names <- names(coef(gam))
+  post.marginals <- list(full = 1:length(coef.names),
+                         cov_gp = grep("s(som_x,som_y)", coef.names, fixed = TRUE),
+                         tenure_gp = grep("s(ed_east,ed_north)", coef.names, fixed = TRUE),
+                         )
 }
 
+
+
+
+
 cat("Evaluating the linear predictor for model ", region, ".m3,\n",
-     "using draws from the ",
-     ifelse(posterior.type == "marginal", "marginal", ""),
-     " posterior distribution.\n", sep = "")
+     "using draws from the  posterior distribution.\n", sep = "")
 cat("Processing rows ", row.chunks$from[task_id],
     " to ", row.chunks$to[task_id],
     " (chunk ", task_id, " / ", task_count, "):\n",
@@ -69,6 +75,7 @@ lp <-
                      posterior = post,
                      newdata = data.pred,
                      id.col = "id",
+                     marginals = post.marginals,
                      predict.chunk = 500,
                      post.chunk = 200,
                      type = "link",
