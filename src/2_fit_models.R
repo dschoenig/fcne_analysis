@@ -123,6 +123,8 @@ if(model.id == 3) {
         )
 }
 
+warnings()
+
 print("Saving fitted model ...")
 saveRDS(model, paste0(path.gam, model.name, ".rds"))
 
