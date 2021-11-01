@@ -46,7 +46,7 @@ if(file.exists(file.data.proc)) {
   saveRDS(data.proc, file.data.proc)
 }
 
-data.proc <- data.proc[1:1e5,]
+# data.proc <- data.proc[1:1e5,]
 
 data.mod <- as.data.frame(data.proc)
 data.mod$b0 <- model.matrix(~ 1, data.mod)
