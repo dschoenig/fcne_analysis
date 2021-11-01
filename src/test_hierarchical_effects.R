@@ -20,6 +20,18 @@ cam.mod <- as.data.frame(cam.data[,
                                   som_x, som_y, ed_east, ed_north, adm0)
                                   ])
 cam.mod$b0 <- model.matrix(~ 1, cam.mod)
+cam.mod$beta <- model.matrix(~ it_type * pa_type + adm0, data = cam.mod,
+                              contrasts.arg = list(it_type = contr.treatment,
+                                                   pa_type = contr.treatment,
+                                                   adm0 = contr.treatment))[,-1]
+colnames(cam.mod$beta) <-
+  with(cam.mod, c(paste0("it_type-", levels(it_type)[-1]),
+                   paste0("pa_type-", levels(pa_type)[-1]),
+                   paste0("adm0-", levels(adm0)[-1]),
+                   paste0("it_type-", rep(levels(it_type)[-1],
+                                         length(levels(pa_type))-1), ":",
+                          "pa_type-", rep(levels(pa_type)[-1],
+                                        each = length(levels(it_type)) -1), ":")))
 # cam.mod$P <- model.matrix(~ it_type * pa_type, cam.mod)
 # cam.mod$P2 <- model.matrix(~ it_type * pa_type * adm0, cam.mod)
 # rm(cam.data, cam.som, cam.som.mapped)
@@ -28,35 +40,7 @@ k.def = 100
 max.knots.def = 2000
 
 
-cam.m1 <-
-  bam(forestloss ~
-      -1 +
-      s(ed_east, ed_north, bs = 'gp',
-        k = k.def, xt = list(max.knots = max.knots.def)) +
-      s(ed_east, ed_north, bs = 'gp',
-        by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
-      s(ed_east, ed_north, bs = 'gp',
-        by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
-      s(ed_east, ed_north, bs = 'gp',
-        by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
-      s(it_type, bs = "re") +
-      s(pa_type, bs = "re") +
-      s(it_type, pa_type, bs = "re") +
-      s(som_x, som_y, bs = 'gp',
-        k = k.def, xt = list(max.knots = max.knots.def)) +
-      s(som_x, som_y, bs = 'gp',
-        by = adm0, k = k.def, xt = list(max.knots = max.knots.def)) +
-      s(adm0, bs = "re"),
-      family = binomial(link = "cloglog"),
-      data = cam.mod,
-      select = TRUE,
-      chunk.size = 5e3,
-      discrete = TRUE,
-      nthreads = n.threads,
-      gc.level = 0
-      )
-
-cam.m2 <- readRDS(paste0(path.gam, "cam.m3_flat.rds"))
+cam.flat <- readRDS(paste0(path.gam, "cam.m3_flat.rds"))
 # cam.m2 <-
 #   bam(forestloss ~
 #       s(ed_east, ed_north, bs = 'gp',
@@ -84,7 +68,7 @@ cam.m2 <- readRDS(paste0(path.gam, "cam.m3_flat.rds"))
 #       gc.level = 0
 #       )
 
-cam.m3 <- readRDS(paste0(path.gam, "cam.m3_normal.rds"))
+cam.normal <- readRDS(paste0(path.gam, "cam.m3_normal.rds"))
 # cam.m3 <-
 #   bam(forestloss ~
 #       -1 + b0 +
@@ -114,14 +98,15 @@ cam.m3 <- readRDS(paste0(path.gam, "cam.m3_normal.rds"))
 #       gc.level = 0
 #       )
 
-models <- list(cam.m1 = cam.m1,
-               cam.m2 = cam.m2,
-               cam.m3 = cam.m3)
+cam.mpf <- readRDS(paste0(path.gam, "cam.m3_mpf.rds"))
+cam.mpn <- readRDS(paste0(path.gam, "cam.m3_mpn.rds"))
 
-summary(cam.m1, re.test = FALSE)
-summary(cam.m2, re.test = FALSE)
-summary(cam.m3, re.test = FALSE)
+models <- list(cam.flat = cam.flat,
+               cam.normal = cam.normal,
+               cam.mpf = cam.mpf,
+               cam.mpn = cam.mpn)
 
+for(i in 1:length(models)) print(summary(models[[i]], re.test = FALSE))
 
 summarize_effects <- function(models, evaluate_data, summarize_data) {
   effects <- list()
@@ -137,7 +122,7 @@ summarize_effects <- function(models, evaluate_data, summarize_data) {
     marginals$ten_loc <- marginals$full[!marginals$full %in% grep("som", names(coef(models[[i]])))]
     pred <- evaluate_posterior(models[[i]], mod.post, evaluate_data,
                                id.col = "id", marginals = marginals,
-                               predict.chunk = 1000, post.chunk = 250)
+                               predict.chunk = 10000, post.chunk = 250)
     base <- summarize_predictions(pred$full, ids = summarize_data[it_type == "none" &
                                                              pa_type == "none",
                                                              id],
@@ -169,7 +154,7 @@ summarize_effects <- function(models, evaluate_data, summarize_data) {
                                   n.cores = 4)
     pred_sum_it.mar <- summarize_predictions_by(pred$ten_loc, summarize_data[it_type != "none",],
                                             id.col = "id",
-                                            group.vars = c("it_type")
+                                            group.vars = c("it_type"),
                                             draw.chunk = 125,
                                             n.cores = 4)
     pred_sum_pa.mar <- summarize_predictions_by(pred$ten_loc, summarize_data[pa_type != "none",],
@@ -202,16 +187,19 @@ summarize_effects <- function(models, evaluate_data, summarize_data) {
   return(effects_overview)
 }
 
-AIC(cam.m1, cam.m2, cam.m3)
+mod.aic <- lapply(models, AIC)
 
 evaluate_data <- cam.mod
 summarize_data <- cam.data
 
-cam.eval <- as.data.frame(cam.data)
-cam.eval$b0 <- model.matrix(~ 1, cam.eval)
+predict(cam.mpf, cam.mod[1:10,], type = "link")
+predict(cam.mpn, cam.mod[1:10,], type = "link")
+
+# cam.eval <- as.data.frame(cam.data)
+# cam.eval$b0 <- model.matrix(~ 1, cam.eval)
 # cam.eval$P2 <- model.matrix(~ it_type * pa_type * adm0, cam.eval)
 
-effects <- summarize_effects(models, cam.eval, cam.data)
+effects <- summarize_effects(models, cam.mod[1:1e4,], cam.data[1:1e4,])
 effects_pan <- summarize_effects(models, cam.eval[cam.eval$adm0 == "PAN",], cam.data[adm0 == "PAN",])
 effects_gtm <- summarize_effects(models, cam.eval[cam.eval$adm0 == "GTM",], cam.data[adm0 == "GTM",])
 
