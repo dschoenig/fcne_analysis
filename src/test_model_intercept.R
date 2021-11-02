@@ -25,10 +25,7 @@ file.som <- paste0(path.som, model.reg, ".som.1e6.rds")
 file.som.mapped <- paste0(path.data.int, model.reg, ".som.mapped")
 model.name <- paste0(model.reg, ".m3_", model.id)
 
-k.def = 1000
-max.knots.def = 10000
-# k.def = 100
-# max.knots.def = 1000
+
 
 ## FIT MODELS ##################################################################
 
@@ -46,6 +43,12 @@ if(file.exists(file.data.proc)) {
   saveRDS(data.proc, file.data.proc)
 }
 
+
+k.def = 1000
+max.knots.def = 10000
+
+# k.def = 100
+# max.knots.def = 1000
 # data.proc <- data.proc[1:1e5,]
 
 data.mod <- as.data.frame(data.proc)
@@ -187,6 +190,147 @@ if(model.id == "mpn") {
         data = data.mod,
         select = TRUE,
         paraPen = list(beta = list(diag(16))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+
+if(model.id == "gp") {
+  model <-
+    bam(forestloss ~
+        -1 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+if(model.id == "gpf") {
+  model <-
+    bam(forestloss ~
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+if(model.id == "gplf") {
+  model <-
+    bam(forestloss ~
+        s(it_type, bs = "re") +
+        s(pa_type, bs = "re") +
+        s(it_type, pa_type, bs = "re") +
+        s(adm0, bs = "re") +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+if(model.id == "gpn") {
+  data.mod$b0 <- model.matrix(~ 1, data.mod)
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+if(model.id == "gpln") {
+  data.mod$b0 <- model.matrix(~ 1, data.mod)
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(it_type, bs = "re") +
+        s(pa_type, bs = "re") +
+        s(it_type, pa_type, bs = "re") +
+        s(adm0, bs = "re") +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def, xt = list(max.knots = max.knots.def)) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
