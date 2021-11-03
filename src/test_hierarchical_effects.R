@@ -130,10 +130,39 @@ effects_gtm <- summarize_effects(models, cam.mod[cam.mod$adm0 == "GTM",], cam.da
 effects[[1]]
 effects[[2]]
 
-effects_pan
-effects_gtm
+effects_pan[[1]]
+effects_pan[[2]]
 
-summary(cam.m3, re.test = FALSE)
-summary(cam.m4, re.test = FALSE)
+effects_gtm[[1]]
+effects_gtm[[2]]
 
+library(pROC)
+library(ggdist)
+
+par(mfrow = c(2,3))
+for(i in 1:length(models)) {
+  predicted <- invlink_cll(summarise_draws(effects[[2]][[i]]$full, mean)$mean)
+  response <- as.integer(cam.data$forestloss[1:1e4])
+  mod.roc <- roc(response, predicted)
+  plot(mod.roc)
+  print(mod.roc)
+}
+
+par(mfrow = c(2,3))
+for(i in 1:length(models)) {
+  predicted <- invlink_cll(summarise_draws(effects[[2]][[i]]$full, Mode)$Mode)
+  response <- as.integer(cam.data$forestloss[1:1e4])
+  mod.roc <- roc(response, predicted)
+  plot(mod.roc)
+  print(mod.roc)
+}
+
+par(mfrow = c(2,3))
+for(i in 1:length(models)) {
+  predicted <- invlink_cll(summarise_draws(effects_pan[[2]][[i]]$full, mean)$mean)
+  response <- as.integer(cam.data[adm0 == "PAN", forestloss])
+  mod.roc <- roc(response, predicted)
+  plot(mod.roc)
+  print(mod.roc)
+}
 
