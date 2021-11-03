@@ -58,12 +58,13 @@ print(paste0("Fitting model `", model.name, "` ..."))
 if(model.id == 1) {
   model <-
     bam(forestloss ~
-        -1 +
+        -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = 2*k.def, xt = list(max.knots = max.knots.def)),
         family = binomial(link = "cloglog"),
         data = data.mod,
         select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
@@ -74,7 +75,7 @@ if(model.id == 1) {
 if(model.id == 2) {
   model <-
     bam(forestloss ~
-        -1 +
+        -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = 2*k.def, xt = list(max.knots = max.knots.def)),
         s(som_x, som_y, bs = 'gp',
@@ -84,6 +85,7 @@ if(model.id == 2) {
         family = binomial(link = "cloglog"),
         data = data.mod,
         select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
@@ -94,7 +96,7 @@ if(model.id == 2) {
 if(model.id == 3) {
   model <-
     bam(forestloss ~
-        -1 +
+        -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = k.def, xt = list(max.knots = max.knots.def)) +
         s(ed_east, ed_north, bs = 'gp',
@@ -110,6 +112,7 @@ if(model.id == 3) {
         family = binomial(link = "cloglog"),
         data = data.mod,
         select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
