@@ -27,8 +27,6 @@ model.name <- paste0(model.reg, ".m", model.id)
 
 k.def = 1000
 max.knots.def = 10000
-# k.def = 100
-# max.knots.def = 1000
 
 ## FIT MODELS ##################################################################
 
@@ -46,6 +44,9 @@ if(file.exists(file.data.proc)) {
   saveRDS(data.proc, file.data.proc)
 }
 
+# # FOR TESTING ONLY:
+# k.def = 100
+# max.knots.def = 1000
 # data.proc <- data.proc[1:1e5,]
 
 data.mod <- as.data.frame(data.proc)
@@ -56,7 +57,8 @@ print(paste0("Fitting model `", model.name, "` ..."))
 
 if(model.id == 1) {
   model <-
-    bam(forestloss ~ 
+    bam(forestloss ~
+        -1 +
         s(ed_east, ed_north, bs = 'gp',
           k = 2*k.def, xt = list(max.knots = max.knots.def)),
         family = binomial(link = "cloglog"),
@@ -74,12 +76,11 @@ if(model.id == 2) {
     bam(forestloss ~
         -1 +
         s(ed_east, ed_north, bs = 'gp',
-          k = 2*k.def, xt = list(max.knots = max.knots.def)) +
+          k = 2*k.def, xt = list(max.knots = max.knots.def)),
         s(som_x, som_y, bs = 'gp',
           k = k.def, xt = list(max.knots = max.knots.def)) +
         s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)) +
-        s(adm0, bs = "re"),
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)),
         family = binomial(link = "cloglog"),
         data = data.mod,
         select = TRUE,
@@ -102,14 +103,10 @@ if(model.id == 3) {
           by = pa_type, k = k.def, xt = list(max.knots = max.knots.def)) +
         s(ed_east, ed_north, bs = 'gp',
           by = overlap, k = k.def, xt = list(max.knots = max.knots.def)) +
-        s(it_type, bs = "re") +
-        s(pa_type, bs = "re") +
-        s(it_type, pa_type, bs = "re") +
         s(som_x, som_y, bs = 'gp',
           k = k.def, xt = list(max.knots = max.knots.def)) +
         s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)) +
-        s(adm0, bs = "re"),
+          by = adm0, k = k.def, xt = list(max.knots = max.knots.def)),
         family = binomial(link = "cloglog"),
         data = data.mod,
         select = TRUE,
