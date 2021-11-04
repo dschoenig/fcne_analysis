@@ -54,10 +54,7 @@ post.marginals <- list(full = b.full,
                        ten_loc = b.full[!b.full %in% b.cov])
 
 
-
-
-
-cat("Evaluating the linear predictor for model ", region, ".m3,\n",
+cat("Evaluating the linear predictor for model ", region, ".m3, ",
      "using draws from the  posterior distribution.\n", sep = "")
 cat("Processing rows ", row.chunks$from[task_id],
     " to ", row.chunks$to[task_id],
