@@ -7,8 +7,8 @@ library(arrow)
 
 source("utilities.R")
 
-# path.base <- "/home/schoed/scratch/fcne_analysis/"
-path.base <- "../"
+path.base <- "/home/schoed/scratch/fcne_analysis/"
+# path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.lp <- paste0(path.base, "models/gam/lp/")
@@ -37,7 +37,7 @@ data.pred <- as.data.frame(data[,
                                   som_x, som_y, ed_east, ed_north, adm0)
                                 ])
 data.pred$b0 <- model.matrix(~ 1, data.pred)
-# rm(data)
+rm(data)
 
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
