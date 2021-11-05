@@ -91,7 +91,7 @@ lp.dt <-
 # Export
 
 if(!dir.exists(paste0(path.lp, region, ".lp"))) {
-  dir.create(paste0(path.lp, region, ".lp"))
+  dir.create(paste0(path.lp, region, ".lp"), recursive = TRUE)
 }
 write_parquet(lp.dt, file.out)
 
