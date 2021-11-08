@@ -7,4 +7,4 @@
 
 module load StdEnv/2020 r/4.1.0
 
-Rscript 4_evaluate_lp.R CAM 95 200
+Rscript 4_evaluate_lp.R CAM 27 200
