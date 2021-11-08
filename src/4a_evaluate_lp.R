@@ -39,13 +39,8 @@ data.pred <- as.data.frame(data[,
 data.pred$b0 <- model.matrix(~ 1, data.pred)
 rm(data)
 
-# # Construct chunk overview
-# row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
-
-# Calculate only missing chunks for CAM
-row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / 200))
-missing.ids <- c(10:17, 76, 77, 108, 110, 152, 155, 167, 168)
-row.chunks <- lapply(row.chunks, \(x) x[missing.ids])
+# Construct chunk overview
+row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
 
 # Subset data
 data.pred <- data.pred[row.chunks$from[task_id]:row.chunks$to[task_id],]
