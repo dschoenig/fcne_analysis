@@ -8,7 +8,7 @@ library(arrow)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-path.base <- "../"
+# path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.lp <- paste0(path.base, "models/gam/lp/")
