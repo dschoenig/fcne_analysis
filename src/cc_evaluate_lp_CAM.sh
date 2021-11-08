@@ -8,4 +8,4 @@
 
 module load StdEnv/2020 r/4.1.0
 
-Rscript 4_evaluate_lp.R CAM $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_COUNT
+Rscript 4b_evaluate_lp.R CAM $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_COUNT
