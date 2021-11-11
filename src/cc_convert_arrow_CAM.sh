@@ -13,3 +13,4 @@ Rscript 4b_convert_arrow.R CAM $SLURM_CPUS_PER_TASK
 
 rm -rf /home/schoed/scratch/fcne_analysis/models/gam/lp/cam.lp
 mv /home/schoed/scratch/fcne_analysis/models/gam/lp/cam.lp.arrow /home/schoed/scratch/fcne_analysis/models/gam/lp/cam.lp
+rename 's/\d+/sprintf("%03d",$&)/e' /home/schoed/scratch/fcne_analysis/models/gam/lp/cam.lp/*/*.arrow
