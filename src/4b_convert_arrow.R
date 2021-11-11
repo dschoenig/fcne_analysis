@@ -1,4 +1,3 @@
-a <- Sys.time()
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -22,7 +21,6 @@ path.out <- paste0(path.lp, region, ".", suffix.lp, ".arrow/")
 paths.marginals <- paste0(path.out, "marginal=", marginals, "/")
 silent <- lapply(paths.marginals, \(x) if(!dir.exists(x)) dir.create(x, recursive = TRUE))
 files.parquet <- list.files(path.in, pattern = "parquet")
-files.parquet <- files.parquet[1:3]
 files.arrow <- stri_replace_last_fixed(files.parquet, ".parquet", ".arrow")
 
 cat(paste0("Converting: `", path.in, "` -> `", path.out, "` (",
@@ -31,6 +29,7 @@ cat(paste0("Converting: `", path.in, "` -> `", path.out, "` (",
 prog <- txtProgressBar(min = 0, max = length(files.parquet), initial = 0,
                          char = "=", width = NA, title = "Progress", style = 3)
 
+a <- Sys.time()
 for(i in 1:length(files.parquet)) {
   lp.pq <- read_parquet(paste0(path.in, files.parquet[i]), as_data_frame = FALSE)
   for(m in 1:length(marginals)) {
@@ -48,9 +47,8 @@ for(i in 1:length(files.parquet)) {
   rm(lp.pq)
   setTxtProgressBar(prog, i)
 }
+b <- Sys.time()
 
 close(prog)
-
-b <- Sys.time()
 
 b-a
