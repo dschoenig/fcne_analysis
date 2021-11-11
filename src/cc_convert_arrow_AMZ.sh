@@ -11,6 +11,9 @@ module load StdEnv/2020 r/4.1.0
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 Rscript 4b_convert_arrow.R AMZ $SLURM_CPUS_PER_TASK
 
-rm -rf /home/schoed/scratch/fcne_analysis/models/gam/lp/amz.lp
-mv /home/schoed/scratch/fcne_analysis/models/gam/lp/amz.lp.arrow /home/schoed/scratch/fcne_analysis/models/gam/lp/amz.lp
-rename 's/\d+/sprintf("%03d",$&)/e' /home/schoed/scratch/fcne_analysis/models/gam/lp/amz.lp/*/*.arrow
+DIR_LP="/home/schoed/scratch/fcne_analysis/models/gam/lp/amz.lp/"
+rm -rf ${DIR_LP}
+mv ${DIR_LP}.arrow ${DIR_LP}
+# Rename for CentOS
+rename --verbose amz.lp- amz.lp-00 ${DIR_LP}*/amz.lp-?.arrow
+rename --verbose amz.lp- amz.lp-0 ${DIR_LP}*/amz.lp-??.arrow
