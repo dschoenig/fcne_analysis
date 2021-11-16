@@ -29,7 +29,7 @@ names(id.list) <- groups$group.label
 
 system.time({
 sum_pred <- summarize_predictions(ds, ids = id.list, n.threads = 4,
-                                  draw.ids = as.character(1:100), draw.chunk = 100)
+                                  draw.ids = as.character(1:1000), draw.chunk = 100)
 })
 summary(sum_pred)
 summary(sum_pred - extract_variable(sum_pred, "it_type.none:pa_type.none"))
@@ -44,7 +44,7 @@ summary(sum_pred - extract_variable(sum_pred, "it_type.none:pa_type.none"))
 ds <- open_dataset(paste0(path.arrow, "marginal=full"), format = "arrow")
 system.time({
 sum_pred <- summarize_predictions(ds, ids = id.list, n.threads = 4,
-                                  draw.ids = as.character(1:100), draw.chunk = 100)
+                                  draw.ids = as.character(1:1000), draw.chunk = 100)
 })
 summary(sum_pred)
 summary(sum_pred - extract_variable(sum_pred, "it_type.none:pa_type.none"))
