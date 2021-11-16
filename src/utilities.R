@@ -543,8 +543,12 @@ summarize_predictions.draws_matrix <-
   for(i in seq_along(draw.chunks$from)) {
     id.cond <- parse(text = paste(id.col, "%in% ids[[j]]"))
     for(j in seq_along(ids)) {
-      predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- 
-        predictions[eval(id.cond), .(val = fun(eta)), by = draw.column][,val]
+      chunk.summarized <- predictions[eval(id.cond), .(val = fun(eta)), by = draw.column][,val]
+      if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- chunk.summarized
+      } else {
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- NA
+      }
     }
   }
   if(is.numeric(n.threads)) {
@@ -671,9 +675,12 @@ summarize_predictions.FileSystemDataset <-
     }
     id.cond <- parse(text = paste(id.col, "%in% ids[[j]]"))
     for(j in seq_along(ids)) {
-      try(predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- 
-            predictions.pulled[eval(id.cond), .(val = fun(eta)), by = draw.column][,val],
-          silent = TRUE)
+      chunk.summarized <- predictions.pulled[eval(id.cond), .(val = fun(eta)), by = draw.column][,val]
+      if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- chunk.summarized
+      } else {
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- NA
+      }
     }
     rm(predictions.pulled)
     if(progress) {

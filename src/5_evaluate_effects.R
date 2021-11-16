@@ -36,33 +36,34 @@ if(region == "cam") {
   adm.it_not_rec <- c("BLZ", "CRI", "GTM", "HND", "NIC", "PAN", "SLV")
 }
 
-effects <- list()
 
+data.proc <- readRDS(paste0(path.base, "data/processed/", region, ".data.proc.rds"))
+
+groups.it_pa <-
+  data.proc |>
+  ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
+  subset(n >= 100)
+groups.adm_it_pa <-
+  data.proc[(it_type == "none") |
+            (it_type == "recognized" & adm0 %in% adm.it_rec) |
+            (it_type == "not_recognized" & adm0 %in% adm.it_not_rec)] |>
+  ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
+  subset(n >= 50)
+groups <- rbindlist(list(groups.it_pa, groups.adm_it_pa), fill = TRUE)
+groups$group.id <- 1:nrow(groups)
+setcolorder(groups, c("group.id", "group.label", "adm0", "it_type", "pa_type"))
+
+id.list <- groups$ids
+names(id.list) <- groups$group.label
+
+rm(data.proc)
+
+effects <- list()
 for(i in seq_along(marginals)) {
   ds <- open_dataset(paste0(path.arrow, "marginal=", marginals[i]), format = "arrow")
-  data.proc <- readRDS(paste0(path.base, "data/processed/", region, ".data.proc.rds"))
-
-  groups.it_pa <-
-    data.proc |>
-    ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
-    subset(n >= 100)
-  groups.adm_it_pa <-
-    data.proc[(it_type == "none") |
-              (it_type == "recognized" & adm0 %in% adm.it_rec) |
-              (it_type == "not_recognized" & adm0 %in% adm.it_not_rec)] |>
-    ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
-    subset(n >= 50)
-  groups <- rbindlist(list(groups.it_pa, groups.adm_it_pa), fill = TRUE)
-  groups$group.id <- 1:nrow(groups)
-  setcolorder(groups, c("group.id", "group.label", "adm0", "it_type", "pa_type"))
-
-  id.list <- groups$ids
-  names(id.list) <- groups$group.label
-  
   message(paste0("Evaluating effects for region `", region,
                    "` over marginal `", marginals[i], "` (",
                    length(draw.ids), " draws) …"))
-
   effects[[i]] <- summarize_predictions(ds,
                                    ids = id.list,
                                    draw.ids = draw.ids,
