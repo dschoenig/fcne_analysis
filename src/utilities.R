@@ -623,7 +623,9 @@ summarize_predictions.FileSystemDataset <-
            ...) {
   if(is.numeric(n.threads)) {
     dt.threads.old <- getDTthreads()
+    arrow.threads.old <- cpu_count()
     setDTthreads(n.threads)
+    set_cpu_count(n.threads)
   }
   if(is.null(draw.ids)) {
     # Hack to get draw.ids if not specified
@@ -689,7 +691,7 @@ ids_by_group <- function(data,
                          id.col = NULL,
                          group.vars = NULL,
                          group.labels = NULL,
-                         add.label = FALSE,
+                         add.label = TRUE,
                          ...){
   setDT(data)
   if(is.null(id.col)) {
@@ -708,8 +710,11 @@ ids_by_group <- function(data,
     }
     setorderv(groups, group.vars)
   }
-  if(add.label) {
-    groups <- add_group_label(data = groups, cols = group.vars, label.name = "group.label")
+  if(add.label == TRUE) {
+    groups <- add_group_label(data = groups, cols = group.vars)
+  }
+  if(is.character(add.label)) {
+    groups <- add_group_label(data = groups, cols = group.vars, label.name = add.label)
   }
   return(groups)
 }
