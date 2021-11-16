@@ -5,8 +5,8 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-path.base <- "../"
-# path.base <- "/home/schoed/scratch/fcne_analysis/"
+# path.base <- "../"
+path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.lp <- paste0(path.base, "models/gam/lp/")
 path.data.proc <- paste0(path.base, "data/processed/")
 
@@ -32,12 +32,14 @@ sum_pred <- summarize_predictions(ds, ids = id.list, n.threads = 4,
                                   draw.ids = as.character(1:100), draw.chunk = 100)
 })
 summary(sum_pred)
+summary(sum_pred - extract_variable(sum_pred, "it_type.none:pa_type.none"))
 
-system.time({
-sum_pred <- summarize_predictions(ds, ids = id.list, n.threads = 4,
-                                  draw.ids = as.character(1:1000), draw.chunk = 100)
-summary(sum_pred)
-
+# system.time({
+# sum_pred <- summarize_predictions(ds, ids = id.list, n.threads = 4,
+#                                   draw.ids = as.character(1:1000), draw.chunk = 100)
+# })
+# summary(sum_pred)
+# summary(sum_pred - extract_variable(sum_pred, "it_type.none:pa_type.none"))
 
 ds <- open_dataset(paste0(path.arrow, "marginal=full"), format = "arrow")
 system.time({
@@ -45,3 +47,4 @@ sum_pred <- summarize_predictions(ds, ids = id.list, n.threads = 4,
                                   draw.ids = as.character(1:100), draw.chunk = 100)
 })
 summary(sum_pred)
+summary(sum_pred - extract_variable(sum_pred, "it_type.none:pa_type.none"))
