@@ -66,8 +66,7 @@ for(i in seq_along(marginals)) {
   effects[[i]] <- summarize_predictions(ds,
                                    ids = id.list,
                                    draw.ids = draw.ids,
-                                   # draw.chunk = 100,
-                                   draw.chunk = 1000,
+                                   draw.chunk = 100,
                                    clamp = link_cll(c(.Machine$double.eps, 1-.Machine$double.eps)),
                                    n.threads = n.threads
                                    )
