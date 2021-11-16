@@ -2,6 +2,8 @@ library(mgcv)
 library(data.table)
 library(posterior)
 library(doParallel)
+library(arrow)
+library(dplyr)
 # library(ggplot2)
 # library(patchwork)
 
@@ -493,17 +495,72 @@ evaluate_posterior <-
   }
 }
 
-summarize_predictions <- function(x, ...) {
-  UseMethod("summarize_predictions", x)
+summarize_predictions <- function(predictions, ...) {
+  UseMethod("summarize_predictions", predictions)
 }
+
 
 summarize_predictions.draws_matrix <- 
   function(predictions,
            fun = mean,
            ids = NULL,
+           id.col = "id",
+           draw.column = "draw",
+           draw.ids = NULL,
+           draw.chunk = NULL,
+           value.column = "eta",
+           clamp = NULL,
+           n.threads = NULL,
+           ...) {
+  if(is.numeric(n.threads)) {
+    dt.threads.old <- getDTthreads()
+    setDTthreads(n.threads)
+  }
+  if(is.null(draw.ids)) {
+    draw.ids <- rownames(predictions)
+  }
+  if(is.null(draw.chunk)) {
+    draw.chunk <- length(draw.ids)
+  }
+  if(is.null(ids)) {
+    ids <- list(1:ncol(predictions))
+  }
+  draw.chunks <- chunk_seq(1, length(draw.ids), draw.chunk)
+  predictions.summarized <- matrix(NA, nrow = length(draw.ids), ncol = length(ids))
+  dimnames(predictions.summarized)[1:2] <- list(draw.ids, names(ids))
+  predictions <- as_draws_df(predictions)
+  setDT(predictions)
+  exclude.vars <- c(".iteration", ".chain")
+  predictions <- melt(predictions[,!..exclude.vars], id.vars = ".draw",
+                     variable.name = "id", value.name = "eta")
+  setnames(predictions, ".draw", "draw")
+  setkey(predictions, "id")
+  if(!is.null(clamp)) {
+    predictions[eta < clamp[1] | eta > clamp[2],
+                eta := fcase(eta < clamp[1], clamp[1],
+                             eta > clamp[2], clamp[2])]
+  }
+  for(i in seq_along(draw.chunks$from)) {
+    id.cond <- parse(text = paste(id.col, "%in% ids[[j]]"))
+    for(j in seq_along(ids)) {
+      predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- 
+        predictions[eval(id.cond), .(val = fun(eta)), by = draw.column][,val]
+    }
+  }
+  if(is.numeric(n.threads)) {
+    setDTthreads(dt.threads.old)
+  }
+  return(as_draws_matrix(predictions.summarized))
+}
+
+
+summarize_predictions2.draws_matrix <- 
+  function(predictions,
+           fun = mean,
+           ids = NULL,
            draw.chunk = NULL,
            clamp = NULL,
-           n.cores = 1,
+           cluster = NULL,
            ...) {
   if(is.null(ids)) {
     ids <- 1:ncol(predictions)
@@ -517,107 +574,181 @@ summarize_predictions.draws_matrix <-
     predictions[which(predictions < clamp[1])] <- clamp[1]
     predictions[which(predictions > clamp[2])] <- clamp[2]
   }
-  registerDoParallel(cores = n.cores)
-  pred_summarized <-
-    foreach(i = 1:length(draw.chunks$from),
-            .combine = c) %dopar% {
-      pred_summarized_chunk <- 
-        apply(predictions[draw.chunks$from[i]:draw.chunks$to[i],idx], 1, fun)
+  if(!is.null(cluster)) {
+    if(is.numeric(cluster)) {
+      cl <- makeCluster(cluster)
+    } else {
+      cl <- cluster
     }
-  stopImplicitCluster()
-  return(rvar(pred_summarized))
+  } else {
+    cl <- makeCluster(detectCores())
+  }
+  predictions.summarized.l <- list()
+  for(i in seq_along(draw.chunks$from)) {
+    try(predictions.summarized.l[[i]] <-
+        parRapply(cl,
+                  predictions[draw.chunks$from[i]:draw.chunks$to[i],idx],
+                  fun),
+        silent = TRUE)
+
+  }
+  # registerDoParallel(cores = n.cores)
+  # pred_summarized <-
+  #   foreach(i = 1:length(draw.chunks$from),
+  #           .combine = c) %dopar% {
+  #     pred_summarized_chunk <- 
+  #       apply(predictions[draw.chunks$from[i]:draw.chunks$to[i],idx], 1, fun)
+  #   }
+  if(is.null(cluster) | is.numeric(cluster)) {
+    stopCluster(cl)
+  }
+  # return(rvar(pred_summarized))
+  predictions.summarized <- rvar(do.call(c, predictions.summarized.l))
+  return(predictions.summarized)
 }
 
 summarize_predictions.FileSystemDataset <- 
   function(predictions,
            fun = mean,
            ids = NULL,
-           id.col = NULL,
-           draw.prefix = "draw",
+           id.col = "id",
+           draw.column = "draw",
+           draw.ids = NULL,
            draw.chunk = NULL,
+           value.column = "eta",
            clamp = NULL,
-           n.cores = 1,
+           n.threads = NULL,
+           pull.all = TRUE,
+           progress = TRUE,
            ...) {
-  if(is.null(ids)) {
-    ids <- 1:nrow(predictions)
+  if(is.numeric(n.threads)) {
+    dt.threads.old <- getDTthreads()
+    setDTthreads(n.threads)
   }
-  if(is.null(id.col)) {
-    source.ids <- 1:nrow(predictions)
-  } else {
-    source.ids <- as.data.frame(predictions[, id.col])[[id.col]]
-  }
-  idx <- which(source.ids %in% ids)
-  if(is.null(draw.prefix)) {
-    draw.cols <- 1:ncol(predictions)
-  } else {
-    draw.cols <- grep(draw.prefix, names(predictions))
+  if(is.null(draw.ids)) {
+    # Hack to get draw.ids if not specified
+    draw.ids <- levels(as.data.frame(ds[1,draw.column])[[1]])
   }
   if(is.null(draw.chunk)) {
-    draw.chunk <- length(draw.cols)
+    draw.chunk <- length(draw.ids)
   }
-  draw.chunks <- chunk_seq(1, length(draw.cols), draw.chunk)
-  registerDoParallel(cores = n.cores)
-  predictions.summarized <-
-    foreach(i = 1:length(draw.chunks$from),
-            .combine = c) %dopar% {
-      predictions.pulled <- 
-        as.data.frame(predictions[idx,
-                                  draw.cols[draw.chunks$from[i]:draw.chunks$to[i]]])
-      predictions.pulled <- t(as.matrix(predictions.pulled))
-      if(!is.null(clamp)) {
-        predictions.pulled[which(predictions.pulled < clamp[1])] <- clamp[1]
-        predictions.pulled[which(predictions.pulled > clamp[2])] <- clamp[2]
-      }
-      predictions.summarized.chunk <- apply(predictions.pulled, 1, fun)
-      return(predictions.summarized.chunk)
+  if(is.null(ids)) {
+    n.r <-  
+      filter(predictions, .data[[draw.column]] == draw.ids[1]) |>
+      nrow()
+    ids <- list(1:n.r)
+  }
+  if(!pull.all) {
+    pull.ids <- unique(do.call(c, ids))
+  }
+  draw.chunks <- chunk_seq(1, length(draw.ids), draw.chunk)
+  if(progress) {
+    prog <- txtProgressBar(min = 0, max = length(draw.chunks$from), initial = 0,
+                           char = "=", width = NA, title = "Progress", style = 3)
+  }
+  predictions.summarized <- matrix(NA, nrow = length(draw.ids), ncol = length(ids))
+  dimnames(predictions.summarized)[1:2] <- list(draw.ids, names(ids))
+  for(i in seq_along(draw.chunks$from)) {
+    if(pull.all) {
+      predictions.pulled <-
+        filter(predictions,
+               .data[[draw.column]] %in% draw.ids[draw.chunks$from[i]:draw.chunks$to[i]]) |>
+        collect()
+    } else {
+      predictions.pulled <-
+        filter(predictions,
+               id %in% pull.ids,
+               .data[[draw.column]] %in% draw.ids[draw.chunks$from[i]:draw.chunks$to[i]]) |>
+        collect()
     }
-  stopImplicitCluster()
-  return(rvar(predictions.summarized))
+    setDT(predictions.pulled, key = id.col)
+    if(!is.null(clamp)) {
+      predictions.pulled[eta < clamp[1] | eta > clamp[2],
+                         eta := fcase(eta < clamp[1], clamp[1],
+                                       eta > clamp[2], clamp[2])]
+    }
+    id.cond <- parse(text = paste(id.col, "%in% ids[[j]]"))
+    for(j in seq_along(ids)) {
+      try(predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- 
+            predictions.pulled[eval(id.cond), .(val = fun(eta)), by = draw.column][,val],
+          silent = TRUE)
+    }
+    rm(predictions.pulled)
+    if(progress) {
+      setTxtProgressBar(prog, i)
+    }
+  }
+  if(progress) close(prog)
+  if(is.numeric(n.threads)) {
+    setDTthreads(dt.threads.old)
+  }
+  return(as_draws_matrix(predictions.summarized))
 }
 
-
-summarize_predictions_by <- 
-  function(predictions,
-           data = NULL,
-           fun = mean,
-           id.col = NULL,
-           group.vars = NULL,
-           group.labels = NULL,
-           draw.prefix = "draw",
-           draw.chunk = NULL,
-           n.cores = 1,
-           ...) {
+ids_by_group <- function(data,
+                         id.col = NULL,
+                         group.vars = NULL,
+                         group.labels = NULL,
+                         add.label = FALSE,
+                         ...){
   setDT(data)
   if(is.null(id.col)) {
     groups <- data[, .(n = .N, ids = list(.I)), group.vars]
   } else {
     groups <- data[, .(n = .N, ids = list(data$id[.I])), group.vars]
   }
+  setorderv(groups, group.vars)
+  labels <- groups[, ..group.vars]
   if(!is.null(group.labels)) {
     for(i in 1:length(group.vars)) {
       old.labels <- as.character(groups[[group.vars[i]]])
       new.labels <- factor(group.labels[[i]][old.labels], 
                            levels = group.labels[[i]])
-      groups[[group.vars[i]]] <- new.labels
+      groups[, (group.vars[i]) := new.labels]
     }
+    setorderv(groups, group.vars)
   }
-  setorderv(groups, group.vars)
-  summary.labels <- do.call(paste, c(groups[, 1:length(group.vars)] , sep = "."))
-  groups.summarized <- list()
-  for(i in 1:nrow(groups)) {
-    group.summary <- 
-      summarize_predictions(predictions,
-                            fun = fun,
-                            ids = unlist(groups[i, ids]),
-                            id.col = id.col,
-                            draw.prefix = draw.prefix,
-                            draw.chunk = draw.chunk,
-                            n.cores = n.cores
-                            # , ...
-                            )
-    groups.summarized[[summary.labels[i]]] <- group.summary
+  if(add.label) {
+    groups <- add_group_label(data = groups, cols = group.vars, label.name = "group.label")
   }
-  return(as_draws_matrix(groups.summarized))
+  return(groups)
+}
+
+add_group_label <- function(data,
+                      cols,
+                      label.name = "group.label",
+                      expand.label = TRUE) {
+    data <- copy(data)
+    labels <- data[, ..cols]
+    if(expand.label) {
+      for(i in 1:length(cols)) {
+        labels[[cols[i]]] <- paste(cols[i], labels[[cols[i]]], sep = ".")
+      }
+    }
+    labels.c <- do.call(paste, c(labels, sep = ":"))
+    data[, (label.name) := labels.c]
+    setorderv(data, c(cols, label.name))
+    setcolorder(data, c(label.name, cols))
+    return(data)
+}
+
+summarize_predictions_by <- 
+  function(predictions,
+           data,
+           group.vars,
+           group.labels = NULL,
+           ...) {
+  groups <- ids_by_group(data = data,
+                         group.vars = group.vars,
+                         group.labels = group.labels,
+                         add.label = TRUE)
+  id.list <- groups$ids
+  names(id.list) <- groups$group.label
+  groups.summarized <-
+    summarize_predictions(predictions = predictions,
+                         ids = id.list,
+                         ...)
+  return(groups.summarized)
 }
 
 
