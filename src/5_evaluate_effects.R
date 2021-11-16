@@ -7,22 +7,25 @@ n.threads <- as.integer(args[2])
 # region <- "amz"
 # n.threads <- 4
 
-# path.base <- "../"
 path.base <- "/home/schoed/scratch/fcne_analysis/"
+# path.base <- "../"
 path.lp <- paste0(path.base, "models/gam/lp/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 if(!dir.exists(path.effects)) dir.create(path.effects)
 
-file.data <- paste0(path.data.proc, region, ".data.proc.rds")
 path.arrow <- paste0(path.lp, region, ".lp/")
+file.data <- paste0(path.data.proc, region, ".data.proc.rds")
+file.effects <- paste0(path.effects, region, ".effects.rds")
 
 set_cpu_count(n.threads)
 setDTthreads(n.threads)
 
 ## EVALUATE EFFECTS ############################################################
 
-marginals <- c("ten_loc")
+marginals <- c("full","ten_loc")
+draw.ids <- as.character(1:1000)
+# draw.ids <- as.character(1:100)
 
 if(region == "amz") {
   adm.it_rec <- c("BOL", "BRA", "COL", "ECU", "GUF", "GUY", "PER", "VEN")
@@ -36,7 +39,7 @@ if(region == "cam") {
 effects <- list()
 
 for(i in seq_along(marginals)) {
-  ds <- open_dataset(paste0(path.arrow, "marginal=ten_loc"), format = "arrow")
+  ds <- open_dataset(paste0(path.arrow, "marginal=", marginals[i]), format = "arrow")
   data.proc <- readRDS(paste0(path.base, "data/processed/", region, ".data.proc.rds"))
 
   groups.it_pa <-
@@ -55,10 +58,14 @@ for(i in seq_along(marginals)) {
 
   id.list <- groups$ids
   names(id.list) <- groups$group.label
+  
+  message(paste0("Evaluating effects for region `", region,
+                   "` over marginal `", marginals[i], "` (",
+                   length(draw.ids), " draws) …"))
 
   effects[[i]] <- summarize_predictions(ds,
                                    ids = id.list,
-                                   draw.ids = as.character(1:1000),
+                                   draw.ids = draw.ids,
                                    # draw.chunk = 100,
                                    draw.chunk = 1000,
                                    clamp = link_cll(c(.Machine$double.eps, 1-.Machine$double.eps)),
@@ -67,4 +74,5 @@ for(i in seq_along(marginals)) {
 }
 names(effects) <- marginals
 
-saveRDS(effects, paste0(path.effects, region, ".effects.rds"))
+message(paste0("Saving outputs to `", file.effects, "` …"))
+saveRDS(effects, file.effects)

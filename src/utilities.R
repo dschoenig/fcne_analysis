@@ -1,11 +1,11 @@
-library(mgcv)
-library(data.table)
-library(posterior)
-library(doParallel)
-library(arrow)
-library(dplyr)
-# library(ggplot2)
-# library(patchwork)
+require(mgcv, quietly = TRUE)
+require(data.table, quietly = TRUE)
+require(posterior, quietly = TRUE)
+require(doParallel, quietly = TRUE)
+require(arrow, quietly = TRUE)
+require(dplyr, quietly = TRUE)
+# require(ggplot2)
+# require(patchwork)
 
 
 link_cll <- function(mu) {
