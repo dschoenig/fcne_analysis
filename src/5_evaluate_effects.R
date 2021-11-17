@@ -36,27 +36,53 @@ if(region == "cam") {
   adm.it_not_rec <- c("BLZ", "CRI", "GTM", "HND", "NIC", "PAN", "SLV")
 }
 
-
 data.proc <- readRDS(paste0(path.base, "data/processed/", region, ".data.proc.rds"))
+n.min <- 50
 
-groups.it_pa <-
-  data.proc |>
+data.eff <- data.proc[(pa_type %in% levels(pa_type)) |
+                      (it_type == "none") |
+                      (it_type == "recognized" & it_type %in% adm.it_rec) |
+                      (it_type == "not_recognized" & it_type %in% adm.it_not_rec)]
+rm(data.proc)
+
+groups.bl <-
+  data.eff[it_type == "none" & pa_type == "none"] |>
   ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
-  subset(n >= 100)
-groups.adm_it_pa <-
-  data.proc[(it_type == "none") |
-            (it_type == "recognized" & adm0 %in% adm.it_rec) |
-            (it_type == "not_recognized" & adm0 %in% adm.it_not_rec)] |>
+  subset(n >= n.min)
+groups.bl_adm <-
+  data.eff[it_type == "none" & pa_type == "none"] |>
   ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
-  subset(n >= 50)
-groups <- rbindlist(list(groups.it_pa, groups.adm_it_pa), fill = TRUE)
+  subset(n >= n.min)
+groups.it <-
+  data.eff[it_type != "none"] |>
+  ids_by_group(id.col = "id", group.vars = c("it_type")) |>
+  subset(n >= n.min)
+groups.pa <-
+  data.eff[pa_type != "none"] |>
+  ids_by_group(id.col = "id", group.vars = c("pa_type")) |>
+  subset(n >= n.min)
+groups.it_pa <-
+  data.eff[it_type != "none" & pa_type != "none"] |>
+  ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
+  subset(n >= n.min)
+groups.adm_it_pa <-
+  data.eff[it_type != "none" & pa_type != "none"] |>
+  ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
+  subset(n >= n.min)
+
+groups <- rbindlist(list(groups.bl,
+                         groups.bl_adm,
+                         groups.it,
+                         groups.pa,
+                         groups.it_pa,
+                         groups.adm_it_pa), fill = TRUE)
 groups$group.id <- 1:nrow(groups)
 setcolorder(groups, c("group.id", "group.label", "adm0", "it_type", "pa_type"))
 
 id.list <- groups$ids
 names(id.list) <- groups$group.label
 
-rm(data.proc)
+rm(data.eff)
 
 effects <- list()
 for(i in seq_along(marginals)) {

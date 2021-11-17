@@ -701,13 +701,21 @@ ids_by_group <- function(data,
                          add.label = TRUE,
                          ...){
   setDT(data)
-  if(is.null(id.col)) {
-    groups <- data[, .(n = .N, ids = list(.I)), group.vars]
+  if(is.null(group.vars)) {
+    if(is.null(id.col)) {
+      groups <- data[, .(n = .N, ids = list(.I))]
+    } else {
+      groups <- data[, .(n = .N, ids = list(data$id[.I]))]
+    }
   } else {
-    groups <- data[, .(n = .N, ids = list(data$id[.I])), group.vars]
+    if(is.null(id.col)) {
+      groups <- data[, .(n = .N, ids = list(.I)), by = group.vars]
+    } else {
+      groups <- data[, .(n = .N, ids = list(data$id[.I])), by = group.vars]
+    }
+    setorderv(groups, group.vars)
+    labels <- groups[, ..group.vars]
   }
-  setorderv(groups, group.vars)
-  labels <- groups[, ..group.vars]
   if(!is.null(group.labels)) {
     for(i in 1:length(group.vars)) {
       old.labels <- as.character(groups[[group.vars[i]]])
@@ -717,10 +725,10 @@ ids_by_group <- function(data,
     }
     setorderv(groups, group.vars)
   }
-  if(add.label == TRUE) {
+  if(add.label == TRUE & !is.null(group.vars)) {
     groups <- add_group_label(data = groups, cols = group.vars)
   }
-  if(is.character(add.label)) {
+  if(is.character(add.label) & !is.null(group.vars)) {
     groups <- add_group_label(data = groups, cols = group.vars, label.name = add.label)
   }
   return(groups)
