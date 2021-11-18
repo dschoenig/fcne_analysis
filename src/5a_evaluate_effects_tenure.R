@@ -16,7 +16,7 @@ if(!dir.exists(path.effects)) dir.create(path.effects)
 
 path.arrow <- paste0(path.lp, region, ".lp/")
 file.data <- paste0(path.data.proc, region, ".data.proc.rds")
-file.effects <- paste0(path.effects, region, ".effects.rds")
+file.effects <- paste0(path.effects, region, ".eff.tenure.rds")
 
 set_cpu_count(n.threads)
 setDTthreads(n.threads)
@@ -36,8 +36,9 @@ if(region == "cam") {
   adm.it_not_rec <- c("BLZ", "CRI", "GTM", "HND", "NIC", "PAN", "SLV")
 }
 
-data.proc <- readRDS(paste0(path.base, "data/processed/", region, ".data.proc.rds"))
-n.min <- 50
+
+message("Aggregating observations …")
+data.proc <- readRDS(paste0(path.data.proc, region, ".data.proc.rds"))
 
 data.eff <- data.proc[(pa_type %in% levels(pa_type)) |
                       (it_type == "none") |
@@ -45,6 +46,7 @@ data.eff <- data.proc[(pa_type %in% levels(pa_type)) |
                       (it_type == "not_recognized" & it_type %in% adm.it_not_rec)]
 rm(data.proc)
 
+n.min <- 50
 groups.bl <-
   data.eff[it_type == "none" & pa_type == "none"] |>
   ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>

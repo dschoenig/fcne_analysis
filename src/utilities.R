@@ -699,6 +699,7 @@ ids_by_group <- function(data,
                          group.vars = NULL,
                          group.labels = NULL,
                          add.label = TRUE,
+                         expand.label = TRUE,
                          ...){
   setDT(data)
   if(is.null(group.vars)) {
@@ -726,10 +727,13 @@ ids_by_group <- function(data,
     setorderv(groups, group.vars)
   }
   if(add.label == TRUE & !is.null(group.vars)) {
-    groups <- add_group_label(data = groups, cols = group.vars)
+    groups <- add_group_label(data = groups, cols = group.vars,
+                              expand.label = expand.label)
   }
   if(is.character(add.label) & !is.null(group.vars)) {
-    groups <- add_group_label(data = groups, cols = group.vars, label.name = add.label)
+    groups <- add_group_label(data = groups, cols = group.vars,
+                              label.name = add.label,
+                              expand.label = expand.label)
   }
   return(groups)
 }
@@ -773,7 +777,7 @@ summarize_predictions_by <-
 
 
 bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, append = FALSE) {
-  bins.l <- vector(mode = "list", length = length(columns))
+  bins.l <- list()
   for (i in 1:length(columns)) {
     if(is.null(bin.min)) {
       c.min <- min(data[[columns[i]]])
@@ -793,10 +797,9 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, appen
                     by = bin.res[i])
     b.center <- b.breaks[1:(length(b.breaks)-1)] + bin.res[i] / 2 
     cuts <- cut(data[[columns[i]]], breaks = b.breaks, labels = FALSE)
-    binned <- b.center[cuts]
-    b.col <- paste0(columns[i], ".bin")
-    bins.l[[b.col]] <- binned
+    bins.l[[i]] <- b.center[cuts]
   }
+  names(bins.l) <- paste0(columns, ".bin")
   return(bins.l)
 }
 
