@@ -67,6 +67,14 @@ groups.it_pa <-
   data.eff[it_type != "none" & pa_type != "none"] |>
   ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
   subset(n >= n.min)
+groups.adm_it <-
+  data.eff[it_type != "none"] |>
+  ids_by_group(id.col = "id", group.vars = c("adm0", "it_type")) |>
+  subset(n >= n.min)
+groups.adm_pa <-
+  data.eff[pa_type != "none"] |>
+  ids_by_group(id.col = "id", group.vars = c("adm0", "pa_type")) |>
+  subset(n >= n.min)
 groups.adm_it_pa <-
   data.eff[it_type != "none" & pa_type != "none"] |>
   ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
@@ -77,6 +85,8 @@ groups <- rbindlist(list(groups.bl,
                          groups.it,
                          groups.pa,
                          groups.it_pa,
+                         groups.adm_it,
+                         groups.adm_pa,
                          groups.adm_it_pa), fill = TRUE)
 groups$group.id <- 1:nrow(groups)
 setcolorder(groups, c("group.id", "group.label", "adm0", "it_type", "pa_type"))
@@ -101,6 +111,7 @@ for(i in seq_along(marginals)) {
                                    )
 }
 names(effects) <- marginals
+effects$groups <- groups
 
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(effects, file.effects)
