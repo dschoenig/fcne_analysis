@@ -124,10 +124,10 @@ lp.dt <-
 # Export
 
 if(!dir.exists(path.out.full)){
-  dir.create(path.out.full)
+  dir.create(path.out.full, recursive = TRUE)
 }
 if(!dir.exists(path.out.ten_loc)){
-  dir.create(path.out.ten_loc)
+  dir.create(path.out.ten_loc, recursive = TRUE)
 }
 
 write_feather(lp.dt[marginal == "full"], file.out.full)
