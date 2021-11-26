@@ -26,10 +26,13 @@ for(i in 1:length(regions)) {
 
   # Posterior draws
   set.seed(seed + i)
-  post <- mvnfast::rmvn(1000,
-                        mu = coef(model),
-                        sigma = vcov(model, unconditional = TRUE),
-                        ncores = n.threads)
+  # post <- mvnfast::rmvn(1000,
+  #                       mu = coef(model),
+  #                       sigma = vcov(model, unconditional = TRUE),
+  #                       ncores = n.threads)
+  post <- mgcv::rmvn(1000,
+                     mu = coef(model),
+                     V = vcov(model, unconditional = TRUE))
   colnames(post) <- names(coef(model))
   post <- as_draws_matrix(post)
   saveRDS(post, file.post)
