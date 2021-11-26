@@ -10,7 +10,7 @@ source("utilities.R")
 path.data.int <- "../data/intermediate/"
 path.data.proc <- "../data/processed/"
 path.som <- "../models/som/"
-path.gam <- "../models/gam/"
+path.gam <- "../models/gam/test_effects/"
 
 model.reg <- tolower(as.character(args[1]))
 model.id <- tolower(args[2])
