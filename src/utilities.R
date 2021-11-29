@@ -730,7 +730,6 @@ summarize_predictions.FileSystemDataset <-
   if(is.numeric(n.threads)) {
     setDTthreads(dt.threads.old)
   }
-  if(progress) message("Preparing output …")
   return(as_draws_matrix(predictions.summarized))
 }
 
