@@ -173,24 +173,24 @@ if(model.id == "l2") {
         )
 }
 
-if(model.id == "l1f") {
+if(model.id == "l1.tp") {
   model <-
     bam(forestloss ~
         -1 + b0 +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           k = k.def$ten_loc.bl, xt = list(max.knots = max.knots.def$ten_loc.bl)) +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           by = it_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
         s(it_type, bs = "re") +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           by = pa_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
         s(pa_type, bs = "re") +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           by = overlap, k = k.def$ten_loc.ov, xt = list(max.knots = max.knots.def$ten_loc.ov)) +
         s(overlap, bs = "re") +
-        s(som_x, som_y, bs = 'gp',
+        s(som_x, som_y, bs = 'tp',
           k = k.def$som, xt = list(max.knots = max.knots.def$som)) +
-        s(som_x, som_y, bs = 'gp',
+        s(som_x, som_y, bs = 'tp',
           by = adm0, k = k.def$som, xt = list(max.knots = max.knots.def$som)) +
         s(adm0, bs = "re"),
         family = binomial(link = "logit"),
@@ -204,26 +204,80 @@ if(model.id == "l1f") {
         )
 }
 
-if(model.id == "l2f") {
+if(model.id == "l2.tp") {
   model <-
     bam(forestloss ~
         -1 + b0 +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           k = k.def$ten_loc.bl, xt = list(max.knots = max.knots.def$ten_loc.bl)) +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           by = it_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
         s(it_type, bs = "re") +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           by = pa_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
         s(pa_type, bs = "re") +
-        s(ed_east, ed_north, bs = 'gp',
+        s(ed_east, ed_north, bs = 'tp',
           by = overlap, k = k.def$ten_loc.ov, xt = list(max.knots = max.knots.def$ten_loc.ov)) +
         s(overlap, bs = "re") +
-        s(som_x, som_y, bs = 'gp',
+        s(som_x, som_y, bs = 'tp',
           k = k.def$som, xt = list(max.knots = max.knots.def$som)) +
-        s(som_x, som_y, bs = 'gp',
+        s(som_x, som_y, bs = 'tp',
           by = adm0, k = k.def$som, xt = list(max.knots = max.knots.def$som)) +
         s(adm0, bs = "re"),
+        family = binomial(link = "cauchit"),
+        data = data.mod,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+if(model.id == "l1.ma7") {
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          k = k.def$ten_loc.bl, xt = list(max.knots = max.knots.def$ten_loc.bl)) +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          by = it_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          by = pa_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          by = overlap, k = k.def$ten_loc.ov, xt = list(max.knots = max.knots.def$ten_loc.ov)) +
+        s(som_x, som_y, bs = 'gp', m = 5,
+          k = k.def$som, xt = list(max.knots = max.knots.def$som)) +
+        s(som_x, som_y, bs = 'gp', m = 5,
+          by = adm0, k = k.def$som, xt = list(max.knots = max.knots.def$som)),
+        family = binomial(link = "logit"),
+        data = data.mod,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
+if(model.id == "l2.ma7") {
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          k = k.def$ten_loc.bl, xt = list(max.knots = max.knots.def$ten_loc.bl)) +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          by = it_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          by = pa_type, k = k.def$ten_loc.itpa, xt = list(max.knots = max.knots.def$ten_loc.itpa)) +
+        s(ed_east, ed_north, bs = 'gp', m = 5,
+          by = overlap, k = k.def$ten_loc.ov, xt = list(max.knots = max.knots.def$ten_loc.ov)) +
+        s(som_x, som_y, bs = 'gp', m = 5,
+          k = k.def$som, xt = list(max.knots = max.knots.def$som)) +
+        s(som_x, som_y, bs = 'gp', m = 5,
+          by = adm0, k = k.def$som, xt = list(max.knots = max.knots.def$som)),
         family = binomial(link = "cauchit"),
         data = data.mod,
         select = TRUE,
