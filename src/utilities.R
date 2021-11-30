@@ -26,19 +26,25 @@ linkinv_cauchit <- function (eta) {
     pcauchy(eta)
 }
 
-rrc <- function(eta, bl, linkinv = identity) {
+
+rr <- function(eta, bl, linkinv = identity) {
   if(is_rvar(bl)) {
-    rrc <- linkinv(eta)
+    rr <- linkinv(eta)
   }
   if(is.character(bl)) {
     eta.l <- linkinv(eta)
-    rrc <- eta.l / extract_variable(eta.l, bl)
+    rr <- eta.l / extract_variable(eta.l, bl)
   }
   if(is.numeric(bl)) {
     bl.name <- colnames(eta)[bl]
     eta.l <- linkinv(eta)
-    rrc <- eta.l / extract_variable(eta.l, bl.name)
+    rr <- eta.l / extract_variable(eta.l, bl.name)
   }
+  return(rr)
+}
+
+rrc <- function(eta, bl, linkinv = identity) {
+  rrc <- rr(eta = eta, bl = bl, linkinv = linkinv) - 1
   return(rrc)
 }
 
