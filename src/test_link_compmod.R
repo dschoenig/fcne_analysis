@@ -63,6 +63,7 @@ summarize_effects <- function(models, evaluate_data, summarize_data) {
   predictions <- list()
   for(i in 1:length(models)) {
     message(names(models)[i])
+    linkinv <- models[[i]]$family$linkinv
     mod.post <- mgcv::rmvn(n = 1000, mu = coef(models[[i]]),
                            V = vcov(models[[i]], unconditional = TRUE))
     marginals <- list()
@@ -98,17 +99,23 @@ summarize_effects <- function(models, evaluate_data, summarize_data) {
                                       draw.chunk = 125,
                                       n.cores = 4)
     colnames(pred_sum_c)[1] <- "control"
-    effects[[i]] <- summary(pred_sum_c)
-    effects.bl[[i]] <- summary(pred_sum_c - extract_variable(pred_sum_c, "control"))
+    effects[[i]] <- summary(linkinv(pred_sum_c),
+                             mean, median, mode=ggdist::Mode, sd, mad, quantile2)
+    effects.bl[[i]] <- summary(rrc(pred_sum_c, bl = "control", linkinv = linkinv),
+                               mean, median, mode=ggdist::Mode, sd, mad, quantile2)
     pred_sum_c.mar <- summarize_predictions(pred$ten_loc,
                                             ids = id.list,
                                             id.col = "id",
                                             draw.chunk = 125,
                                             n.cores = 4)
     colnames(pred_sum_c.mar)[1] <- "control"
-    effects.mar[[i]] <- summary(pred_sum_c.mar)
-    effects.bl.mar[[i]] <- summary(pred_sum_c.mar - extract_variable(pred_sum_c.mar, "control"))
-    effects.mar.dif[[i]] <- summary(pred_sum_c.mar - pred_sum_c)
+    effects.mar[[i]] <- summary(linkinv(pred_sum_c.mar),
+                                mean, median, mode=ggdist::Mode, sd, mad, quantile2)
+    effects.bl.mar[[i]] <- summary(rrc(pred_sum_c.mar, bl = "control", linkinv = linkinv),
+                                   mean, median, mode=ggdist::Mode, sd, mad, quantile2)
+    effects.mar.dif[[i]] <- summary(rrc(pred_sum_c.mar, bl = "control", linkinv = linkinv) -
+                                    rrc(pred_sum_c, bl = "control", linkinv = linkinv),
+                                        mean, median, mode=ggdist::Mode, sd, mad, quantile2)
   }
   names(effects) <- names(models)
   names(effects.bl) <- names(models)
@@ -141,12 +148,7 @@ summarize_data <- cam.data[1:1e4,]
 
 effects <- summarize_effects(models, cam.mod[1:1e4,], cam.data[1:1e4,])
 
-str(effects)
-
-invlink_cll(effects[[1]][[1]]$mean[1:9])
-plogis(effects[[1]][[1]]$mean[10:18])
-pcauchy(effects[[1]][[1]]$mean[19:27])
-
+effects[[1]]
 effects[[2]]
 
 effects_pan <- summarize_effects(models, cam.mod[cam.mod$adm0 == "PAN",], cam.data[adm0 == "PAN",])

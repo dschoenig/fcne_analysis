@@ -16,6 +16,31 @@ invlink_cll <- function(eta) {
   pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
 }
 
+link_cauchit <- function(mu) {
+  qcauchy(mu)
+}
+
+linkinv_cauchit <- function (eta) {
+    thresh <- -qcauchy(.Machine$double.eps)
+    eta <- pmin(pmax(eta, -thresh), thresh)
+    pcauchy(eta)
+}
+
+rrc <- function(eta, bl, linkinv = identity) {
+  if(is_rvar(bl)) {
+    rrc <- linkinv(eta)
+  }
+  if(is.character(bl)) {
+    eta.l <- linkinv(eta)
+    rrc <- eta.l / extract_variable(eta.l, bl)
+  }
+  if(is.numeric(bl)) {
+    bl.name <- colnames(eta)[bl]
+    eta.l <- linkinv(eta)
+    rrc <- eta.l / extract_variable(eta.l, bl.name)
+  }
+  return(rrc)
+}
 
 # model_overview <- function(models, path = "../results/models/", prefix = "") {
 #   # models: Character vector containing the names of the models to be loaded.
