@@ -7,7 +7,7 @@ source("utilities.R")
 region <- "cam"
 
 path.base <- "../"
-path.effects <- paste0(path.base, "models/gam/test_link/")
+path.effects <- paste0(path.base, "models/gam/test_link/effects")
 file.effects <- paste0(path.effects, region, ".eff.tenure.rds")
 
 effects <- readRDS(file.effects)
