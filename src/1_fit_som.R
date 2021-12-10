@@ -38,19 +38,23 @@ for(i in 1:length(regions)) {
   grid <- somgrid(xdim = xdim, ydim = ydim, 
                       topo = "rectangular", 
                       neighbourhood.fct = "gaussian")
+  som.init <- init_som(train.1e4, xdim, ydim)
 
+  # Initial training
   som.1e4 <- som(train.1e4, grid = grid, 
                      rlen = 1000, mode = "pbatch", 
-                     init = init_som(train.1e4, xdim, ydim),
+                     init = som.init,
                      normalizeDataLayers = FALSE)
   saveRDS(som.1e4, paste0(file.prefix.som, "1e4.rds"))
-
+  
+  # Pass with larger part of sample
   som.1e5 <- som(train.1e5, grid = grid, 
                      rlen = 1000, mode = "pbatch", 
                      init = som.1e4$codes,
                      normalizeDataLayers = FALSE)
   saveRDS(som.1e5, paste0(file.prefix.som, "1e5.rds"))
 
+  # Final training with full sample
   som.1e6 <- som(train.1e6, grid = grid, 
                      rlen = 1000, mode = "pbatch", 
                      init = som.1e5$codes,
