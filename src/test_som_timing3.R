@@ -41,7 +41,7 @@ som.init <- init_som(train.1e4, xdim, ydim)
 
 message("Small, 10 epochs, 16 cores")
 a <- Sys.time()
-som(train.1e4, grid = grid, 
+som.1e4 <- som(train.1e4, grid = grid, 
     rlen = 10, mode = "pbatch", 
     init = som.init, cores = 16,
     normalizeDataLayers = FALSE)
@@ -50,7 +50,7 @@ print(b-a)
 
 message("Medium, 10 epochs, 16 cores")
 a <- Sys.time()
-som(train.1e5, grid = grid, 
+som.1e5 <- som(train.1e5, grid = grid, 
     rlen = 10, mode = "pbatch", 
     init = som.init, cores = 16,
     normalizeDataLayers = FALSE)
@@ -59,7 +59,7 @@ print(b-a)
 
 message("Large, 10 epochs, 16 cores")
 a <- Sys.time()
-som(train.1e6, grid = grid, 
+som.1e6 <- som(train.1e6, grid = grid, 
     rlen = 10, mode = "pbatch", 
     init = som.init, cores = 16,
     normalizeDataLayers = FALSE)
