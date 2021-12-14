@@ -4,6 +4,7 @@ require(posterior, quietly = TRUE)
 require(doParallel, quietly = TRUE)
 require(arrow, quietly = TRUE)
 require(dplyr, quietly = TRUE)
+require(igraph)
 # require(ggplot2)
 # require(patchwork)
 
@@ -885,6 +886,128 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, appen
   return(bins.l)
 }
 
+# SOM UTILITIES ################################################################
+
+init_som <- function(data, xdim, ydim) {
+  # Calculate principal components
+  init_pca <- prcomp(x = data, center = FALSE, scale = FALSE)
+  init_max <- apply(init_pca$x[, 1:2], 2, max)
+  init_min <- apply(init_pca$x[, 1:2], 2, min)
+  # Distribute nodes along first two PC
+  init_coord_pc <- matrix(NA, nrow = xdim * ydim, ncol = 2)
+  init_coord_pc[, 1] <-  rep(seq(init_min[1], init_max[1], 
+                                  length.out = xdim),
+                              times = ydim)
+  init_coord_pc[, 2] <-  rep(seq(init_min[2], init_max[2], 
+                                  length.out = ydim),
+                              each = ydim)
+  # Map to covariate space
+  init_coord_cov <- init_coord_pc %*% t(init_pca$rotation[,1:2])
+  return(init_coord_cov)
+}
+
+bmu <- function(x, codes, bmu.rank = 1) {
+  dist_bmu <- colMeans((t(codes) - x)^2, na.rm = TRUE)
+  order(dist_bmu)[bmu.rank]
+}
+
+units_nb <- function(x, y, grid) {
+  # Only for rectangular, square grids
+  stopifnot({
+              grid$topo == "rectangular"
+              grid$toroidal == FALSE
+            })
+  u1 <- grid$pts[x,]
+  u2 <- grid$pts[y,]
+  du.x <- abs(u1[,1] - u2[,1])
+  du.y <- abs(u1[,2] - u2[,2])
+  nb <- (du.x == 1 | du.y == 1)
+  return(nb)
+}
+
+dist_to_unit <- function(x, unit, codes, type = "squared") {
+  stopifnot({
+              type %in% c("euclidean", "squared")
+            })
+  dist.squared <- rowSums((x - codes[unit, ])^2, na.rm = TRUE)
+  if(type == "euclidean") {
+    return(sqrt(dist.squared))
+  }
+  if(type == "squared") {
+    return(dist.squared)
+  }
+}
+
+get_bmu <- function(som, data = NULL, bmu.rank = 1, n.cores = 1) {
+  if(is.null(data)) {
+    data <- som$data[[1]]
+  }
+  codes <- som$codes[[1]]
+  registerDoParallel(n.cores)
+  bmus <-
+    foreach(i = 1:nrow(data), .combine = rbind) %dopar% {
+      bmu(data[i,], codes, bmu.rank)
+    }
+  dimnames(bmus) <- list(1:nrow(data), paste0("bmu.", bmu.rank))
+  return(bmus)
+}
+
+quantization_error <- function(som, data = NULL) {
+  if(is.null(data)) {
+    data <- som$data[[1]]
+  }
+  dist.squared <- dist_to_unit(data, som$unit.classif, som$codes[[1]],
+                               type = "squared")
+  mean(dist.squared)
+}
+
+topological_error <- function(som, data = NULL, n.cores = 1) {
+  if(is.null(data)) {
+    data <- som$data[[1]]
+  }
+  bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+  nb <- units_nb(bmus[,1], bmus[,2], som$grid)
+  topo.e <- 1 - (sum(nb) / length(nb))
+  return(topo.e)
+}
+
+kaski_lagus_error <- function(som, data = NULL, n.cores = 1, qe = NULL) {
+  if(is.null(data)) {
+    data <- som$data[[1]]
+  }
+  dist.grid <- unit.distances(som$grid)
+  dist.fs <- as.matrix(dist(som$codes[[1]], method = "euclidean"))
+  Aw <- dist.fs * (dist.grid == 1)
+  graph <- graph_from_adjacency_matrix(Aw, weighted = TRUE)
+  rm(Aw, dist.fs, dist.grid)
+  bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+  registerDoParallel(n.cores)
+  # Carefult with number of cores here, distance calculation is memory
+  # intensive
+  dist.shortest <-
+    foreach(i = 1:nrow(bmus), .combine = c) %dopar% {
+      d <- distances(graph, bmus[i,1], bmus[i,2])
+      return(d[1,1])
+    }
+  dist.eucl <- dist_to_unit(data, bmus[,1], som$codes[[1]],
+                            type = "euclidean")
+  kl.e <- mean(dist.eucl + dist.shortest)
+  return(kl.e)
+}
+
+variance_explained <- function(som, data = NULL) {
+  if(is.null(data)) {
+    data <- som$data[[1]]
+  }
+  var.data <- mean(colSums((t(data) - colMeans(data, na.rm = TRUE))^2, na.rm = TRUE))
+  qe <- quantization_error(som, data)
+  var.ex <- 1 - (qe/var.data)
+  return(var.ex)
+}
+
+
+
+
 #diag_residuals <- function(model, 
 #                           residuals,
 #                           sample = NULL,
@@ -1001,20 +1124,3 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, appen
 #  return(p_arranged)
 #  }
 
-init_som <- function(data, xdim, ydim) {
-  # Calculate principal components
-  init_pca <- prcomp(x = data, center = FALSE, scale = FALSE)
-  init_max <- apply(init_pca$x[, 1:2], 2, max)
-  init_min <- apply(init_pca$x[, 1:2], 2, min)
-  # Distribute nodes along first two PC
-  init_coord_pc <- matrix(NA, nrow = xdim * ydim, ncol = 2)
-  init_coord_pc[, 1] <-  rep(seq(init_min[1], init_max[1], 
-                                  length.out = xdim),
-                              times = ydim)
-  init_coord_pc[, 2] <-  rep(seq(init_min[2], init_max[2], 
-                                  length.out = ydim),
-                              each = ydim)
-  # Map to covariate space
-  init_coord_cov <- init_coord_pc %*% t(init_pca$rotation[,1:2])
-  return(init_coord_cov)
-}
