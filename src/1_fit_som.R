@@ -20,6 +20,7 @@ n.cores <- as.integer(args[2])
 # SOM parameters
 xdim <- 100
 ydim <- 100
+rlen <- 1000
 
 seed <- 19120623
 
@@ -35,6 +36,8 @@ data <- readRDS(file.data.fit.int)
 cov.z <- scale(data[, c("tri", "dist_set", "dist_roads", "dist_rivers",
                         "dens_pop", "dens_roads")],
                center = TRUE, scale = TRUE)
+scale <- list(mean = attr(cov.z, "scaled:center"),
+              sd = attr(cov.z, "scaled:scale"))
 rm(data)
 
 set.seed(seed)
@@ -44,38 +47,41 @@ train.1e5 <- cov.z[sam[1:1e5],]
 train.1e6 <- cov.z[sam,]
 
 grid <- somgrid(xdim = xdim, ydim = ydim, 
-                    topo = "rectangular", 
-                    neighbourhood.fct = "gaussian")
+                topo = "rectangular", 
+                neighbourhood.fct = "gaussian")
 som.init <- init_som(train.1e4, xdim, ydim)
 
-message("Initial training …")
+message("Small sample …")
 a <- Sys.time()
 som.1e4 <- som(train.1e4, grid = grid, 
-                   rlen = 1000, mode = "pbatch", 
+                   rlen = rlen, mode = "pbatch", 
                    init = som.init, cores = n.cores,
                    normalizeDataLayers = FALSE)
 b <- Sys.time()
 print(b-a)
+som.1e4$scale <- scale
 saveRDS(som.1e4, paste0(file.prefix.som, "1e4.rds"))
 
-message("Pass with larger part of sample …")
+message("Medium sample …")
 a <- Sys.time()
 som.1e5 <- som(train.1e5, grid = grid, 
-                   rlen = 1000, mode = "pbatch", 
-                   init = som.1e4$codes, cores = n.cores,
+                   rlen = rlen, mode = "pbatch", 
+                   init = som.init, cores = n.cores,
                    normalizeDataLayers = FALSE)
 b <- Sys.time()
 print(b-a)
+som.1e5$scale <- scale
 saveRDS(som.1e5, paste0(file.prefix.som, "1e5.rds"))
 
-message("Final training with full sample …")
+message("Full sample …")
 a <- Sys.time()
 som.1e6 <- som(train.1e6, grid = grid, 
-                   rlen = 1000, mode = "pbatch", 
-                   init = som.1e5$codes, cores = n.cores,
+                   rlen = rlen, mode = "pbatch", 
+                   init = som.init, cores = n.cores,
                    normalizeDataLayers = FALSE)
 b <- Sys.time()
 print(b-a)
+som.1e6$scale <- scale
 saveRDS(som.1e6, paste0(file.prefix.som, "1e6.rds"))
 
 rm(cov.z, grid, train.1e4, train.1e5, train.1e6,
