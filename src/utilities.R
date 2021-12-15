@@ -906,6 +906,11 @@ init_som <- function(data, xdim, ydim) {
   return(init_coord_cov)
 }
 
+scale_data_som <- function(som, data) {
+  scaled <- t((t(cov) - som$scale$mean) / som$scale$sd)
+  return(scaled)
+}
+
 bmu <- function(x, codes, bmu.rank = 1) {
   dist_bmu <- colMeans((t(codes) - x)^2, na.rm = TRUE)
   order(dist_bmu)[bmu.rank]
