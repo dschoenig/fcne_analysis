@@ -938,7 +938,7 @@ dist_to_unit <- function(x, unit, codes, type = "squared") {
   }
 }
 
-get_bmu <- function(som, data = NULL, bmu.rank = 1, n.cores = 1) {
+get_bmu <- function(som, data = NULL, bmu.rank = 1, coord = FALSE, n.cores = 1, grid.coord = FALSE) {
   if(is.null(data)) {
     data <- som$data[[1]]
   }
@@ -949,38 +949,64 @@ get_bmu <- function(som, data = NULL, bmu.rank = 1, n.cores = 1) {
       bmu(data[i,], codes, bmu.rank)
     }
   dimnames(bmus) <- list(1:nrow(data), paste0("bmu.", bmu.rank))
-  return(bmus)
+  if(grid.coord) {
+    coord <- list()
+    for(i in 1:ncol(bmus)) {
+      coord <- som$grid$pts[bmus[,i],]
+    }
+    return(list(bmus, coord))
+  } else {
+    return(bmus)
+  }
 }
 
-quantization_error <- function(som, data = NULL) {
+quantization_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
   if(is.null(data)) {
     data <- som$data[[1]]
   }
-  dist.squared <- dist_to_unit(data, som$unit.classif, som$codes[[1]],
+  if(is.null(bmus)) {
+    bmus <- get_bmu(som = som, data = data, bmu.rank = 1, n.cores = n.cores)
+  }
+  stopifnot({
+             length(bmus) == nrow(data)
+            })
+  dist.squared <- dist_to_unit(data, bmus, som$codes[[1]],
                                type = "squared")
   mean(dist.squared)
 }
 
-topological_error <- function(som, data = NULL, n.cores = 1) {
+topological_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
   if(is.null(data)) {
     data <- som$data[[1]]
   }
-  bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+  if(is.null(bmus)){
+    bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+  }
+  stopifnot({
+             nrow(bmus) == nrow(data)
+             ncol(bmus) == 2
+            })
   nb <- units_nb(bmus[,1], bmus[,2], som$grid)
   topo.e <- 1 - (sum(nb) / length(nb))
   return(topo.e)
 }
 
-kaski_lagus_error <- function(som, data = NULL, n.cores = 1, qe = NULL) {
+kaski_lagus_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
   if(is.null(data)) {
     data <- som$data[[1]]
   }
+  if(is.null(bmus)){
+    bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+  }
+  stopifnot({
+             nrow(bmus) == nrow(data)
+             ncol(bmus) == 2
+            })
   dist.grid <- unit.distances(som$grid)
   dist.fs <- as.matrix(dist(som$codes[[1]], method = "euclidean"))
   Aw <- dist.fs * (dist.grid == 1)
   graph <- graph_from_adjacency_matrix(Aw, weighted = TRUE)
   rm(Aw, dist.fs, dist.grid)
-  bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
   registerDoParallel(n.cores)
   # Carefult with number of cores here, distance calculation is memory
   # intensive
@@ -995,16 +1021,109 @@ kaski_lagus_error <- function(som, data = NULL, n.cores = 1, qe = NULL) {
   return(kl.e)
 }
 
-variance_explained <- function(som, data = NULL) {
+variance_explained <- function(som, data = NULL, n.cores = 1, qe = NULL) {
   if(is.null(data)) {
     data <- som$data[[1]]
   }
+  if(is.null(qe)) {
+    qe <- quantization_error(som, data, n.cores = n.cores)
+  }
   var.data <- mean(colSums((t(data) - colMeans(data, na.rm = TRUE))^2, na.rm = TRUE))
-  qe <- quantization_error(som, data)
   var.ex <- 1 - (qe/var.data)
   return(var.ex)
 }
 
+evaluate_embedding <- function(data,
+                               som = NULL,
+                               mapped = NULL,
+                               family = gaussian,
+                               combined = FALSE,
+                               k.max = NULL,
+                               max.knots = NULL,
+                               n.cores = 1,
+                               approximate = TRUE,
+                               ret.models = FALSE) {
+  if(is.null(som) & is.null(mapped))
+    stop("Most provide either `som` or `mapped`.")
+  if(is.null(mapped)) {
+    bmus <- get_bmu(som, data, n.cores = n.cores)
+    mapped <- som$grid$pts[bmus,]
+  }
+  data <- as.data.frame(data)
+  k.mod <- min(nrow(unique(mapped)), k.max)
+  if(is.null(max.knots)) {
+    if(!is.null(som)) {
+      max.knots.mod <- nrow(som$grid$pts)
+    } else {
+      max.knots.mod <- max(2000, min(k.mod * 10, nrow(data)))
+    }
+  } else {
+    max.knots.mod <- max.knots
+  }
+  models <- list()
+  k <- edf <- r.sq <- dev.expl <- list()
+  vars <- colnames(data)
+  for(i in 1:ncol(data)) {
+    if(length(family) == 1) {
+      fam <- family
+    } else {
+      fam <- family[[i]]
+    }
+    if(!approximate) {
+      models[[i]] <-
+        gam(data[,i] ~ s(mapped[,1], mapped[,2], bs = "tp",
+                         k = k.mod, xt = list(max.knots = max.knots.mod)),
+            family = fam,
+            method = "REML")
+    } else {
+      models[[i]] <-
+        bam(data[,i] ~ s(mapped[,1], mapped[,2], bs = "tp",
+                         k = k.mod, xt = list(max.knots = max.knots.mod)),
+            family = fam,
+            discrete = TRUE,
+            nthreads = n.cores)
+    }
+  }
+  if(combined) {
+    vars <- c(vars, "combined")
+    formulas <- list()
+    for(i in 1:ncol(data)) {
+      formulas[[i]] <- as.formula(paste0("data[,", i, "] ~ 1"))
+    }
+    formulas[[ncol(data)+1]] <-
+      as.formula(paste0(paste(1:ncol(data), collapse = " + "),
+                        " ~ s(mapped[,1], mapped[,2], bs = 'tp', ",
+                        "k = k.mod - ncol(data)) - 1"))
+    models[[length(models) + 1]] <-
+      gam(formulas,
+          family = fam,
+          discrete = TRUE,
+          nthreads = n.cores)
+  }
+  for(i in 1:length(models)) {
+    k[[i]] <- k.mod
+    edf[[i]] <- sum(models[[i]]$edf)
+    dev.expl[[i]] <-
+      (models[[i]]$null.deviance - models[[i]]$deviance) / 
+      models[[i]]$null.deviance
+    w <- as.numeric(models[[i]]$prior.weights)
+    mean.y <- sum(w * models[[i]]$y)/sum(w)
+    w <- sqrt(w)
+    residual.df <- length(models[[i]]$y) - sum(models[[i]]$edf)
+    r.sq[[i]] <-
+      1 - var(w * (as.numeric(models[[i]]$y) - models[[i]]$fitted.values)) *
+      (nobs(models[[i]]) - 1)/(var(w * (as.numeric(models[[i]]$y) - mean.y)) *
+      (length(models[[i]]$y) - sum(models[[i]]$edf)))
+  }
+  evaluation <- cbind(variable = vars, k = k, edf = edf,
+                      dev.expl = dev.expl, r.sq = r.sq)
+  if(ret.models) {
+    results <- list(evaluation = evaluation, models = models)
+  } else {
+    results <- evaluation
+  }
+  return(results)
+}
 
 
 
