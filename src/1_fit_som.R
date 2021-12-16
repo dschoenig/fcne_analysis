@@ -21,6 +21,7 @@ n.cores <- as.integer(args[2])
 xdim <- 100
 ydim <- 100
 rlen <- 1000
+radius <- 100
 
 seed <- 19120623
 
@@ -49,14 +50,17 @@ train.1e6 <- cov.z[sam,]
 grid <- somgrid(xdim = xdim, ydim = ydim, 
                 topo = "rectangular", 
                 neighbourhood.fct = "gaussian")
-som.init <- init_som(train.1e4, xdim, ydim)
 
 message("Small sample …")
 a <- Sys.time()
-som.1e4 <- som(train.1e4, grid = grid, 
-                   rlen = rlen, mode = "pbatch", 
-                   init = som.init, cores = n.cores,
-                   normalizeDataLayers = FALSE)
+som.1e4 <- som(train.1e4,
+               grid = grid, 
+               rlen = rlen,
+               radius = radius,
+               init = init_som(train.1e4, xdim, ydim),
+               mode = "pbatch", 
+               cores = n.cores,
+               normalizeDataLayers = FALSE)
 b <- Sys.time()
 print(b-a)
 som.1e4$scale <- scale
@@ -64,10 +68,14 @@ saveRDS(som.1e4, paste0(file.prefix.som, "1e4.rds"))
 
 message("Medium sample …")
 a <- Sys.time()
-som.1e5 <- som(train.1e5, grid = grid, 
-                   rlen = rlen, mode = "pbatch", 
-                   init = som.init, cores = n.cores,
-                   normalizeDataLayers = FALSE)
+som.1e5 <- som(train.1e5,
+               grid = grid, 
+               rlen = rlen,
+               radius = radius,
+               init = init_som(train.1e5, xdim, ydim),
+               mode = "pbatch", 
+               cores = n.cores,
+               normalizeDataLayers = FALSE)
 b <- Sys.time()
 print(b-a)
 som.1e5$scale <- scale
@@ -75,10 +83,14 @@ saveRDS(som.1e5, paste0(file.prefix.som, "1e5.rds"))
 
 message("Full sample …")
 a <- Sys.time()
-som.1e6 <- som(train.1e6, grid = grid, 
-                   rlen = rlen, mode = "pbatch", 
-                   init = som.init, cores = n.cores,
-                   normalizeDataLayers = FALSE)
+som.1e6 <- som(train.1e6,
+               grid = grid, 
+               rlen = rlen,
+               radius = radius,
+               init = init_som(train.1e6, xdim, ydim),
+               mode = "pbatch", 
+               cores = n.cores,
+               normalizeDataLayers = FALSE)
 b <- Sys.time()
 print(b-a)
 som.1e6$scale <- scale

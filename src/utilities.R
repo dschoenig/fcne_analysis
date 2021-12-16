@@ -943,7 +943,7 @@ dist_to_unit <- function(x, unit, codes, type = "squared") {
   }
 }
 
-get_bmu <- function(som, data = NULL, bmu.rank = 1, coord = FALSE, n.cores = 1, grid.coord = FALSE) {
+embed_som <- function(som, data = NULL, bmu.rank = 1, coord = FALSE, n.cores = 1, grid.coord = FALSE) {
   if(is.null(data)) {
     data <- som$data[[1]]
   }
@@ -970,7 +970,7 @@ quantization_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
     data <- som$data[[1]]
   }
   if(is.null(bmus)) {
-    bmus <- get_bmu(som = som, data = data, bmu.rank = 1, n.cores = n.cores)
+    bmus <- embed_som(som = som, data = data, bmu.rank = 1, n.cores = n.cores)
   }
   stopifnot({
              length(bmus) == nrow(data)
@@ -985,7 +985,7 @@ topological_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
     data <- som$data[[1]]
   }
   if(is.null(bmus)){
-    bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+    bmus <- embed_som(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
   }
   stopifnot({
              nrow(bmus) == nrow(data)
@@ -1001,7 +1001,7 @@ kaski_lagus_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
     data <- som$data[[1]]
   }
   if(is.null(bmus)){
-    bmus <- get_bmu(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+    bmus <- embed_som(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
   }
   stopifnot({
              nrow(bmus) == nrow(data)
@@ -1051,8 +1051,7 @@ evaluate_embedding <- function(data,
   if(is.null(som) & is.null(mapped))
     stop("Most provide either `som` or `mapped`.")
   if(is.null(mapped)) {
-    bmus <- get_bmu(som, data, n.cores = n.cores)
-    mapped <- som$grid$pts[bmus,]
+    mapped <- embed_som(som, data, n.cores = n.cores, bmu.rank = 1, grid.coord = TRUE)
   }
   data <- as.data.frame(data)
   k.mod <- min(nrow(unique(mapped)), k.max)
