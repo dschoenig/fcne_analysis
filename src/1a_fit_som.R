@@ -34,8 +34,8 @@ file.prefix.som <- paste0(path.som, region, ".som.")
 
 data <- readRDS(file.data.fit.int)
 
-cov.z <- scale(data[, c("tri", "dist_set", "dist_roads", "dist_rivers",
-                        "dens_pop", "dens_roads")],
+cov.z <- scale(data[, .(tri, dist_set, dist_roads, dist_rivers,
+                        dens_pop, dens_roads)],
                center = TRUE, scale = TRUE)
 scale <- list(mean = attr(cov.z, "scaled:center"),
               sd = attr(cov.z, "scaled:scale"))

@@ -906,14 +906,22 @@ init_som <- function(data, xdim, ydim) {
   return(init_coord_cov)
 }
 
-scale_data_som <- function(som, data) {
-  scaled <- t((t(cov) - som$scale$mean) / som$scale$sd)
+scale_data_som <- function(data, som) {
+  scaled <- t((t(data) - som$scale$mean) / som$scale$sd)
   return(scaled)
 }
 
-bmu <- function(x, codes, bmu.rank = 1) {
+bmu <- function(x, codes, bmu.rank = 1, dist = FALSE) {
   dist_bmu <- colMeans((t(codes) - x)^2, na.rm = TRUE)
-  order(dist_bmu)[bmu.rank]
+  bmus <- order(dist_bmu)[bmu.rank]
+  names(bmus) <- paste0("bmu.", bmu.rank)
+  if(dist) {
+    distances <- dist_bmu[bmus]
+    names(distances) <- paste0("dist.", bmu.rank)
+    return(list(bmus, dist_bmu[bmus]))
+  } else {
+    return(bmus)
+  }
 }
 
 units_nb <- function(x, y, grid) {
@@ -930,54 +938,85 @@ units_nb <- function(x, y, grid) {
   return(nb)
 }
 
-dist_to_unit <- function(x, unit, codes, type = "squared") {
+dist_to_unit <- function(x, unit, codes, type = "sumofsquares") {
   stopifnot({
-              type %in% c("euclidean", "squared")
+              type %in% c("euclidean", "sumofsquares")
             })
   dist.squared <- rowSums((x - codes[unit, ])^2, na.rm = TRUE)
   if(type == "euclidean") {
     return(sqrt(dist.squared))
   }
-  if(type == "squared") {
+  if(type == "sumofsquares") {
     return(dist.squared)
   }
 }
 
-embed_som <- function(som, data = NULL, bmu.rank = 1, coord = FALSE, n.cores = 1, grid.coord = FALSE) {
+embed_som <- function(som,
+                      data = NULL,
+                      bmu.rank = 1,
+                      dist = FALSE,
+                      grid.coord = FALSE,
+                      n.cores = 1) {
   if(is.null(data)) {
     data <- som$data[[1]]
   }
-  codes <- som$codes[[1]]
-  registerDoParallel(n.cores)
-  bmus <-
-    foreach(i = 1:nrow(data), .combine = rbind) %dopar% {
-      bmu(data[i,], codes, bmu.rank)
+  n.bmu <- length(bmu.rank)
+  bmus <- matrix(NA, nrow = nrow(data), ncol = length(bmu.rank))
+  dimnames(bmus) <- list(rownames(data), paste0("bmu.", bmu.rank))
+  if(dist) {
+    bmu.dist <- bmus
+    dimnames(bmu.dist) <- list(rownames(data), paste0("dist.", bmu.rank))
+  }
+  if(n.bmu == 1 & bmu.rank[1] == 1) {
+    # Use fast implementation from `kohonen`
+    mapped <- map(x = som, newdata = data)
+    bmus[,1:n.bmu] <- mapped$unit.classif
+    if(dist) {
+      bmu.dist[,1:n.bmu] <- mapped$distances
     }
-  dimnames(bmus) <- list(1:nrow(data), paste0("bmu.", bmu.rank))
+  } else {
+    codes <- som$codes[[1]]
+    registerDoParallel(n.cores)
+    mapped <-
+      foreach(i = 1:nrow(data), .combine = rbind) %dopar% {
+        bmu(data[i,], codes, bmu.rank = bmu.rank, dist = dist)
+      }
+    bmus[,1:n.bmu] <- do.call(rbind, as.list(mapped[,1]))
+    if(dist) {
+      bmu.dist[,1:n.bmu] <- do.call(rbind, as.list(mapped[,2]))
+    }
+  }
+  results <- list()
+  results$bmu <- bmus
+  if(dist) {
+    results$distances <- bmu.dist
+  }
   if(grid.coord) {
     coord <- list()
-    for(i in 1:ncol(bmus)) {
-      coord <- som$grid$pts[bmus[,i],]
+    for(i in 1:length(bmu.rank)) {
+      coord[[i]] <- som$grid$pts[bmus[,i],]
     }
-    return(list(bmus, coord))
-  } else {
-    return(bmus)
+    names(coord) <- colnames(bmus)
+    results$grid.coordinates <- coord
   }
+  return(results)
 }
 
-quantization_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
+quantization_error <- function(som, data = NULL, distances = NULL) {
   if(is.null(data)) {
-    data <- som$data[[1]]
+    distances <- som$distances
   }
-  if(is.null(bmus)) {
-    bmus <- embed_som(som = som, data = data, bmu.rank = 1, n.cores = n.cores)
+  if(is.null(distances)) {
+    embedded <- embed_som(som = som, data = data, bmu.rank = 1, n.cores = n.cores, dist = TRUE)
+    distances <- embedded$distances
   }
-  stopifnot({
-             length(bmus) == nrow(data)
-            })
-  dist.squared <- dist_to_unit(data, bmus, som$codes[[1]],
-                               type = "squared")
-  mean(dist.squared)
+  if(som$dist.fcts == "sumofsquares") {
+    dist.sq <- distances
+  } else {
+    dist.sq <- distances^2
+  }
+  quant.e <- mean(dist.sq)
+  return(quant.e)
 }
 
 topological_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
