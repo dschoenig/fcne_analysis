@@ -1070,7 +1070,7 @@ variance_explained <- function(som, data = NULL, n.cores = 1, qe = NULL) {
     data <- som$data[[1]]
   }
   if(is.null(qe)) {
-    qe <- quantization_error(som, data, n.cores = n.cores)
+    qe <- quantization_error(som, data)
   }
   var.data <- mean(colSums((t(data) - colMeans(data, na.rm = TRUE))^2, na.rm = TRUE))
   var.ex <- 1 - (qe/var.data)
@@ -1082,6 +1082,7 @@ evaluate_embedding <- function(data,
                                mapped = NULL,
                                family = gaussian,
                                combined = FALSE,
+                               bs = "tp",
                                k.max = NULL,
                                max.knots = NULL,
                                n.cores = 1,
@@ -1107,6 +1108,7 @@ evaluate_embedding <- function(data,
   k <- edf <- r.sq <- dev.expl <- list()
   vars <- colnames(data)
   for(i in 1:ncol(data)) {
+    message(paste0("Evaluate embedding for variable ", i, " / ", ncol(data), " …"))
     if(length(family) == 1) {
       fam <- family
     } else {
@@ -1114,13 +1116,13 @@ evaluate_embedding <- function(data,
     }
     if(!approximate) {
       models[[i]] <-
-        gam(data[,i] ~ s(mapped[,1], mapped[,2], bs = "tp",
+        gam(data[,i] ~ s(mapped[,1], mapped[,2], bs = bs,
                          k = k.mod, xt = list(max.knots = max.knots.mod)),
             family = fam,
             method = "REML")
     } else {
       models[[i]] <-
-        bam(data[,i] ~ s(mapped[,1], mapped[,2], bs = "tp",
+        bam(data[,i] ~ s(mapped[,1], mapped[,2], bs = bs,
                          k = k.mod, xt = list(max.knots = max.knots.mod)),
             family = fam,
             discrete = TRUE,
@@ -1128,6 +1130,7 @@ evaluate_embedding <- function(data,
     }
   }
   if(combined) {
+    message(paste0("Evaluate combined embedding for all variables …"))
     vars <- c(vars, "combined")
     formulas <- list()
     for(i in 1:ncol(data)) {
@@ -1135,12 +1138,13 @@ evaluate_embedding <- function(data,
     }
     formulas[[ncol(data)+1]] <-
       as.formula(paste0(paste(1:ncol(data), collapse = " + "),
-                        " ~ s(mapped[,1], mapped[,2], bs = 'tp', ",
+                        " ~ s(mapped[,1], mapped[,2], bs = '", bs ,"', ",
                         "k = k.mod - ncol(data)) - 1"))
     models[[length(models) + 1]] <-
       gam(formulas,
-          family = fam,
+          family = mvn(d = ncol(data)),
           discrete = TRUE,
+          method = "REML",
           nthreads = n.cores)
   }
   for(i in 1:length(models)) {
