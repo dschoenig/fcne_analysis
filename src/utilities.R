@@ -370,6 +370,39 @@ rrc <- function(eta, bl, linkinv = identity) {
 #   return(simulations)
 # }
 
+profile_matern <- function(y, x, rho,
+                           m = NULL, k = NULL, family = gaussian,
+                           discrete = FALSE, nthreads = NULL) {
+  if(is.null(m)) m <- 3
+  if(is.null(k)) k <- 100
+  m[2] <- NA
+  max.knots <- max(2000, k * 10)
+  REML <- numeric()
+  AIC <- numeric()
+  for(i in seq_along(rho)) {
+    message(paste0("Profiling `rho = ", rho[i], "` (", i, " / ", length(rho), ")"))
+    m[2] <- rho[i]
+    if(discrete) {
+      if(is.null(nthreads)) nthreads <- 1
+      mod <- bam(y ~ s(x[,1], x[,2], bs = "gp",
+                       m = m, k = k, xt = list(max.knots = max.knots)),
+                 family = family,
+                 discrete = TRUE,
+                 nthreads = nthreads)
+    } else {
+      mod <- gam(y ~ s(x[,1], x[,2], bs = "gp",
+                       m = m, k = k, xt = list(max.knots = max.knots)),
+                 family = family,
+                 method = "REML")
+    }
+    REML[i] <- mod$gcv.ubre
+    AIC[i] <- mod$aic
+  }
+  mat.prof <- data.frame(rho = rho, REML_score = REML, AIC = AIC)
+  return(mat.prof)
+}
+
+
 chunk_seq <- function(from, to, size = to) {
   chunk.from <- seq(from, to, size)
   if(length(chunk.from) > 1) {
