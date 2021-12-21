@@ -132,8 +132,8 @@ if(model.id == "t2") {
              ten_loc.itpa = 50,
              ten_loc.ov = 25,
              som = 75)
-  max.knots.def <- c(k.def[1:3] * 10, som = 10000)
-  data.proc <- data.proc[1:5e5,]
+  max.knots.def <- c(k.def[1:3] * 10, som = 2000)
+  data.proc <- data.proc[5:5e5,]
 
   data.mod <- 
     as.data.frame(data.proc[, .(forestloss,
