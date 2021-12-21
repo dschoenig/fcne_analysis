@@ -142,6 +142,37 @@ if(model.id == 3) {
         )
 }
 
+if(model.id == 4) {
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def["ten_loc.bl"],
+          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def["ten_loc.ov"],
+          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def["som"], xt = list(max.knots = max.knots.def["som"])) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
+
 b <- Sys.time()
 b - a
 
