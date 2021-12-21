@@ -40,7 +40,7 @@ data.proc <- readRDS(file.data.proc)
 print(paste0("Fitting model `", model.name, "` …"))
 
 
-if(model.id == "t2") {
+if(model.id == "t1") {
   
   # Model size
   k.def <- c(ten_loc.bl = 75,
