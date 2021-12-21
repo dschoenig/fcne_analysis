@@ -7,5 +7,5 @@
 #SBATCH --mail-type=ALL
 
 module load StdEnv/2020 r/4.1.2
-echo $OMP_NUM_THREADS
+export OMP_NUM_THREADS=$SLRUM_CPUS_PER_TASK
 Rscript test_perf.R CAM t1 $SLURM_CPUS_PER_TASK

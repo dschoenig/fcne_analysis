@@ -20,15 +20,6 @@ if(!dir.exists(path.gam))
 file.data.proc <- paste0(path.data.proc, model.reg, ".data.fit.proc.rds")
 model.name <- paste0(model.reg, ".m", model.id)
 
-k.def <- c(ten_loc.bl = 750,
-           ten_loc.itpa = 500,
-           ten_loc.ov = 250,
-           som = 750)
-# k.def <- c(ten_loc.bl = 1000,
-#            ten_loc.itpa = 1000,
-#            ten_loc.ov = 1000,
-#            som = 1000)
-max.knots.def <- c(k.def[1:3] * 10, som = 10000)
 
 ## FIT MODELS ##################################################################
 
@@ -36,18 +27,17 @@ max.knots.def <- c(k.def[1:3] * 10, som = 10000)
 data.proc <- readRDS(file.data.proc)
 
 
-
 print(paste0("Fitting model `", model.name, "` …"))
 
 
-if(model.id == "t1") {
+if(model.id == "t0") {
   
   # Model size
   k.def <- c(ten_loc.bl = 75,
              ten_loc.itpa = 50,
              ten_loc.ov = 25,
              som = 75)
-  max.knots.def <- c(k.def[1:3] * 10, som = 10000)
+  max.knots.def <- c(k.def[1:3] * 10, som = 2000)
   data.proc <- data.proc[1:1e5,]
 
   data.mod <- 
@@ -82,11 +72,57 @@ if(model.id == "t1") {
         paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
-        nthreads = n.threads,
+        nthreads = 1,
         gc.level = 0
         )
 }
 
+if(model.id == "t1") {
+  
+  # Model size
+  k.def <- c(ten_loc.bl = 75,
+             ten_loc.itpa = 50,
+             ten_loc.ov = 25,
+             som = 75)
+  max.knots.def <- c(k.def[1:3] * 10, som = 2000)
+  data.proc <- data.proc[1:5e5,]
+
+  data.mod <- 
+    as.data.frame(data.proc[, .(forestloss,
+                            it_type, pa_type, overlap, ed_east, ed_north,
+                            adm0, som_x, som_y)])
+  data.mod$b0 <- model.matrix(~ 1, data.mod)
+  rm(data.proc)
+
+  model <-
+    bam(forestloss ~
+        -1 + b0 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def["ten_loc.bl"],
+          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def["ten_loc.ov"],
+          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
+        s(som_x, som_y, bs = 'gp',
+          k = k.def["som"], xt = list(max.knots = max.knots.def["som"])) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
+        family = binomial(link = "cauchit"),
+        data = data.mod,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = TRUE,
+        nthreads = n.threads,
+        gc.level = 0
+        )
+}
 
 
 if(model.id == "t2") {
@@ -97,7 +133,7 @@ if(model.id == "t2") {
              ten_loc.ov = 25,
              som = 75)
   max.knots.def <- c(k.def[1:3] * 10, som = 10000)
-  data.proc <- data.proc[1:1e5,]
+  data.proc <- data.proc[1:5e5,]
 
   data.mod <- 
     as.data.frame(data.proc[, .(forestloss,
@@ -183,8 +219,6 @@ if(model.id == "t3") {
         gc.level = 0
         )
 }
-
-b - a
 
 warnings()
 
