@@ -39,7 +39,7 @@ data.proc <- readRDS(file.data.proc)
 # FOR TESTING ONLY:
 # k.def = k.def/10
 # max.knots.def = max.knots.def / 10
-data.proc <- data.proc[1:1e5,]
+# data.proc <- data.proc[1:1e5,]
 
 data.mod <- 
   as.data.frame(data.proc[, .(forestloss,
