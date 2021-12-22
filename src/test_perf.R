@@ -354,7 +354,7 @@ if(model.id == "t6") {
         data = data.mod,
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
-        chunk.size = 5e3,
+        chunk.size = 5e5,
         discrete = TRUE,
         nthreads = n.threads,
         gc.level = 0
