@@ -573,6 +573,7 @@ if(model.id == "t10") {
         family = binomial(link = "cauchit"),
         data = data.mod,
         select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
         chunk.size = 1e5,
         discrete = TRUE,
         nthreads = n.threads,
@@ -593,6 +594,7 @@ if(model.id == "t11") {
                             .(forestloss,
                             it_type, pa_type, overlap, ed_east, ed_north,
                             adm0, som_x, som_y)])
+  data.mod$b0 <- model.matrix(~ 1, data.mod)
   rm(data.proc)
   model <-
     bam(forestloss ~
@@ -614,6 +616,7 @@ if(model.id == "t11") {
         family = binomial(link = "cauchit"),
         data = data.mod,
         select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
         chunk.size = 1e5,
         discrete = TRUE,
         nthreads = n.threads,
@@ -622,23 +625,22 @@ if(model.id == "t11") {
 }
 
 if(model.id == "t12") {
-  cl <- makeCluster(n.threads) 
   # Model size
-  k.def <- c(ten_loc.bl = 75,
-             ten_loc.itpa = 50,
-             ten_loc.ov = 25,
-             som = 75)
-  max.knots.def <- c(k.def[1:3] * 10, som = 2000)
+  k.def <- c(ten_loc.bl = 750,
+             ten_loc.itpa = 500,
+             ten_loc.ov = 250,
+             som = 750)
+  max.knots.def <- c(k.def[1:3] * 10, som = 10000)
   data.mod <- 
-    as.data.frame(data.proc[1:1e5,
+    as.data.frame(data.proc[,
                             .(forestloss,
                             it_type, pa_type, overlap, ed_east, ed_north,
                             adm0, som_x, som_y)])
+  data.mod$b0 <- model.matrix(~ 1, data.mod)
   rm(data.proc)
-  a <- Sys.time
   model <-
     bam(forestloss ~
-        -1 + 
+        -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = k.def["ten_loc.bl"],
           xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
@@ -656,14 +658,13 @@ if(model.id == "t12") {
         family = binomial(link = "cauchit"),
         data = data.mod,
         select = TRUE,
-        chunk.size = 5e3,
-        discrete = FALSE,
-        cluster = cl,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 1e5,
+        discrete = TRUE,
         nthreads = n.threads,
-        gc.level = 0
+        gc.level = 0,
+        control = gam.control(trace = TRUE),
         )
-  b <- Sys.time
-  b-a
 }
 
 
