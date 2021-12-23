@@ -702,9 +702,8 @@ if(model.id == "t13") {
         data = data.mod,
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
-        chunk.size = 1e5,
+        chunk.size = 1e3,
         discrete = TRUE,
-        samfrac = 0.1,
         nthreads = n.threads,
         gc.level = 0,
         control = gam.control(trace = TRUE)
