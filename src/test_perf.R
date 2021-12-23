@@ -659,7 +659,7 @@ if(model.id == "t12") {
         data = data.mod,
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
-        chunk.size = 1e5,
+        chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
         gc.level = 0,
