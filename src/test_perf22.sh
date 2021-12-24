@@ -8,4 +8,4 @@
 
 module load StdEnv/2020 r/4.1.2
 export OMP_NUM_THREADS=$SLRUM_CPUS_PER_TASK
-Rscript test_perf.R CAM t19 $SLURM_CPUS_PER_TASK
+Rscript test_perf.R CAM t21 $SLURM_CPUS_PER_TASK
