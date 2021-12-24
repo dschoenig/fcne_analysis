@@ -1022,6 +1022,7 @@ if(model.id == "t20") {
                             .(forestloss,
                             it_type, pa_type, overlap, ed_east, ed_north,
                             adm0, som_x, som_y)])
+  data.mod$b0 <- model.matrix(~ 1, data.mod)
   rm(data.proc)
   model <-
     bam(forestloss ~
@@ -1043,6 +1044,7 @@ if(model.id == "t20") {
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = TRUE,
         nthreads = n.threads,
