@@ -1174,7 +1174,7 @@ if(model.id == "t23") {
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
         s(som_x, som_y, bs = 'gp',
           by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
-        family = binomial(link = "probit"),
+        family = binomial(link = "cauchit"),
         data = data.mod,
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
