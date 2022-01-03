@@ -72,7 +72,7 @@ if(model.id == 0) {
         paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         # discrete = TRUE,
-        discrete = max.knots.loc,
+        discrete = 2e4,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
@@ -89,7 +89,7 @@ if(model.id == 1) {
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
-        discrete = TRUE,
+        discrete = 2e4,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
@@ -111,7 +111,7 @@ if(model.id == 2) {
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
-        discrete = TRUE,
+        discrete = 2e4,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
