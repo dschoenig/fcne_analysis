@@ -4,29 +4,36 @@ require(posterior, quietly = TRUE)
 require(doParallel, quietly = TRUE)
 require(arrow, quietly = TRUE)
 require(dplyr, quietly = TRUE)
-require(igraph)
+# require(igraph) # needed only for Kaski-Lagus error (SOM)
 # require(ggplot2)
 # require(patchwork)
 
 
-link_cll <- function(mu) {
-  log(-log(1 - mu))
+# link_cll <- function(mu) {
+#   log(-log(1 - mu))
+# }
+
+# invlink_cll <- function(eta) {
+#   pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
+# }
+
+# link_cauchit <- function(mu) {
+#   qcauchy(mu)
+# }
+
+# linkinv_cauchit <- function (eta) {
+#     thresh <- -qcauchy(.Machine$double.eps)
+#     eta <- pmin(pmax(eta, -thresh), thresh)
+#     pcauchy(eta)
+# }
+
+logit <- function(mu) {
+  -log(1 / mu - 1)
 }
 
-invlink_cll <- function(eta) {
-  pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
+inv_logit <- function(eta) { 
+  1 / (1 + exp(-eta))
 }
-
-link_cauchit <- function(mu) {
-  qcauchy(mu)
-}
-
-linkinv_cauchit <- function (eta) {
-    thresh <- -qcauchy(.Machine$double.eps)
-    eta <- pmin(pmax(eta, -thresh), thresh)
-    pcauchy(eta)
-}
-
 
 rr <- function(eta, bl, linkinv = identity) {
   if(is_rvar(bl)) {
@@ -1082,14 +1089,14 @@ kaski_lagus_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
   dist.grid <- unit.distances(som$grid)
   dist.fs <- as.matrix(dist(som$codes[[1]], method = "euclidean"))
   Aw <- dist.fs * (dist.grid == 1)
-  graph <- graph_from_adjacency_matrix(Aw, weighted = TRUE)
+  graph <- igraph::graph_from_adjacency_matrix(Aw, weighted = TRUE)
   rm(Aw, dist.fs, dist.grid)
   registerDoParallel(n.cores)
   # Carefult with number of cores here, distance calculation is memory
   # intensive
   dist.shortest <-
     foreach(i = 1:nrow(bmus), .combine = c) %dopar% {
-      d <- distances(graph, bmus[i,1], bmus[i,2])
+      d <- igraph::distances(graph, bmus[i,1], bmus[i,2])
       return(d[1,1])
     }
   dist.eucl <- dist_to_unit(data, bmus[,1], som$codes[[1]],
