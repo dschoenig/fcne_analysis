@@ -63,7 +63,7 @@ if(model.id == 0) {
         -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = 2 * sum(k.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]),
-          xt = list(max.knots = 2 * sum(max.knots.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]))) +
+          xt = list(max.knots = 2 * sum(max.knots.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]))),
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
