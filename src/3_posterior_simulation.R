@@ -6,35 +6,31 @@ library(posterior)
 
 source("utilities.R")
 
-n.threads <- ifelse(length(args) < 1, 1, as.integer(args[1]))
+region <- tolower(as.character(args[1]))
+n.threads <- ifelse(length(args) < 2, 1, as.integer(args[2]))
 
 path.gam <- "../models/gam/"
 
-regions <- c("amz", "cam")
-# regions <- c("amz")
 seed <- 18980605
 
 
-## SIMULATION FROM MULTIVARIATE APPROXIMATION OF MODEL POSTERIOR ###############
+## SIMULATION FROM MULTIVARIATE NORMAL APPROXIMATION OF MODEL POSTERIOR ########
 
-for(i in 1:length(regions)) {
-  file.model <- paste0(path.gam, regions[i], ".m3.rds")
-  file.post <- paste0(path.gam, regions[i], ".m3.post.rds")
+file.model <- paste0(path.gam, region, ".m3.rds")
+file.post <- paste0(path.gam, region, ".m3.post.rds")
 
-  # Load model
-  model <- readRDS(file.model)
+# Load model
+model <- readRDS(file.model)
 
-  # Posterior draws
-  set.seed(seed + i)
-  post <- mvnfast::rmvn(1000,
-                        mu = coef(model),
-                        sigma = vcov(model, unconditional = TRUE),
-                        ncores = n.threads)
-  colnames(post) <- names(coef(model))
-  post <- as_draws_matrix(post)
-  saveRDS(post, file.post)
+# Posterior draws
+set.seed(seed)
+post <- mvnfast::rmvn(1000,
+                      mu = coef(model),
+                      sigma = vcov(model, unconditional = TRUE),
+                      ncores = n.threads)
+colnames(post) <- names(coef(model))
+post <- as_draws_matrix(post)
+saveRDS(post, file.post)
 
-  rm(model, post)
-  gc()
-}
-
+# rm(model, post)
+# gc()
