@@ -62,7 +62,7 @@ if(model.id == 0) {
     bam(forestloss ~
         -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
-          k = sum(k.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]),
+          k = sum(k.def["ten_loc.bl"], 4 * k.def["ten_loc.itpa"], 4 * k.def["ten_loc.ov"]),
           xt = list(max.knots = sum(max.knots.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]))),
         family = binomial(link = "logit"),
         data = data.mod,
@@ -97,7 +97,7 @@ if(model.id == 2) {
     bam(forestloss ~
         -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
-          k = sum(k.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]),
+          k = sum(k.def["ten_loc.bl"], 4 * k.def["ten_loc.itpa"], 4 * k.def["ten_loc.ov"]),
           xt = list(max.knots = sum(max.knots.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]))) +
         s(som_x, som_y, bs = 'gp',
           by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
