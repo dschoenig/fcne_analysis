@@ -58,18 +58,21 @@ print(paste0("Fitting model `", model.name, "` …"))
 a <- Sys.time()
 
 if(model.id == 0) {
+  k.loc <- sum(k.def["ten_loc.bl"], 4 * k.def["ten_loc.itpa"], 4 * k.def["ten_loc.ov"]) 
+  max.knots.loc <- 10 * k.loc
   model <-
     bam(forestloss ~
         -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
-          k = 2 * sum(k.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]),
-          xt = list(max.knots = 2 * sum(max.knots.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]))),
+          k = k.loc,
+          xt = list(max.knots = max.knots.loc)),
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
-        discrete = TRUE,
+        # discrete = TRUE,
+        discrete = max.knots.loc,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
@@ -93,12 +96,14 @@ if(model.id == 1) {
 }
 
 if(model.id == 2) {
+  k.loc <- sum(k.def["ten_loc.bl"], 4 * k.def["ten_loc.itpa"], 4 * k.def["ten_loc.ov"]) 
+  max.knots.loc <- 10 * k.loc
   model <-
     bam(forestloss ~
         -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
-          k = 2 * sum(k.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]),
-          xt = list(max.knots = 2 * sum(max.knots.def[c("ten_loc.bl", "ten_loc.itpa", "ten_loc.ov")]))) +
+          k = k.loc,
+          xt = list(max.knots = max.knots.loc)) +
         s(som_x, som_y, bs = 'gp',
           by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
         family = binomial(link = "logit"),
@@ -141,6 +146,34 @@ if(model.id == 3) {
         )
 }
 
+if(model.id == 4) {
+  model <-
+    bam(forestloss ~
+        0 + b0 +
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def["ten_loc.bl"],
+          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def["ten_loc.ov"],
+          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
+        family = binomial(link = "logit"),
+        data = data.mod,
+        select = TRUE,
+        paraPen = list(b0 = list(diag(1))),
+        chunk.size = 5e3,
+        discrete = 2e4,
+        nthreads = n.threads,
+        control = gam.control(trace = TRUE, epsilon = conv.eps)
+        )
+}
 
 b <- Sys.time()
 b - a
