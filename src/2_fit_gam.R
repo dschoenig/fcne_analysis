@@ -33,7 +33,7 @@ max.knots.reg <- list(cam = c(k.reg$cam[1:3] * 10, som = 10000),
                       amz = c(k.reg$amz[1:3] * 10, som = 10000))
 
 # Fitting parameters
-conv.eps <- 1e-6 # Default is 1e-7
+conv.eps <- 1e-7 # Default is 1e-7
 max.discrete.bins <- 1e5 # Default for bivariate smooths is effectively 1e4
 
 ## FIT MODELS ##################################################################
@@ -64,7 +64,6 @@ if(model.id == 0) {
   max.knots.loc <- 10 * k.loc
   model <-
     bam(forestloss ~
-        -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = k.loc,
           xt = list(max.knots = max.knots.loc)),
@@ -73,7 +72,6 @@ if(model.id == 0) {
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
-        # discrete = TRUE,
         discrete = max.discrete.bins,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
@@ -83,7 +81,6 @@ if(model.id == 0) {
 if(model.id == 1) {
   model <-
     bam(forestloss ~
-        -1 + b0 +
         s(som_x, som_y, bs = 'gp',
           by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
         family = binomial(link = "logit"),
@@ -102,7 +99,6 @@ if(model.id == 2) {
   max.knots.loc <- 10 * k.loc
   model <-
     bam(forestloss ~
-        -1 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = k.loc,
           xt = list(max.knots = max.knots.loc)) +
@@ -122,7 +118,6 @@ if(model.id == 2) {
 if(model.id == 3) {
   model <-
     bam(forestloss ~
-        0 + b0 +
         s(ed_east, ed_north, bs = 'gp',
           k = k.def["ten_loc.bl"],
           xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
@@ -141,41 +136,13 @@ if(model.id == 3) {
         data = data.mod,
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
-        chunk.size = 5e3,
+        # chunk.size = 5e3,
         discrete = max.discrete.bins,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
 }
 
-if(model.id == 4) {
-  model <-
-    bam(forestloss ~
-        0 + b0 +
-        s(ed_east, ed_north, bs = 'gp',
-          k = k.def["ten_loc.bl"],
-          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = it_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = pa_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = overlap, k = k.def["ten_loc.ov"],
-          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
-        family = binomial(link = "logit"),
-        data = data.mod,
-        select = TRUE,
-        paraPen = list(b0 = list(diag(1))),
-        chunk.size = 5e3,
-        discrete = 2e5,
-        nthreads = n.threads,
-        control = gam.control(trace = TRUE, epsilon = conv.eps)
-        )
-}
 
 if(model.id == 5) {
   model <-
@@ -198,7 +165,7 @@ if(model.id == 5) {
         data = data.mod,
         select = TRUE,
         chunk.size = 5e3,
-        discrete = 1e5,
+        discrete = max.discrete.bins,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
