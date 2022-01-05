@@ -21,10 +21,10 @@ if(!dir.exists(path.gam))
 file.data.proc <- paste0(path.data.proc, model.reg, ".data.fit.proc.rds")
 model.name <- paste0(model.reg, ".m", model.id)
 
-k.reg <- list(cam = c(ten_loc.bl = 1500,
-                      ten_loc.itpa = 500,
-                      ten_loc.ov = 250,
-                      som = 750),
+k.reg <- list(cam = c(ten_loc.bl = 2000,
+                      ten_loc.itpa = 1000,
+                      ten_loc.ov = 500,
+                      som = 1000),
               amz = c(ten_loc.bl = 1000,
                       ten_loc.itpa = 1000,
                       ten_loc.ov = 1000,
@@ -33,7 +33,7 @@ max.knots.reg <- list(cam = c(k.reg$cam[1:3] * 10, som = 10000),
                       amz = c(k.reg$amz[1:3] * 10, som = 10000))
 
 # Fitting parameters
-conv.eps <- 1e-7 # Default is 1e-7
+conv.eps <- 1e-6 # Default is 1e-7
 max.discrete.bins <- 1e5 # Default for bivariate smooths is effectively 1e4
 
 ## FIT MODELS ##################################################################
@@ -149,8 +149,6 @@ if(model.id == 3) {
 }
 
 if(model.id == 4) {
-  k.def[1] <- 1250
-  max.knots.def[1] <- 12500
   model <-
     bam(forestloss ~
         0 + b0 +
@@ -173,7 +171,7 @@ if(model.id == 4) {
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
-        discrete = max.discrete.bins,
+        discrete = 2e5,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
@@ -181,6 +179,11 @@ if(model.id == 4) {
 
 b <- Sys.time()
 b - a
+
+model
+summary(model, re.test = FALSE)
+k.check(model)
+AIC(model)
 
 print("Saving fitted model …")
 saveRDS(model, paste0(path.gam, model.name, ".rds"))
