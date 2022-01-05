@@ -197,7 +197,6 @@ if(model.id == 5) {
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
-        paraPen = list(b0 = list(diag(1))),
         chunk.size = 5e3,
         discrete = 1e5,
         nthreads = n.threads,
