@@ -21,7 +21,7 @@ if(!dir.exists(path.gam))
 file.data.proc <- paste0(path.data.proc, model.reg, ".data.fit.proc.rds")
 model.name <- paste0(model.reg, ".m", model.id)
 
-k.reg <- list(cam = c(ten_loc.bl = 2500,
+k.reg <- list(cam = c(ten_loc.bl = 3000,
                       ten_loc.itpa = 1000,
                       ten_loc.ov = 500,
                       som = 1000),
@@ -135,7 +135,6 @@ if(model.id == 3) {
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
-        paraPen = list(b0 = list(diag(1))),
         # chunk.size = 5e3,
         discrete = max.discrete.bins,
         nthreads = n.threads,
