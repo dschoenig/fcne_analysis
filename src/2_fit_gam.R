@@ -21,7 +21,7 @@ if(!dir.exists(path.gam))
 file.data.proc <- paste0(path.data.proc, model.reg, ".data.fit.proc.rds")
 model.name <- paste0(model.reg, ".m", model.id)
 
-k.reg <- list(cam = c(ten_loc.bl = 2000,
+k.reg <- list(cam = c(ten_loc.bl = 2500,
                       ten_loc.itpa = 1000,
                       ten_loc.ov = 500,
                       som = 1000),
@@ -137,34 +137,6 @@ if(model.id == 3) {
         select = TRUE,
         paraPen = list(b0 = list(diag(1))),
         # chunk.size = 5e3,
-        discrete = max.discrete.bins,
-        nthreads = n.threads,
-        control = gam.control(trace = TRUE, epsilon = conv.eps)
-        )
-}
-
-
-if(model.id == 5) {
-  model <-
-    bam(forestloss ~
-        s(ed_east, ed_north, bs = 'gp',
-          k = k.def["ten_loc.bl"],
-          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = it_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = pa_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = overlap, k = k.def["ten_loc.ov"],
-          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
-        family = binomial(link = "logit"),
-        data = data.mod,
-        select = TRUE,
-        chunk.size = 5e3,
         discrete = max.discrete.bins,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
