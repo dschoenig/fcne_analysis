@@ -29,8 +29,16 @@ k.reg <- list(cam = c(ten_loc.bl = 3000,
                       ten_loc.itpa = 1000,
                       ten_loc.ov = 1000,
                       som = 1000))
-max.knots.reg <- list(cam = c(k.reg$cam[1:3] * 10, som = 10000),
-                      amz = c(k.reg$amz[1:3] * 10, som = 10000))
+max.knots.reg <- list(cam = c(ten_loc.bl = 2e4,
+                              ten_loc.itpa = 2e4,
+                              ten_loc.ov = 2e4,
+                              som = 2e4),
+                      amz = c(ten_loc.bl = 2e4,
+                              ten_loc.itpa = 2e4,
+                              ten_loc.ov = 2e4,
+                              som = 2e4))
+# max.knots.reg <- list(cam = c(k.reg$cam[1:3] * 10, som = 10000),
+#                       amz = c(k.reg$amz[1:3] * 10, som = 10000))
 
 # Fitting parameters
 conv.eps <- 1e-7 # Default is 1e-7
@@ -135,7 +143,6 @@ if(model.id == 3) {
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
-        # chunk.size = 5e3,
         discrete = max.discrete.bins,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
@@ -144,7 +151,6 @@ if(model.id == 3) {
 
 if(model.id == 4) {
   k.def[1] <- 5000
-  max.knots.def[1] <- 50000
   model <-
     bam(forestloss ~
         s(ed_east, ed_north, bs = 'gp',
@@ -164,7 +170,6 @@ if(model.id == 4) {
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
-        # chunk.size = 5e3,
         discrete = max.discrete.bins,
         nthreads = n.threads,
         control = gam.control(trace = TRUE, epsilon = conv.eps)
