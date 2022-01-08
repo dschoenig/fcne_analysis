@@ -142,6 +142,35 @@ if(model.id == 3) {
         )
 }
 
+if(model.id == 4) {
+  k.def[1] <- 5000
+  max.knots.def[1] <- 50000
+  model <-
+    bam(forestloss ~
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def["ten_loc.bl"],
+          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def["ten_loc.ov"],
+          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
+        family = binomial(link = "logit"),
+        data = data.mod,
+        select = TRUE,
+        # chunk.size = 5e3,
+        discrete = max.discrete.bins,
+        nthreads = n.threads,
+        control = gam.control(trace = TRUE, epsilon = conv.eps)
+        )
+}
+
 b <- Sys.time()
 b - a
 
