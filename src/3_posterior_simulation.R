@@ -22,7 +22,6 @@ file.post <- paste0(path.gam, region, ".m3.post.rds")
 # Load model
 model <- readRDS(file.model)
 
-
 # Posterior draws
 set.seed(seed)
 post <- rmvn(1000,
