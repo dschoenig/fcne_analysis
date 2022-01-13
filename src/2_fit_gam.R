@@ -13,7 +13,11 @@ path.gam <- "../models/gam/"
 
 model.reg <- tolower(as.character(args[1]))
 model.id <- as.integer(args[2])
-n.threads <- ifelse(length(args) < 3, c(2,1), as.integer(args[3]))
+if(length(args) < 3) {
+  n.threads <- c(2,1)
+} else {
+  n.threads <- as.integer(args[3])
+}
 
 if(!dir.exists(path.gam))
   dir.create(path.gam, recursive = TRUE)
@@ -59,10 +63,9 @@ k.def <- k.reg[[model.reg]]
 max.knots.def <- max.knots.reg[[model.reg]]
 
 # # FOR TESTING ONLY:
-# k.def = k.def / 10
+# k.def = k.def / 100
 # max.knots.def = max.knots.def / 10
 # data.mod <- data.mod[1:1e5,]
-
 
 print(paste0("Fitting model `", model.name, "` …"))
 
