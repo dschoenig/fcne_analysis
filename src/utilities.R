@@ -567,11 +567,11 @@ evaluate_posterior <-
   }
 }
 
-summarize_predictions <- function(predictions, ...) {
-  UseMethod("summarize_predictions", predictions)
+aggregate_variables <- function(predictions, ...) {
+  UseMethod("aggregate_variables", predictions)
 }
 
-summarize_predictions.draws_matrix <- 
+aggregate_variables.draws_matrix <- 
   function(predictions,
            fun = mean,
            ids = NULL,
@@ -598,9 +598,11 @@ summarize_predictions.draws_matrix <-
     ids <- list(1:ncol(predictions))
   }
   draw.chunks <- chunk_seq(1, length(draw.ids), draw.chunk)
-  if(is.null(agg.size)) {
+  if(is.null(agg.size))
     agg.size <- min(unlist(lapply(ids, length)))
-  }
+  # n.obs <- sum(unlist(lapply(ids, length)))
+  # if(agg.size > n.obs)
+  #   agg.size <- n.obs
   id.col <- "id"
   draw.column <- "draw"
   value.column <- "eta"
@@ -620,18 +622,17 @@ summarize_predictions.draws_matrix <-
   single.ids <- ids.dt[aggregate == FALSE, group.id]
   predictions.summarized <- matrix(NA, nrow = length(draw.ids), ncol = length(ids))
   dimnames(predictions.summarized)[1:2] <- list(draw.ids, ids.dt$group.label)
-  predictions <- as_draws_df(predictions)
-  setDT(predictions)
+  predictions <- as.data.table(as_draws_df(predictions))
   exclude.vars <- c(".iteration", ".chain")
   predictions <-
     predictions[,!..exclude.vars] |>
     melt(id.vars = ".draw", variable.name = id.col, value.name = value.column)
-  predictions[, (draw.column) := as.factor(.draw)][,-".draw"]
+  predictions <- predictions[, (draw.column) := as.factor(.draw)][,-".draw"]
   setkeyv(predictions, id.col)
   if(!is.null(clamp)) {
     clamp.cond.l <- parse(text = paste(value.column, "< clamp[1]"))
     clamp.cond.u <- parse(text = paste(value.column, "> clamp[2]"))
-    predictions.[eval(clamp.cond.l) | eval(clamp.cond.u),
+    predictions[eval(clamp.cond.l) | eval(clamp.cond.u),
                  (value.column) := fcase(eval(clamp.cond.l), clamp[1],
                                          eval(clamp.cond.u), clamp[2])]
   }
@@ -663,18 +664,23 @@ summarize_predictions.draws_matrix <-
       match.ids.groups <- 
         ids.dt[agg.id == agg.ids[k]][,lapply(.SD, unlist), .SDcols = "ids", by = "group.id" ] |>
         setnames("ids", id.col)
+      if(is.factor(predictions[[id.col]]))
+        match.ids.groups[[id.col]] <- factor(as.character(match.ids.groups[[id.col]]))
+      if(is.character(predictions[[id.col]]))
+        match.ids.groups[[id.col]] <- as.character(match.ids.groups[[id.col]])
       ids.sum <- unique(match.ids.groups$id)
       chunk.summarized <-
-        merge(predictions.pulled[eval(id.cond)],
+        merge(predictions[eval(id.cond)],
               match.ids.groups,
-              by = id.col)[,
-                         .(val = eval(fun.cond)),
-                         by = c(draw.column, "group.id")
-                         ][eval(order.cond)] |>
+              by = "id",
+              allow.cartesian = TRUE)[,
+                                      .(val = eval(fun.cond)),
+                                      by = c(draw.column, "group.id")
+                                      ][eval(order.cond)] |>
         dcast(draw ~ group.id, value.var = "val")
-      group.cols <- as.integer(names(chunk.summarized[,-draw.column]))
+      group.cols <- as.integer(names(chunk.summarized[,-..draw.column]))
       draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
-      predictions.summarized[draw.cols, group.cols] <- as.matrix(chunk.summarized[, -draw.column])
+      predictions.summarized[draw.cols, group.cols] <- as.matrix(chunk.summarized[, -..draw.column])
       if(progress) {
         prog.counter <- prog.counter + sum(ids.dt[agg.id == agg.ids[k], N])
         setTxtProgressBar(prog, prog.counter)
@@ -689,7 +695,7 @@ summarize_predictions.draws_matrix <-
 }
 
 
-summarize_predictions.FileSystemDataset <- 
+aggregate_variables.FileSystemDataset <- 
   function(predictions,
            fun = mean,
            ids = NULL,
@@ -791,18 +797,23 @@ summarize_predictions.FileSystemDataset <-
       match.ids.groups <- 
         ids.dt[agg.id == agg.ids[k]][,lapply(.SD, unlist), .SDcols = "ids", by = "group.id" ] |>
         setnames("ids", id.col)
+      if(is.factor(predictions[[id.col]]))
+        match.ids.groups[[id.col]] <- factor(as.character(match.ids.groups[[id.col]]))
+      if(is.character(predictions[[id.col]]))
+        match.ids.groups[[id.col]] <- as.character(match.ids.groups[[id.col]])
       ids.sum <- unique(match.ids.groups$id)
       chunk.summarized <-
         merge(predictions.pulled[eval(id.cond)],
               match.ids.groups,
-              by = id.col)[,
-                         .(val = eval(fun.cond)),
-                         by = c(draw.column, "group.id")
-                         ][eval(order.cond)] |>
+              by = id.col,
+              allow.cartesian = TRUE)[,
+                                      .(val = eval(fun.cond)),
+                                      by = c(draw.column, "group.id")
+                                      ][eval(order.cond)] |>
         dcast(cast.form, value.var = "val")
-      group.cols <- as.integer(names(chunk.summarized[,-draw.column]))
+      group.cols <- as.integer(names(chunk.summarized[,-..draw.column]))
       draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
-      predictions.summarized[draw.cols, group.cols] <- as.matrix(chunk.summarized[, -draw.column])
+      predictions.summarized[draw.cols, group.cols] <- as.matrix(chunk.summarized[, -..draw.column])
       if(progress) {
         prog.counter <- prog.counter + sum(ids.dt[agg.id == agg.ids[k], N])
         setTxtProgressBar(prog, prog.counter)
@@ -899,7 +910,7 @@ summarize_predictions_by <-
 }
 
 
-bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, append = FALSE) {
+bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, bin.names = NULL, append = FALSE) {
   bins.l <- list()
   for (i in 1:length(columns)) {
     if(is.null(bin.min)) {
@@ -908,12 +919,12 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, appen
       c.min <- bin.min[i]
     }
     c.max <- max(data[[columns[i]]])
-    if (is.null(round)) {
+    if(is.null(bin.round)) {
       b.lower <- c.min - bin.res[i]
       b.upper <- c.max + bin.res[i]
     } else {
-      b.lower <- round(c.min, round) - bin.res[i]
-      b.upper <- round(c.max, round) + bin.res[i]
+      b.lower <- round(c.min, bin.round) - bin.res[i]
+      b.upper <- round(c.max, bin.round) + bin.res[i]
     }
     b.breaks <- seq(from = b.lower, 
                     to =  b.upper, 
@@ -922,8 +933,16 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, round = NULL, appen
     cuts <- cut(data[[columns[i]]], breaks = b.breaks, labels = FALSE)
     bins.l[[i]] <- b.center[cuts]
   }
-  names(bins.l) <- paste0(columns, ".bin")
-  return(bins.l)
+  if(is.null(bin.names)) {
+    names(bins.l) <- paste0(columns, ".bin")
+  } else {
+    names(bins.l) <- bin.names
+  }
+  if(append) {
+    data.binned <- cbind(data, do.call(cbind, bins.l))
+  } else {
+    return(bins.l)
+  }
 }
 
 # SOM UTILITIES ################################################################
