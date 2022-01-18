@@ -171,7 +171,6 @@ if(model.id == 4) {
           by = overlap, k = k.def["ten_loc.ov"],
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
         # Tenure effects, discontinuous
-        s(adm0, bs = "re") +
         s(adm0, it_type, bs = "re") +
         s(adm0, pa_type, bs = "re") +
         s(adm0, it_type, pa_type, bs = "re") +
