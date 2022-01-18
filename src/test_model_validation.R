@@ -29,10 +29,10 @@ n.postsam <- 1000
 predict.chunk <- 500
 post.chunk <- 200
 
-# Testing
-n.postsam <- 100
-predict.chunk <- 50000
-post.chunk <- 100
+# # Testing
+# n.postsam <- 100
+# predict.chunk <- 50000
+# post.chunk <- 100
 
 n.threads <- 1
 
