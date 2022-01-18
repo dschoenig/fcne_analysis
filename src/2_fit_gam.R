@@ -130,6 +130,7 @@ if(model.id == 2) {
 if(model.id == 3) {
   model <-
     bam(forestloss ~
+        # Tenure effects, continuous variation over geographic location
         s(ed_east, ed_north, bs = 'gp',
           k = k.def["ten_loc.bl"],
           xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
@@ -142,40 +143,14 @@ if(model.id == 3) {
         s(ed_east, ed_north, bs = 'gp',
           by = overlap, k = k.def["ten_loc.ov"],
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
-        family = binomial(link = "logit"),
-        data = data.mod,
-        select = TRUE,
-        discrete = max.discrete.bins,
-        nthreads = n.threads,
-        control = gam.control(trace = TRUE, epsilon = conv.eps)
-        )
-}
-
-
-if(model.id == 4) {
-  model <-
-    bam(forestloss ~
-        # Tenure effects, continuous
-        s(ed_east, ed_north, bs = 'gp',
-          k = k.def["ten_loc.bl"],
-          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = it_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = pa_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = overlap, k = k.def["ten_loc.ov"],
-          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        # Tenure effects, discontinuous
+        # Tenure effects, discontinuous variations between countries
         s(adm0, it_type, bs = "re") +
         s(adm0, pa_type, bs = "re") +
         s(adm0, it_type, pa_type, bs = "re") +
+        # Covariates
         s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
+          by = adm0, k = k.def["som"],
+          xt = list(max.knots = max.knots.def["som"])),
         family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
@@ -184,43 +159,6 @@ if(model.id == 4) {
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
 }
-
-
-if(model.id == 5) {
-  model <-
-    bam(forestloss ~
-        # Tenure effects, continuous spatial variation
-        s(ed_east, ed_north, bs = 'gp',
-          k = k.def["ten_loc.bl"],
-          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = it_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = pa_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = overlap, k = k.def["ten_loc.ov"],
-          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        # Tenure effects, discontinuous between-country variation
-        s(it_type, bs = "re") +
-        s(pa_type, bs = "re") +
-        s(it_type, pa_type, bs = "re") +
-        s(adm0, bs = "re") +
-        s(adm0, it_type, bs = "re") +
-        s(adm0, pa_type, bs = "re") +
-        s(adm0, it_type, pa_type, bs = "re") +
-        s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def["som"], xt = list(max.knots = max.knots.def["som"])),
-        family = binomial(link = "logit"),
-        data = data.mod,
-        select = TRUE,
-        discrete = max.discrete.bins,
-        nthreads = n.threads,
-        control = gam.control(trace = TRUE, epsilon = conv.eps)
-        )
-}
-
 
 
 b <- Sys.time()
