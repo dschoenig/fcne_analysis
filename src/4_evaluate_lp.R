@@ -19,13 +19,7 @@ task_count <- as.integer(args[3])
 
 file.gam <- paste0(path.gam, region, ".m3.rds")
 file.post <- paste0(path.gam, region,  ".m3.post.rds")
-file.data <- paste0(path.data.proc, region, ".data.proc.rds")
-
-path.out.full <-  paste0(path.lp, region, ".lp/marginal=full/")
-path.out.ten_loc <-  paste0(path.lp, region, ".lp/marginal=ten_loc/")
-
-file.out.full <- paste0(path.out.full, region, ".lp-", task_id, ".arrow")
-file.out.ten_loc <- paste0(path.out.ten_loc, region, ".lp-", task_id, ".arrow")
+file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 
 ## EVALUATE LINEAR PREDICTOR BASED ON DRAWS FROM MODEL POSTERIOR ###############
 
@@ -39,7 +33,6 @@ data.pred <- as.data.frame(data[,
                                 .(id, forestloss, it_type, pa_type, overlap,
                                   som_x, som_y, ed_east, ed_north, adm0)
                                 ])
-data.pred$b0 <- model.matrix(~ 1, data.pred)
 rm(data)
 
 # Construct chunk overview
@@ -56,13 +49,11 @@ b.cov <- grep("s(som_x,som_y)", b.names, fixed = TRUE)
 post.marginals <- list(full = b.full,
                        ten_loc = b.full[!b.full %in% b.cov])
 
-
-cat("Evaluating the linear predictor for model ", region, ".m3, ",
-     "using draws from the  posterior distribution.\n", sep = "")
-cat("Processing rows ", row.chunks$from[task_id],
-    " to ", row.chunks$to[task_id],
-    " (chunk ", task_id, " / ", task_count, "):\n",
-    sep = "")
+message(paste0("Evaluating the linear predictor for model ", region, ".m3, ",
+        "using draws from the  posterior distribution.\n"))
+message(paste0("Processing rows ", row.chunks$from[task_id],
+        " to ", row.chunks$to[task_id],
+        " (chunk ", task_id, " / ", task_count, "):\n"))
 
 # Evaluate posterior, calculate linear predictor
 a <- Sys.time()
@@ -73,11 +64,13 @@ lp <-
                      id.col = "id",
                      marginals = post.marginals,
                      predict.chunk = 500,
+                     # predict.chunk = 50000,
                      post.chunk = 200,
                      type = "link",
                      progress = TRUE)
 b <- Sys.time()
 b-a
+
 
 # Prepare export
 lp.dt <-
@@ -93,9 +86,19 @@ lp.dt <-
 
 # Export
 
-if(!dir.exists(paste0(path.lp, region, ".lp"))) {
-  dir.create(paste0(path.lp, region, ".lp"), recursive = TRUE)
-}
-write_feather(lp.dt[marginal == "full"], file.out.full)
-write_feather(lp.dt[marginal == "ten_loc"], file.out.ten_loc)
+paths.marginals <- paste0(path.lp, region, ".lp/marginal=", names(post.marginals), "/")
 
+for(i in seq_along(paths.marginals)) {
+  if(!dir.exists(paths.marginals[i])) {
+    dir.create(paths.marginals[i], recursive = TRUE)
+  }
+}
+
+for(i in seq_along(paths.marginals)) {
+  name.marginal <- names(post.marginals)[i]
+  file.out <- paste0(paths.marginals[i], region, ".lp-", task_id, ".arrow")
+  message(paste0("Writing output for marginal `", name.marginal,
+                 "` to `", file.out, "` …"))
+  write_feather(lp.dt[marginal == name.marginal, .(id, draw, eta)],
+                file.out)
+}

@@ -27,16 +27,6 @@ marginals <- c("full","ten_loc")
 draw.ids <- as.character(1:1000)
 # draw.ids <- as.character(1:100)
 
-if(region == "amz") {
-  adm.it_rec <- c("BOL", "BRA", "COL", "ECU", "GUF", "GUY", "PER", "VEN")
-  adm.it_not_rec <- c("BOL", "ECU", "GUF", "GUY", "PER", "SUR", "VEN")
-}
-if(region == "cam") {
-  adm.it_rec <- c("CRI", "MEX", "NIC", "PAN")
-  adm.it_not_rec <- c("BLZ", "CRI", "GTM", "HND", "NIC", "PAN", "SLV")
-}
-
-
 message("Aggregating observations …")
 data.proc <- readRDS(paste0(path.data.proc, region, ".data.proc.rds"))
 
@@ -46,7 +36,7 @@ data.eff <- data.proc[(pa_type %in% levels(pa_type)) |
                       (it_type == "not_recognized" & it_type %in% adm.it_not_rec)]
 rm(data.proc)
 
-n.min <- 50
+n.min <- 1
 groups.bl <-
   data.eff[it_type == "none" & pa_type == "none"] |>
   ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
@@ -102,16 +92,17 @@ for(i in seq_along(marginals)) {
   message(paste0("Evaluating effects for region `", region,
                    "` over marginal `", marginals[i], "` (",
                    length(draw.ids), " draws) …"))
-  effects[[i]] <- summarize_predictions(ds,
-                                   ids = id.list,
-                                   draw.ids = draw.ids,
-                                   draw.chunk = 100,
-                                   clamp = link_cll(c(.Machine$double.eps, 1-.Machine$double.eps)),
-                                   n.threads = n.threads
-                                   )
+  effects[[i]] <- aggregate_variables(ds,
+                                      ids = id.list,
+                                      draw.ids = draw.ids,
+                                      draw.chunk = 100,
+                                      agg.size = 1e5,
+                                      n.threads = n.threads
+                                      )
 }
 names(effects) <- marginals
 effects$groups <- groups
 
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(effects, file.effects)
+

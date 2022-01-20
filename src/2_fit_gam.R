@@ -67,7 +67,7 @@ max.knots.def <- max.knots.reg[[model.reg]]
 # max.knots.def = max.knots.def / 10
 # data.mod <- data.mod[1:1e5,]
 
-print(paste0("Fitting model `", model.name, "` …"))
+message(paste0("Fitting model `", model.name, "` …"))
 
 a <- Sys.time()
 

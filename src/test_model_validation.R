@@ -48,7 +48,7 @@ data.val <- readRDS(file.data.val)
 # Data for simulation
 
 # Set 1: random points, from data used for fitting
-s1.dat <- data.fit[sample(1:nrow(data.fit), 1e5),]
+s1.dat <- data.fit[1:1e5,]
 
 # Set 2: random points, from data not used for fitting
 s2.dat <- data.val[1:1e5,]
@@ -116,6 +116,14 @@ saveRDS(pred.val, paste0(path.pred, "pred.val.rds"))
 
 rm(gam)
 
+# pred.fit <- readRDS(paste0(path.pred, "pred.fit.rds"))
+# pred.val <- readRDS(paste0(path.pred, "pred.val.rds"))
+# s2.dat <- data.val[id %in% colnames(pred.val)]
+
+# path.pred <- paste0(path.base, "models/gam/ppc/cam1e5/previous/")
+# pred.fit <- readRDS(paste0(path.pred, "pred.fit.rds"))
+# pred.val <- readRDS(paste0(path.pred, "pred.val.rds"))
+
 yrep.fit <- as_draws_matrix(apply(pred.fit, 2, \(x) rbinom(length(x), 1, x)))
 yrep.val <- as_draws_matrix(apply(pred.val, 2, \(x) rbinom(length(x), 1, x)))
 
@@ -174,10 +182,7 @@ for(i in seq_along(id.list)) {
 }
 names(yobs.g1.prop) <- names(id.list)
 
-
 n.bins <- 25
-
-
 
 pdf(paste0(path.pdf, "ppc_s1.pdf"), 11, 8.5)
 sel.g <- which(is.na(g1.fit$adm0))
@@ -321,5 +326,37 @@ pp <- ppc_stat_grouped(yobs.g3.prop,
                  stat = "identity",
                  binwidth = \(x) abs(max(x) - min(x)) / n.bins) +
   guides(fill = guide_legend(order = 1, title = bquote(italic(T) == "prop")))
+print(pp)
+dev.off()
+
+
+
+# Test 4: Difference between tenure categories #################################
+
+# Study region
+sel.g <- which(is.na(g2.val$adm0))
+yrep.g4.rr <- rr(yrep.g2.prop[,sel.g], "it_type.none:pa_type.none") - 1
+
+summary(yrep.g4.rr)
+
+id.list <- g2.val[is.na(adm0), ids]
+names(id.list) <- g2.val[is.na(adm0), group.label]
+
+yobs.g4.rr <- NA
+for(i in seq_along(id.list)) {
+  yobs.g4.rr[i] <- data.val[id %in% id.list[[i]], mean(forestloss)]
+}
+names(yobs.g4.rr) <- names(id.list)
+yobs.g4.rr <- (yobs.g4.rr / yobs.g4.rr["it_type.none:pa_type.none"]) - 1
+
+n.bins <- 25
+
+pdf(paste0(path.pdf, "ppc_s4.pdf"), 11, 8.5)
+pp <- ppc_stat_grouped(yobs.g4.rr,
+                 yrep.g4.rr,
+                 as.factor(g2.val[is.na(adm0), group.label]),
+                 stat = "identity") +
+                 # binwidth = \(x) abs(max(x) - min(x)) / n.bins) +
+  guides(fill = guide_legend(order = 1, title = bquote(italic(T) == "RR")))
 print(pp)
 dev.off()
