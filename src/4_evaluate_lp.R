@@ -50,7 +50,7 @@ post.marginals <- list(full = b.full,
                        ten_loc = b.full[!b.full %in% b.cov])
 
 message(paste0("Evaluating the linear predictor for model ", region, ".m3, ",
-        "using draws from the  posterior distribution.\n"))
+        "using draws from the posterior distribution.\n"))
 message(paste0("Processing rows ", row.chunks$from[task_id],
         " to ", row.chunks$to[task_id],
         " (chunk ", task_id, " / ", task_count, "):\n"))

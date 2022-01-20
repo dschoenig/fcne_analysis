@@ -797,9 +797,9 @@ aggregate_variables.FileSystemDataset <-
       match.ids.groups <- 
         ids.dt[agg.id == agg.ids[k]][,lapply(.SD, unlist), .SDcols = "ids", by = "group.id" ] |>
         setnames("ids", id.col)
-      if(is.factor(predictions[[id.col]]))
+      if(is.factor(predictions.pulled[[id.col]]))
         match.ids.groups[[id.col]] <- factor(as.character(match.ids.groups[[id.col]]))
-      if(is.character(predictions[[id.col]]))
+      if(is.character(predictions.pulled[[id.col]]))
         match.ids.groups[[id.col]] <- as.character(match.ids.groups[[id.col]])
       ids.sum <- unique(match.ids.groups$id)
       chunk.summarized <-

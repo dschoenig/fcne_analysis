@@ -3,6 +3,6 @@ log/
 models/
 tmp/
 src/scratch.R
-session.vim
+session*.vim
 **/slurm*
 
