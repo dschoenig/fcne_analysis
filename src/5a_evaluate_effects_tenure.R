@@ -98,7 +98,7 @@ for(i in seq_along(marginals)) {
                                           draw.ids = draw.ids,
                                           draw.chunk = 100,
                                           # draw.chunk = 1000,
-                                          agg.size = 1e6,
+                                          agg.size = 1e5,
                                           n.threads = n.threads
                                           )
 }
@@ -107,4 +107,3 @@ effects.mar$groups <- groups
 
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(effects.mar, file.effects)
-
