@@ -29,6 +29,7 @@ post <- readRDS(file.post)
 data <- readRDS(file.data)
 
 # Recalculate failed chunks
+task_count <- 200
 task_id.change <- c(136, 148, 150, 152, 190, 191)
 task_id <- task_id.change[task_id]
 
