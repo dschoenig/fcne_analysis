@@ -28,6 +28,10 @@ gam <- readRDS(file.gam)
 post <- readRDS(file.post)
 data <- readRDS(file.data)
 
+# Recalculate failed chunks
+task_id.change <- c(136, 148, 150, 152, 190, 191)
+task_id <- task_id.change[task_id]
+
 # Data for prediction
 data.pred <- as.data.frame(data[, 
                                 .(id, forestloss, it_type, pa_type, overlap,
