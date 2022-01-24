@@ -740,8 +740,8 @@ aggregate_variables.FileSystemDataset <-
     agg.size <- min(unlist(lapply(ids, length)))
   }
   ids.dt <- data.table(group.label = names(ids), group.id = 1:length(ids), ids = ids)[order(group.id)]
-  ids.dt[,N:=unname(unlist(lapply(ids, length)))]
-  ids.dt[order(-N),Nc:=cumsum(N)]
+  ids.dt[,N := as.numeric(unname(unlist(lapply(ids, length))))]
+  ids.dt[order(-N), Nc := cumsum(N)]
   ids.dt[,
       `:=`(aggregate = ifelse(N < agg.size, TRUE, FALSE))
       ][aggregate == TRUE, 
@@ -751,7 +751,8 @@ aggregate_variables.FileSystemDataset <-
   predictions.summarized <- matrix(NA, nrow = length(draw.ids), ncol = length(ids))
   dimnames(predictions.summarized)[1:2] <- list(draw.ids, ids.dt$group.label)
   if(progress) {
-    prog <- txtProgressBar(min = 0, max = max(ids.dt$Nc) * length(draw.chunks$from), initial = 0,
+    prog <- txtProgressBar(min = 0, max = max(ids.dt$Nc) * as.numeric(length(draw.chunks$from)),
+                           initial = 0,
                            char = "=", width = NA, title = "Progress", style = 3)
     prog.counter <- 0
   }
