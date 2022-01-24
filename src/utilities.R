@@ -650,10 +650,13 @@ aggregate_variables.draws_matrix <-
                     ][id %in% ids.sum,
                       .(val = eval(fun.cond)),
                       by = draw.column][,val]
+
       if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
-        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- chunk.summarized
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i],
+                               single.ids[j]] <- chunk.summarized
       } else {
-        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- NA
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i],
+                               single.ids[j]] <- NA
       }
       if(progress) {
         prog.counter <- prog.counter + ids.dt[group.id == single.ids[j], N]
@@ -782,9 +785,10 @@ aggregate_variables.FileSystemDataset <-
                            .(val = eval(fun.cond)),
                            by = draw.column][,val]
       if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
-        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- chunk.summarized
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i],
+                               single.ids[j]] <- chunk.summarized
       } else {
-        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], j] <- NA
+        predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i], single.ids[j]] <- NA
       }
       if(progress) {
         prog.counter <- prog.counter + ids.dt[group.id == single.ids[j], N]
@@ -801,7 +805,7 @@ aggregate_variables.FileSystemDataset <-
         match.ids.groups[[id.col]] <- factor(as.character(match.ids.groups[[id.col]]))
       if(is.character(predictions.pulled[[id.col]]))
         match.ids.groups[[id.col]] <- as.character(match.ids.groups[[id.col]])
-      ids.sum <- unique(match.ids.groups$id)
+      ids.sum <- unique(match.ids.groups[id %in% unique(predictions.pulled$id), id])
       chunk.summarized <-
         merge(predictions.pulled[eval(id.cond)],
               match.ids.groups,
@@ -811,7 +815,7 @@ aggregate_variables.FileSystemDataset <-
                                       by = c(draw.column, "group.id")
                                       ][eval(order.cond)] |>
         dcast(cast.form, value.var = "val")
-      group.cols <- as.integer(names(chunk.summarized[,-..draw.column]))
+      group.cols <- as.integer(colnames(chunk.summarized[,-..draw.column]))
       draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
       predictions.summarized[draw.cols, group.cols] <- as.matrix(chunk.summarized[, -..draw.column])
       if(progress) {
