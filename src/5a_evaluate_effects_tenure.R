@@ -4,11 +4,11 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-region <- "cam"
-n.threads <- 4
+# region <- "cam"
+# n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-path.base <- "../"
+# path.base <- "../"
 path.lp <- paste0(path.base, "models/gam/lp/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
@@ -30,7 +30,7 @@ draw.ids <- as.character(1:1000)
 message("Aggregating observations …")
 data.proc <- readRDS(file.data)
 
-data.proc <- data.proc[1:1e5,]
+# data.proc <- data.proc[1:1e5,]
 
 n.min <- 1
 groups.bl <-
