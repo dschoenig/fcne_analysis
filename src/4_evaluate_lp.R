@@ -3,12 +3,13 @@ args <- commandArgs(trailingOnly = TRUE)
 library(mgcv)
 library(data.table)
 library(posterior)
+library(stringi)
 library(arrow)
 
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.lp <- paste0(path.base, "models/gam/lp/")
@@ -27,11 +28,6 @@ file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 gam <- readRDS(file.gam)
 post <- readRDS(file.post)
 data <- readRDS(file.data)
-
-# Recalculate failed chunks
-task_count <- 200
-task_id.change <- c(136, 148, 150, 152, 190, 191)
-task_id <- task_id.change[task_id]
 
 # Data for prediction
 data.pred <- as.data.frame(data[, 
@@ -101,7 +97,8 @@ for(i in seq_along(paths.marginals)) {
 
 for(i in seq_along(paths.marginals)) {
   name.marginal <- names(post.marginals)[i]
-  file.out <- paste0(paths.marginals[i], region, ".lp-", task_id, ".arrow")
+  file.out <- paste0(paths.marginals[i], region, ".lp-",
+                     stri_pad_left(task_id, 3, 0) , ".arrow")
   message(paste0("Writing output for marginal `", name.marginal,
                  "` to `", file.out, "` …"))
   write_feather(lp.dt[marginal == name.marginal, .(id, draw, eta)],
