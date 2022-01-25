@@ -50,7 +50,7 @@ groups.pa <-
   ids_by_group(id.col = "id", group.vars = c("pa_type")) |>
   subset(n >= n.min)
 groups.it_pa <-
-  data.proc[it_type != "none" & pa_type != "none"] |>
+  data.proc[it_type != "none" | pa_type != "none"] |>
   ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
   subset(n >= n.min)
 groups.adm_it <-
@@ -62,7 +62,7 @@ groups.adm_pa <-
   ids_by_group(id.col = "id", group.vars = c("adm0", "pa_type")) |>
   subset(n >= n.min)
 groups.adm_it_pa <-
-  data.proc[it_type != "none" & pa_type != "none"] |>
+  data.proc[it_type != "none" | pa_type != "none"] |>
   ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
   subset(n >= n.min)
 
@@ -98,7 +98,7 @@ for(i in seq_along(marginals)) {
                                           draw.ids = draw.ids,
                                           draw.chunk = 100,
                                           # draw.chunk = 1000,
-                                          agg.size = 1e5,
+                                          agg.size = 1e6,
                                           n.threads = n.threads
                                           )
 }
