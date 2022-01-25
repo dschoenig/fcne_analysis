@@ -25,7 +25,7 @@ setDTthreads(n.threads)
 
 map_res <- switch(region,
                   amz = 5000,
-                  cam = 1000)
+                  cam = 2500)
 
 marginals <- c("full","ten_loc")
 draw.ids <- as.character(1:1000)
@@ -62,7 +62,7 @@ for(i in seq_along(marginals)) {
                                           draw.ids = draw.ids,
                                           draw.chunk = 100,
                                           # draw.chunk = 1000,
-                                          agg.size = 1e6,
+                                          agg.size = 5e6,
                                           n.threads = n.threads
                                           )
 }
