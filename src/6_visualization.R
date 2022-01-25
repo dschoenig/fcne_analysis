@@ -37,9 +37,18 @@ map_ylim <- list(cam = c(-90e4, 80e4))
 
 
 ## DATA PREPARATION
-loc.means <- readRDS("../models/gam/cam.m3.fitted.rds")
 
-data.fit <- readRDS(file.data)
+effects.tenure <- readRDS(file.effects.tenure)
+
+selg <- effects.tenure$groups[is.na(adm0) & n > 10000, group.id]
+
+selg <- c(1, effects.tenure$groups[adm0 == "SLV", group.id])
+
+selg <- c(1, effects.tenure$groups[it_type == "recognized", group.id])
+
+selg <- c(1, effects.tenure$groups[!is.na(adm0) & it_type == "recognized", group.id])
+
+summary(rrc(effects.tenure[[1]][,selg], "it_type.none:pa_type.none"), mean, median, sd)
 
 data.fit[, risk := loc.means]
 risk.bl.reg <- mean(data.fit[it_type == "none" & pa_type == "none", risk])
