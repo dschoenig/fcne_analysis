@@ -9,14 +9,18 @@ library(arrow)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
-path.lp <- paste0(path.base, "models/gam/lp/")
+path.lp <- paste0(path.base, "models/gam/lp/test_eff")
 
-region <- tolower(as.character(args[1]))
-task_id <- as.integer(args[2])
-task_count <- as.integer(args[3])
+# region <- tolower(as.character(args[1]))
+# task_id <- as.integer(args[2])
+# task_count <- as.integer(args[3])
+
+region <- "cam"
+task_id <- 1
+task_count <- 200
 
 file.gam <- paste0(path.gam, region, ".m3.rds")
 file.post <- paste0(path.gam, region,  ".m3.post.rds")
@@ -47,7 +51,9 @@ silence <- gc()
 b.names <- names(coef(gam))
 b.full <- 1:length(b.names)
 b.cov <- grep("s(som_x,som_y)", b.names, fixed = TRUE)
-post.marginals <- list(full = b.full,
+post.marginals <- list(full1 = b.full,
+                       # full2 = b.full,
+                       # full3 = b.full)
                        ten_loc = b.full[!b.full %in% b.cov])
 
 message(paste0("Evaluating the linear predictor for model ", region, ".m3, ",
@@ -55,6 +61,27 @@ message(paste0("Evaluating the linear predictor for model ", region, ".m3, ",
 message(paste0("Processing rows ", row.chunks$from[task_id],
         " to ", row.chunks$to[task_id],
         " (chunk ", task_id, " / ", task_count, "):\n"))
+
+
+data.pred <- data.pred[1:10000,]
+sam1 <- data.pred$id[1:10000]
+sam2 <- data.pred$id[sample(1:10000, 2000)]
+mar.ids <- list(sam1, sam2)
+
+which(data.pred$id %in% sam1)
+
+model = gam
+posterior = post
+newdata = data.pred
+id.col = "id"
+marginals = post.marginals
+mar.ids = mar.ids
+predict.chunk = 500
+post.chunk = 200
+type = "link"
+progress = TRUE
+           obs = NULL
+           coef = NULL
 
 # Evaluate posterior, calculate linear predictor
 a <- Sys.time()
@@ -64,7 +91,25 @@ lp <-
                      newdata = data.pred,
                      id.col = "id",
                      marginals = post.marginals,
-                     predict.chunk = 500,
+                     predict.chunk = 1000,
+                     # predict.chunk = 50000,
+                     post.chunk = 200,
+                     type = "response",
+                     marginal.ids = mar.ids,
+                     progress = TRUE)
+b <- Sys.time()
+b-a
+
+lp
+
+a <- Sys.time()
+lp.old <-
+  evaluate_posterior.old(model = gam,
+                     posterior = post,
+                     newdata = data.pred,
+                     id.col = "id",
+                     marginals = post.marginals,
+                     predict.chunk = 1000,
                      # predict.chunk = 50000,
                      post.chunk = 200,
                      type = "link",
@@ -72,6 +117,10 @@ lp <-
 b <- Sys.time()
 b-a
 
+summary(lp[[1]][,1])
+lp[[2]]
+lp.old[[1]]
+lp.old[[2]]
 
 # Prepare export
 lp.dt <-
