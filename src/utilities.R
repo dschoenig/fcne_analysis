@@ -1373,6 +1373,19 @@ evaluate_embedding <- function(data,
   return(results)
 }
 
+# GAM UTILITIES ################################################################
+
+lookup_smooths <- function(gam) {
+  smooth.lu <- list()
+    for(i in seq_along(gam$smooth)) {
+      smooth.lu[[i]] <-
+        with(gam$smooth[[i]],
+             data.frame(smooth.id = i, label, first.para, last.para))
+    }
+  smooth.lu <- rbindlist(smooth.lu)
+  smooth.lu[, `:=`(para = list(seq(first.para, last.para))), "smooth.id"]
+  return(smooth.lu)
+}
 
 
 #diag_residuals <- function(model, 

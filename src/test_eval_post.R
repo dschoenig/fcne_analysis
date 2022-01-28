@@ -9,18 +9,18 @@ library(arrow)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-path.base <- "../"
+# path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
-path.lp <- paste0(path.base, "models/gam/lp/test_eff")
+path.lp <- paste0(path.base, "models/gam/lp/")
 
-# region <- tolower(as.character(args[1]))
-# task_id <- as.integer(args[2])
-# task_count <- as.integer(args[3])
+region <- tolower(as.character(args[1]))
+task_id <- as.integer(args[2])
+task_count <- as.integer(args[3])
 
-region <- "cam"
-task_id <- 1
-task_count <- 200
+# region <- "cam"
+# task_id <- 1
+# task_count <- 200
 
 file.gam <- paste0(path.gam, region, ".m3.rds")
 file.post <- paste0(path.gam, region,  ".m3.post.rds")
@@ -34,10 +34,8 @@ post <- readRDS(file.post)
 data <- readRDS(file.data)
 
 # Data for prediction
-data.pred <- as.data.frame(data[, 
-                                .(id, forestloss, it_type, pa_type, overlap,
-                                  som_x, som_y, ed_east, ed_north, adm0)
-                                ])
+data.pred <- data[,.(id, forestloss, it_type, pa_type, overlap,
+                     som_x, som_y, ed_east, ed_north, adm0)]
 rm(data)
 
 # Construct chunk overview
@@ -48,13 +46,68 @@ data.pred <- data.pred[row.chunks$from[task_id]:row.chunks$to[task_id],]
 silence <- gc()
 
 # Marginalize posterior over covariate effects
-b.names <- names(coef(gam))
-b.full <- 1:length(b.names)
-b.cov <- grep("s(som_x,som_y)", b.names, fixed = TRUE)
-post.marginals <- list(full1 = b.full,
-                       # full2 = b.full,
-                       # full3 = b.full)
-                       ten_loc = b.full[!b.full %in% b.cov])
+
+# Lookup table for marginals
+
+smooth.lu <- lookup_smooths(gam)
+
+para.cov <- 
+  smooth.lu[grepl("s(som_x,som_y)", label, fixed = TRUE),
+            unlist(para)]
+para.it <- 
+  smooth.lu[grepl("it_type", label, fixed = TRUE) |
+            grepl("overlap", label, fixed = TRUE),
+            unlist(para)]
+para.pa <- 
+  smooth.lu[grepl("pa_type", label, fixed = TRUE) |
+            grepl("overlap", label, fixed = TRUE),
+            unlist(para)]
+para.ov <- 
+  smooth.lu[grepl("it_type", label, fixed = TRUE) |
+            grepl("pa_type", label, fixed = TRUE) |
+            grepl("overlap", label, fixed = TRUE),
+            unlist(para)]
+para.cov_it <- 
+  smooth.lu[
+            grepl("s(som_x,som_y)", label, fixed = TRUE) |
+            grepl("it_type", label, fixed = TRUE) |
+            grepl("overlap", label, fixed = TRUE),
+            unlist(para)]
+para.cov_pa <- 
+  smooth.lu[
+            grepl("s(som_x,som_y)", label, fixed = TRUE) |
+            grepl("pa_type", label, fixed = TRUE) |
+            grepl("overlap", label, fixed = TRUE),
+            unlist(para)]
+para.cov_ov <- 
+  smooth.lu[
+            grepl("s(som_x,som_y)", label, fixed = TRUE) |
+            grepl("it_type", label, fixed = TRUE) |
+            grepl("pa_type", label, fixed = TRUE) |
+            grepl("overlap", label, fixed = TRUE),
+            unlist(para)]
+
+
+# Define marginals
+
+b.full <- 1:length(coef(gam))
+post.marginals <- list(full = b.full,
+                       cov0 = b.full[-para.cov],
+                       it0 = b.full[-para.it],
+                       pa0 = b.full[-para.pa],
+                       ov0 = b.full[-para.ov],
+                       cov0_it0 = b.full[-para.cov_it],
+                       cov0_pa0 = b.full[-para.cov_pa],
+                       cov0_ov0 = b.full[-para.cov_ov])
+
+marginal.ids <- list(full = data.pred[,id],
+                cov0 = data.pred[,id],
+                it0 = data.pred[it_type != "none", id],
+                pa0 = data.pred[pa_type != "none", id],
+                ov0 = data.pred[overlap != "none", id],
+                cov0_it0 = data.pred[it_type != "none", id],
+                cov0_pa0 = data.pred[pa_type != "none", id],
+                cov0_ov0 = data.pred[overlap != "none", id])
 
 message(paste0("Evaluating the linear predictor for model ", region, ".m3, ",
         "using draws from the posterior distribution.\n"))
@@ -62,26 +115,6 @@ message(paste0("Processing rows ", row.chunks$from[task_id],
         " to ", row.chunks$to[task_id],
         " (chunk ", task_id, " / ", task_count, "):\n"))
 
-
-data.pred <- data.pred[1:10000,]
-sam1 <- data.pred$id[1:10000]
-sam2 <- data.pred$id[sample(1:10000, 2000)]
-mar.ids <- list(sam1, sam2)
-
-which(data.pred$id %in% sam1)
-
-model = gam
-posterior = post
-newdata = data.pred
-id.col = "id"
-marginals = post.marginals
-mar.ids = mar.ids
-predict.chunk = 500
-post.chunk = 200
-type = "link"
-progress = TRUE
-           obs = NULL
-           coef = NULL
 
 # Evaluate posterior, calculate linear predictor
 a <- Sys.time()
@@ -91,36 +124,14 @@ lp <-
                      newdata = data.pred,
                      id.col = "id",
                      marginals = post.marginals,
-                     predict.chunk = 1000,
-                     # predict.chunk = 50000,
-                     post.chunk = 200,
-                     type = "response",
-                     marginal.ids = mar.ids,
-                     progress = TRUE)
-b <- Sys.time()
-b-a
-
-lp
-
-a <- Sys.time()
-lp.old <-
-  evaluate_posterior.old(model = gam,
-                     posterior = post,
-                     newdata = data.pred,
-                     id.col = "id",
-                     marginals = post.marginals,
-                     predict.chunk = 1000,
-                     # predict.chunk = 50000,
+                     # predict.chunk = 1000,
+                     predict.chunk = 500,
                      post.chunk = 200,
                      type = "link",
+                     marginal.ids = marginal.ids,
                      progress = TRUE)
 b <- Sys.time()
 b-a
-
-summary(lp[[1]][,1])
-lp[[2]]
-lp.old[[1]]
-lp.old[[2]]
 
 # Prepare export
 lp.dt <-
@@ -128,28 +139,28 @@ lp.dt <-
          FUN = \(x) {y <- as.data.table(t(x))
                      y$id <- colnames(x)
                      return(y)}) |>
-  rbindlist(idcol = "marginal") |>
+  rbindlist(idcol = "partial") |>
   # setcolorder(c("id", "marginal")) |>
-  melt(id.vars = c("id", "marginal"),
+  melt(id.vars = c("id", "partial"),
        variable.name = "draw",
        value.name = "eta")
 
 # Export
 
-paths.marginals <- paste0(path.lp, region, ".lp/marginal=", names(post.marginals), "/")
+paths.partial <- paste0(path.lp, region, ".lp/partial=", names(post.marginals), "/")
 
-for(i in seq_along(paths.marginals)) {
-  if(!dir.exists(paths.marginals[i])) {
-    dir.create(paths.marginals[i], recursive = TRUE)
+for(i in seq_along(paths.partial)) {
+  if(!dir.exists(paths.partial[i])) {
+    dir.create(paths.partial[i], recursive = TRUE)
   }
 }
 
-for(i in seq_along(paths.marginals)) {
-  name.marginal <- names(post.marginals)[i]
-  file.out <- paste0(paths.marginals[i], region, ".lp-",
+for(i in seq_along(paths.partial)) {
+  name.partial <- names(post.marginals)[i]
+  file.out <- paste0(paths.partial[i], region, ".lp-",
                      stri_pad_left(task_id, 3, 0) , ".arrow")
-  message(paste0("Writing output for marginal `", name.marginal,
+  message(paste0("Writing output for (partial) linear predictor `", name.partial,
                  "` to `", file.out, "` …"))
-  write_feather(lp.dt[marginal == name.marginal, .(id, draw, eta)],
+  write_feather(lp.dt[partial == name.partial, .(id, draw, eta)],
                 file.out)
 }
