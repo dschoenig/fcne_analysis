@@ -151,7 +151,7 @@ if(model.id == 3) {
         s(som_x, som_y, bs = 'gp',
           by = adm0, k = k.def["som"],
           xt = list(max.knots = max.knots.def["som"])),
-        family = binomial(link = "logit"),
+        family = binomial(link = "cloglog"),
         data = data.mod,
         select = TRUE,
         discrete = max.discrete.bins,
@@ -184,7 +184,7 @@ if(model.id == 4) {
         s(som_x, som_y, bs = 'gp',
           by = adm0, k = k.def["som"],
           xt = list(max.knots = max.knots.def["som"])),
-        family = binomial(link = "cloglog"),
+        family = binomial(link = "logit"),
         data = data.mod,
         select = TRUE,
         discrete = max.discrete.bins,
@@ -192,6 +192,7 @@ if(model.id == 4) {
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
 }
+
 
 b <- Sys.time()
 b - a
