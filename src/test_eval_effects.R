@@ -103,13 +103,15 @@ system.time({
 effects.partial <- list()
 for(i in seq_along(partial.idx)) {
   name.par <- names(partial.idx)[i]
-  ds <- open_dataset(paste0(path.arrow, "partial=", name.par), format = "arrow")
+  # ds <- open_dataset(paste0(path.arrow, "partial=", name.par), format = "arrow")
+  ds <- open_dataset(paste0(path.arrow, "partial=", name.par,
+                            "/cam.lp-001.arrow"), format = "arrow")
   message(paste0("Evaluating effects for region `", region,
                    "` for (partial) linear predictor `", name.par, "` (",
                    length(draw.ids), " draws) …"))
   effects.partial[[i]] <- aggregate_variables(ds,
                                           agg.fun = E,
-                                          trans.fun = inv_logit,
+                                          trans.fun = inv_cloglog
                                           ids = partial.idx[[i]],
                                           draw.ids = draw.ids,
                                           draw.chunk = 1000,

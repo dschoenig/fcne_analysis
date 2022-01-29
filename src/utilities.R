@@ -9,13 +9,13 @@ require(dplyr, quietly = TRUE)
 # require(patchwork)
 
 
-# cloglog <- function(mu) {
-#   log(-log(1 - mu))
-# }
+cloglog <- function(mu) {
+  log(-log(1 - mu))
+}
 
-# inv_cloglog <- function(eta) {
-#   pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
-# }
+inv_cloglog <- function(eta) {
+  pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
+}
 
 # link_cauchit <- function(mu) {
 #   qcauchy(mu)
