@@ -5,10 +5,10 @@ region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
 region <- "cam"
-n.threads <- 4
+n.threads <- 1
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-path.base <- "../"
+# path.base <- "../"
 path.lp <- paste0(path.base, "models/gam/lp/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
@@ -23,7 +23,7 @@ setDTthreads(n.threads)
 
 ## EVALUATE EFFECTS ############################################################
 
-partial <- c("full","b.it", "b.pa", "b.ov")
+# partial <- c("full","b.it", "b.pa", "b.ov")
 draw.ids <- as.character(1:1000)
 # draw.ids <- as.character(1:100)
 
@@ -81,13 +81,13 @@ rm(data.proc)
 
 
 partial.subset <- list(full = "TRUE",
-                       bl.cov = "TRUE",
-                       bl.it = 'it_type != "none"',
-                       bl.pa = 'pa_type != "none"',
-                       bl.ov = 'it_type != "none" & pa_type != "none"',
-                       bl.cov0_it0 = 'it_type != "none"',
-                       bl.cov0_pa0 = 'pa_type != "none"',
-                       bl.cov0_ov0 = 'it_type != "none" & pa_type != "none"')
+                       cov0 = "TRUE",
+                       it0 = 'it_type != "none"',
+                       pa0 = 'pa_type != "none"',
+                       ov0 = 'it_type != "none" & pa_type != "none"',
+                       cov0_it0 = 'it_type != "none"',
+                       cov0_pa0 = 'pa_type != "none"',
+                       cov0_ov0 = 'it_type != "none" & pa_type != "none"')
 
 partial.idx <- list()
 for(i in seq_along(partial.subset)) {
@@ -124,37 +124,61 @@ for(i in seq_along(partial.idx)) {
 names(effects.partial) <- names(partial.idx)
 effects.partial$groups <- groups
 
-selg <- groups[is.na(adm0), group.label]
-selg <- groups[adm0 == "SLV", group.label]
-
-selg <- groups[is.na(adm0) & it_type != "none", group.label]
-
-summary(effects.partial[[1]][,selg])
-summary(effects.partial[[2]][,selg])
-summary(effects.partial[[3]][,selg])
-summary(effects.partial[[6]][,selg])
-
-
-summary((effects.partial[[1]][,selg] - effects.partial[[3]][,selg]) / effects.partial[[3]][,selg])
-summary((effects.partial[[2]][,selg] - effects.partial[[6]][,selg]) / effects.partial[[6]][,selg])
-
-selg <- groups[is.na(adm0) & pa_type != "none", group.label]
-summary((effects.partial[[1]][,selg] - effects.partial[[4]][,selg]) / effects.partial[[4]][,selg])
-summary((effects.partial[[2]][,selg] - effects.partial[[7]][,selg]) / effects.partial[[7]][,selg])
-
-selg <- groups[pa_type != "none" & it_type != "none", group.label]
-summary((effects.partial[[1]][,selg] - effects.partial[[5]][,selg]) / effects.partial[[5]][,selg])
-summary((effects.partial[[2]][,selg] - effects.partial[[8]][,selg]) / effects.partial[[8]][,selg])
-
-
-summary((effects.partial[[1]] - effects.partial[[2]]) / effects.partial[[2]])
-
-summary(effects.partial[[1]][,selg])
-summary(effects.partial[[2]][,selg])
-
-
-
-
-
 message(paste0("Saving outputs to `", file.effects, "` …"))
-saveRDS(effects.mar, file.effects)
+saveRDS(effects.partial, file.effects)
+
+
+# selg <- groups[is.na(adm0), group.label]
+# selg <- groups[adm0 == "SLV", group.label]
+
+# selg <- groups[is.na(adm0) & it_type != "none", group.label]
+
+# summary(effects.partial[[1]][,selg])
+# summary(effects.partial[[2]][,selg])
+# summary(effects.partial[[3]][,selg])
+# summary(effects.partial[[6]][,selg])
+
+
+# selg <- groups[is.na(adm0) & it_type != "none", group.label]
+# summary((effects.partial[[1]][,selg] - effects.partial[[3]][,selg]) / effects.partial[[3]][,selg],
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+# summary((effects.partial[[2]][,selg] - effects.partial[[6]][,selg]) / effects.partial[[6]][,selg],
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+
+
+# selg <- groups[is.na(adm0) & it_type != "none", group.label]
+# # selg <- groups[it_type == "not_recognized" & is.na(pa_type), group.label]
+# summary((effects.partial[[1]][,selg] - effects.partial[[3]][,selg]),
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+# summary((effects.partial[[2]][,selg] - effects.partial[[6]][,selg]),
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+
+# selg <- groups[is.na(adm0) & pa_type != "none", group.label]
+# summary((effects.partial[[1]][,selg] - effects.partial[[4]][,selg]) / effects.partial[[4]][,selg],
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+# summary((effects.partial[[2]][,selg] - effects.partial[[7]][,selg]) / effects.partial[[7]][,selg],
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+
+
+# selg <- groups[is.na(adm0) & pa_type != "none", group.label]
+# summary((effects.partial[[1]][,selg] - effects.partial[[4]][,selg]),
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+# summary((effects.partial[[2]][,selg] - effects.partial[[7]][,selg]),
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+
+# selg <- groups[is.na(adm0) & pa_type != "none" & it_type != "none", group.label]
+# summary((effects.partial[[1]][,selg] - effects.partial[[5]][,selg]) / effects.partial[[5]][,selg],
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+# summary((effects.partial[[2]][,selg] - effects.partial[[8]][,selg]) / effects.partial[[8]][,selg],
+#         mean, median, ggdist::Mode, quantile2, \(x) quantile(x, c(0.25, 0.75)))
+
+
+# summary((effects.partial[[1]] - effects.partial[[2]]) / effects.partial[[2]])
+
+# summary(effects.partial[[1]][,selg])
+# summary(effects.partial[[2]][,selg])
+
+
+
+
+
