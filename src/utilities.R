@@ -35,6 +35,37 @@ inv_logit <- function(eta) {
   1 / (1 + exp(-eta))
 }
 
+arc <- function(x, ...) {
+  UseMethod("arc", x)
+}
+
+arc.draws_matrix <- function(x,
+                             cf,
+                             select = NULL,
+                             trans = identity) {
+  if(is.null(select)){
+    select <- intersect(colnames(x), colnames(cf))
+  }
+  arc <- trans(x[, select]) - trans(cf[, select])
+  return(arc)
+}
+
+
+rrc <- function(x, ...) {
+  UseMethod("rrc", x)
+}
+
+rrc.draws_matrix <- function(x,
+                             cf,
+                             select = NULL,
+                             trans = identity) {
+  if(is.null(select)){
+    select <- intersect(colnames(x), colnames(cf))
+  }
+  arc <- trans(x[, select]) - trans(cf[, select])
+  return(arc)
+}
+
 rr <- function(eta, bl, linkinv = identity) {
   if(is_rvar(bl)) {
     rr <- linkinv(eta)
