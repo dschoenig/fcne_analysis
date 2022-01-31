@@ -899,7 +899,9 @@ aggregate_variables.FileSystemDataset <-
   if(is.null(agg.size)) {
     agg.size <- min(unlist(lapply(ids, length)))
   }
-  ids.dt <- data.table(group.label = names(ids), group.id = 1:length(ids), ids = ids)[order(group.id)]
+  ids.dt <- data.table(group.label = names(ids),
+                       group.id = 1:length(ids),
+                       ids = ids)[order(group.id)]
   ids.dt[,N := as.numeric(unname(unlist(lapply(ids, length))))]
   ids.dt[order(-N), Nc := cumsum(N)]
   ids.dt[,

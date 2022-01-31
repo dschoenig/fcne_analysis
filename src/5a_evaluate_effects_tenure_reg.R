@@ -16,7 +16,7 @@ if(!dir.exists(path.effects)) dir.create(path.effects)
 
 path.arrow <- paste0(path.lp, region, ".lp/")
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.effects <- paste0(path.effects, region, ".eff.tenure_reg.rds")
+file.effects <- paste0(path.effects, region, ".eff.risk.tenure.overall.rds")
 
 set_cpu_count(n.threads)
 setDTthreads(n.threads)
@@ -101,8 +101,8 @@ for(i in seq_along(partial.idx)) {
   name.par <- names(partial.idx)[i]
   ds <- open_dataset(paste0(path.arrow, "partial=", name.par), format = "arrow")
   message(paste0("Evaluating effects for region `", region,
-                   "` for (partial) linear predictor `", name.par, "` (",
-                   length(draw.ids), " draws) …"))
+                 "`, using (partial) linear predictor `", name.par,
+                 "` (", length(draw.ids), " draws) …"))
   effects.partial[[i]] <- aggregate_variables(ds,
                                           agg.fun = E,
                                           trans.fun = inv_cloglog,
