@@ -9,13 +9,13 @@ require(dplyr, quietly = TRUE)
 # require(patchwork)
 
 
-# link_cll <- function(mu) {
-#   log(-log(1 - mu))
-# }
+cloglog <- function(mu) {
+  log(-log(1 - mu))
+}
 
-# invlink_cll <- function(eta) {
-#   pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
-# }
+inv_cloglog <- function(eta) {
+  pmax(pmin(-expm1(-exp(eta)), 1 - .Machine$double.eps), .Machine$double.eps)
+}
 
 # link_cauchit <- function(mu) {
 #   qcauchy(mu)
@@ -33,6 +33,37 @@ logit <- function(mu) {
 
 inv_logit <- function(eta) { 
   1 / (1 + exp(-eta))
+}
+
+arc <- function(x, ...) {
+  UseMethod("arc", x)
+}
+
+arc.draws_matrix <- function(x,
+                             cf,
+                             select = NULL,
+                             trans = identity) {
+  if(is.null(select)){
+    select <- intersect(colnames(x), colnames(cf))
+  }
+  arc <- trans(x[, select]) - trans(cf[, select])
+  return(arc)
+}
+
+
+rrc <- function(x, ...) {
+  UseMethod("rrc", x)
+}
+
+rrc.draws_matrix <- function(x,
+                             cf,
+                             select = NULL,
+                             trans = identity) {
+  if(is.null(select)){
+    select <- intersect(colnames(x), colnames(cf))
+  }
+  arc <- trans(x[, select]) - trans(cf[, select])
+  return(arc)
 }
 
 rr <- function(eta, bl, linkinv = identity) {
@@ -476,7 +507,8 @@ lp_matrix <-
   return(lpmatrix)
 }
 
-evaluate_posterior <- 
+
+evaluate_posterior.old <- 
   function(
            model, 
            posterior,
@@ -567,18 +599,143 @@ evaluate_posterior <-
   }
 }
 
+
+evaluate_posterior <- 
+  function(
+           model, 
+           posterior,
+           newdata = NULL,
+           id.col = NULL,
+           type = "link",
+           obs = NULL,
+           coef = NULL,
+           marginals = NULL,
+           marginal.ids = NULL,
+           predict.chunk = NULL,
+           post.chunk = NULL,
+           progress = TRUE
+           ) {
+  if(is.null(dim(posterior))) {
+    posterior <- matrix(posterior, ncol = length(posterior))
+  }
+  if(is.null(newdata)) {
+    data <- model.frame(model)
+  } else {
+    data <- newdata
+  }
+  if(is.null(id.col)) {
+    data$id <- 1:nrow(data)
+    id.col <- "id"
+  }
+  if(is.numeric(obs)) {
+    data <- data[obs,]
+  }
+  n <- nrow(data)
+  m <- nrow(posterior)
+  if(is.null(predict.chunk)) predict.chunk <- n
+  if(is.null(post.chunk)) post.chunk <- m
+  predict.chunks <- chunk_seq(1, n, predict.chunk)
+  post.chunks <- chunk_seq(1, m, post.chunk)
+  # Set excluded coefficients to 0
+  if(is.numeric(coef)) {
+    posterior[,-coef] <- 0
+  }
+  if(is.null(marginals)) {
+    marginals <- list(marginal = 1:ncol(posterior))
+  }
+  if(is.null(marginal.ids)) {
+    marginal.ids <- list(marginal = data[[id.col]])
+  }
+  if(length(marginals) != length(marginal.ids))
+    stop("Number of elements in `marginals` and `marginal.ids` must match.")
+  id.lu <- cbind(data[[id.col]], 1:nrow(data))
+  colnames(id.lu) <- c(id.col, "row.id")
+  id.lu <- as.data.table(id.lu)
+  setorder(id.lu, row.id)
+  mar.lu <- list()
+  for(i in seq_along(marginal.ids)) {
+    mar.lu[[i]] <- id.lu[id %in% marginal.ids[[i]]]
+    mar.lu[[i]][, marginal := names(marginals)[i]]
+  }
+  mar.lu <- rbindlist(mar.lu)
+  mar.lu$chunk <-
+    cut(mar.lu$row.id,
+        with(predict.chunks, c(to[1] - size[1], to)),
+        labels = FALSE)
+  mar.lu <-
+    mar.lu[,
+           .(n = .N,
+             row.ids = list(mar.lu$row.id[.I]),
+             ids = list(mar.lu[[id.col]][.I])),
+           by = c("marginal", "chunk")]
+  mar.lu[, `:=`(eval.id.from = 1 + cumsum(n) - n, eval.id.to = cumsum(n)), marginal]
+  evaluated <- list()
+  for(i in seq_along(marginals)) {
+      idx <- id.lu[eval(parse(text = paste(id.col, "%in% marginal.ids[[i]]")))]
+      evaluated[[i]] <- array(dim = c(nrow(idx), m))
+      dimnames(evaluated[[i]])[1] <- list(idx[[id.col]])
+  }
+  if(progress) {
+    prog <- txtProgressBar(min = 0, max = length(predict.chunks$from), initial = 0,
+                           char = "=", width = NA, title = "Progress", style = 3)
+  }
+  for(i in 1:length(predict.chunks$from)) {
+    Xp <- predict(model, 
+                  data[predict.chunks$from[i]:predict.chunks$to[i],],
+                  type = "lpmatrix",
+                  block.size = predict.chunks$size[i],
+                  newdata.guaranteed = TRUE,
+                  cluster = NULL)
+    for(j in 1:length(marginals)) {
+      chunk.lu <- mar.lu[chunk == i & marginal == names(marginals)[j]]
+      if(nrow(chunk.lu) < 1) next
+      pc.rows <- unlist(chunk.lu$row.ids) - with(predict.chunks, to[i] - size[i])
+      eval.rows <- with(chunk.lu, eval.id.from:eval.id.to)
+      m.predict.chunk <- matrix(nrow = chunk.lu$n, ncol = m)
+      for(k in 1:length(post.chunks$from)) {
+        lp <-
+          Xp[pc.rows, marginals[[j]]] %*%
+          t(posterior[post.chunks$from[k]:post.chunks$to[k], marginals[[j]]])
+        if(type == "response") {
+          fam <- model$family
+          m.predict.chunk[, post.chunks$from[k]:post.chunks$to[k]] <- fam$linkinv(lp)
+        } else {
+          m.predict.chunk[, post.chunks$from[k]:post.chunks$to[k]] <- lp
+        }
+        rm(lp)
+      }
+      evaluated[[j]][eval.rows,] <- m.predict.chunk
+      rm(m.predict.chunk)
+    }
+    rm(Xp)
+    gc()
+    if(progress) {
+      setTxtProgressBar(prog, i)
+    }
+  }
+  if(progress) close(prog)
+  evaluated <- lapply(evaluated, \(x) as_draws_matrix(t(x)))
+  if(length(marginals) == 1) {
+    return(evaluated[[1]])
+  } else {
+    names(evaluated) <- names(marginals)
+    return(evaluated)
+  }
+}
+
 aggregate_variables <- function(predictions, ...) {
   UseMethod("aggregate_variables", predictions)
 }
 
 aggregate_variables.draws_matrix <- 
   function(predictions,
-           fun = mean,
+           trans.fun = NULL,
+           agg.fun = E,
            ids = NULL,
            draw.ids = NULL,
            draw.chunk = NULL,
            agg.size = NULL,
-           clamp = NULL,
+           # clamp = NULL,
            n.threads = NULL,
            progress = TRUE,
            ...) {
@@ -608,7 +765,7 @@ aggregate_variables.draws_matrix <-
   value.column <- "eta"
   id.cond <- parse(text = paste(id.col, "%in% ids.sum"))
   draw.cond <- parse(text = paste0(draw.column, "%in% draw.ids[draw.chunks$from[i]:draw.chunks$to[i]]"))
-  fun.cond <- parse(text = paste0("fun(", value.column,")"))
+  agg.expr <- parse(text = paste0("agg.fun(", value.column,")"))
   order.cond <- parse(text = paste0("order(", draw.column, ", group.id)"))
   cast.form <- as.formula(paste(draw.column, "~ group.id"))
   ids.dt <- data.table(group.label = names(ids), group.id = 1:length(ids), ids = ids)[order(group.id)]
@@ -636,6 +793,10 @@ aggregate_variables.draws_matrix <-
                  (value.column) := fcase(eval(clamp.cond.l), clamp[1],
                                          eval(clamp.cond.u), clamp[2])]
   }
+  if(!is.null(trans.fun)) {
+    trans.expr <- parse(text = paste0(value.column, " := trans.fun(", value.column,")"))
+    predictions[, eval(trans.expr)]
+  }
   if(progress) {
     prog <- txtProgressBar(min = 0, max = max(ids.dt$Nc) * length(draw.chunks$from), initial = 0,
                            char = "=", width = NA, title = "Progress", style = 3)
@@ -644,11 +805,10 @@ aggregate_variables.draws_matrix <-
   for(i in seq_along(draw.chunks$from)) {
     for(j in seq_along(single.ids)) {
       ids.sum <- unlist(ids.dt[group.id == single.ids[j], ids])
-      draws.sel <- 
       chunk.summarized <-
         predictions[eval(draw.cond),
                     ][id %in% ids.sum,
-                      .(val = eval(fun.cond)),
+                      .(val = eval(agg.expr)),
                       by = draw.column][,val]
 
       if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
@@ -677,13 +837,18 @@ aggregate_variables.draws_matrix <-
               match.ids.groups,
               by = "id",
               allow.cartesian = TRUE)[,
-                                      .(val = eval(fun.cond)),
+                                      .(val = eval(agg.expr)),
                                       by = c(draw.column, "group.id")
-                                      ][eval(order.cond)] |>
-        dcast(draw ~ group.id, value.var = "val")
-      group.cols <- as.integer(names(chunk.summarized[,-..draw.column]))
-      draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
-      predictions.summarized[draw.cols, group.cols] <- as.matrix(chunk.summarized[, -..draw.column])
+                                      ][eval(order.cond)]
+      if(nrow(chunk.summarized) > 0) {
+        chunk.summarized <- dcast(chunk.summarized, cast.form, value.var = "val")
+        group.cols <- as.integer(colnames(chunk.summarized[,-..draw.column]))
+        draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
+        predictions.summarized[draw.cols, group.cols] <- 
+          as.matrix(chunk.summarized[, -..draw.column])
+      } else {
+        predictions.summarized[draw.cols, group.cols] <- NA
+      }
       if(progress) {
         prog.counter <- prog.counter + sum(ids.dt[agg.id == agg.ids[k], N])
         setTxtProgressBar(prog, prog.counter)
@@ -700,7 +865,8 @@ aggregate_variables.draws_matrix <-
 
 aggregate_variables.FileSystemDataset <- 
   function(predictions,
-           fun = mean,
+           trans.fun = NULL,
+           agg.fun = mean,
            ids = NULL,
            id.col = "id",
            draw.column = "draw",
@@ -709,16 +875,10 @@ aggregate_variables.FileSystemDataset <-
            value.column = "eta",
            agg.size = NULL,
            clamp = NULL,
-           n.threads = NULL,
            pull.all = TRUE,
            progress = TRUE,
+           gc = FALSE,
            ...) {
-  if(is.numeric(n.threads)) {
-    dt.threads.old <- getDTthreads()
-    arrow.threads.old <- cpu_count()
-    setDTthreads(n.threads)
-    set_cpu_count(n.threads)
-  }
   if(is.null(draw.ids)) {
     # Hack to get draw.ids if not specified
     draw.ids <- levels(as.data.frame(ds[1,draw.column])[[1]])
@@ -740,8 +900,8 @@ aggregate_variables.FileSystemDataset <-
     agg.size <- min(unlist(lapply(ids, length)))
   }
   ids.dt <- data.table(group.label = names(ids), group.id = 1:length(ids), ids = ids)[order(group.id)]
-  ids.dt[,N:=unname(unlist(lapply(ids, length)))]
-  ids.dt[order(-N),Nc:=cumsum(N)]
+  ids.dt[,N := as.numeric(unname(unlist(lapply(ids, length))))]
+  ids.dt[order(-N), Nc := cumsum(N)]
   ids.dt[,
       `:=`(aggregate = ifelse(N < agg.size, TRUE, FALSE))
       ][aggregate == TRUE, 
@@ -751,7 +911,8 @@ aggregate_variables.FileSystemDataset <-
   predictions.summarized <- matrix(NA, nrow = length(draw.ids), ncol = length(ids))
   dimnames(predictions.summarized)[1:2] <- list(draw.ids, ids.dt$group.label)
   if(progress) {
-    prog <- txtProgressBar(min = 0, max = max(ids.dt$Nc) * length(draw.chunks$from), initial = 0,
+    prog <- txtProgressBar(min = 0, max = max(ids.dt$Nc) * as.numeric(length(draw.chunks$from)),
+                           initial = 0,
                            char = "=", width = NA, title = "Progress", style = 3)
     prog.counter <- 0
   }
@@ -776,13 +937,17 @@ aggregate_variables.FileSystemDataset <-
                          (value.column) := fcase(eval(clamp.cond.l), clamp[1],
                                                  eval(clamp.cond.u), clamp[2])]
     }
-    fun.cond <- parse(text = paste0("fun(", value.column,")"))
+    if(!is.null(trans.fun)) {
+      trans.expr <- parse(text = paste0(value.column, " := trans.fun(", value.column,")"))
+      predictions.pulled[, eval(trans.expr)]
+    }
+    agg.expr <- parse(text = paste0("agg.fun(", value.column,")"))
     id.cond <- parse(text = paste(id.col, "%in% ids.sum"))
     for(j in seq_along(single.ids)) {
       ids.sum <- unlist(ids.dt[group.id == single.ids[j], ids])
       chunk.summarized <-
         predictions.pulled[eval(id.cond),
-                           .(val = eval(fun.cond)),
+                           .(val = eval(agg.expr)),
                            by = draw.column][,val]
       if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
         predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i],
@@ -806,29 +971,33 @@ aggregate_variables.FileSystemDataset <-
       if(is.character(predictions.pulled[[id.col]]))
         match.ids.groups[[id.col]] <- as.character(match.ids.groups[[id.col]])
       ids.sum <- unique(match.ids.groups[id %in% unique(predictions.pulled$id), id])
+      ids.sum <- match.ids.groups[, unique(id)]
       chunk.summarized <-
         merge(predictions.pulled[eval(id.cond)],
               match.ids.groups,
               by = id.col,
               allow.cartesian = TRUE)[,
-                                      .(val = eval(fun.cond)),
+                                      .(val = eval(agg.expr)),
                                       by = c(draw.column, "group.id")
-                                      ][eval(order.cond)] |>
-        dcast(cast.form, value.var = "val")
-      group.cols <- as.integer(colnames(chunk.summarized[,-..draw.column]))
-      draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
-      predictions.summarized[draw.cols, group.cols] <- as.matrix(chunk.summarized[, -..draw.column])
+                                      ][eval(order.cond)]
+      if(nrow(chunk.summarized) > 0) {
+        chunk.summarized <- dcast(chunk.summarized, cast.form, value.var = "val")
+        group.cols <- as.integer(colnames(chunk.summarized[,-..draw.column]))
+        draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
+        predictions.summarized[draw.cols, group.cols] <- 
+          as.matrix(chunk.summarized[, -..draw.column])
+      } else {
+        predictions.summarized[draw.cols, group.cols] <- NA
+      }
       if(progress) {
         prog.counter <- prog.counter + sum(ids.dt[agg.id == agg.ids[k], N])
         setTxtProgressBar(prog, prog.counter)
       }
     }
     rm(predictions.pulled)
+    if(gc) gc()
   }
   if(progress) close(prog)
-  if(is.numeric(n.threads)) {
-    setDTthreads(dt.threads.old)
-  }
   return(as_draws_matrix(predictions.summarized))
 }
 
@@ -844,13 +1013,13 @@ ids_by_group <- function(data,
     if(is.null(id.col)) {
       groups <- data[, .(n = .N, ids = list(.I))]
     } else {
-      groups <- data[, .(n = .N, ids = list(data$id[.I]))]
+      groups <- data[, .(n = .N, ids = list(data[[id.col]][.I]))]
     }
   } else {
     if(is.null(id.col)) {
       groups <- data[, .(n = .N, ids = list(.I)), by = group.vars]
     } else {
-      groups <- data[, .(n = .N, ids = list(data$id[.I])), by = group.vars]
+      groups <- data[, .(n = .N, ids = list(data[[id.col]][.I])), by = group.vars]
     }
     setorderv(groups, group.vars)
     labels <- groups[, ..group.vars]
@@ -1235,6 +1404,19 @@ evaluate_embedding <- function(data,
   return(results)
 }
 
+# GAM UTILITIES ################################################################
+
+lookup_smooths <- function(gam) {
+  smooth.lu <- list()
+    for(i in seq_along(gam$smooth)) {
+      smooth.lu[[i]] <-
+        with(gam$smooth[[i]],
+             data.frame(smooth.id = i, label, first.para, last.para))
+    }
+  smooth.lu <- rbindlist(smooth.lu)
+  smooth.lu[, `:=`(para = list(seq(first.para, last.para))), "smooth.id"]
+  return(smooth.lu)
+}
 
 
 #diag_residuals <- function(model, 

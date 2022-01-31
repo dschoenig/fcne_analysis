@@ -1,10 +1,10 @@
 source("utilities.R")
 
-# args <- commandArgs(trailingOnly = TRUE)
-# region <- tolower(args[1])
-# n.threads <- as.integer(args[2])
+args <- commandArgs(trailingOnly = TRUE)
+region <- tolower(args[1])
+n.threads <- as.integer(args[2])
 
-region <- "amz"
+region <- "cam"
 n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
@@ -15,7 +15,7 @@ path.effects <- paste0(path.base, "models/gam/effects/")
 if(!dir.exists(path.effects)) dir.create(path.effects)
 
 path.arrow <- paste0(path.lp, region, ".lp/")
-file.data <- paste0(path.data.proc, region, ".data.proc.rds")
+file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.effects <- paste0(path.effects, region, ".eff.location.rds")
 
 set_cpu_count(n.threads)
@@ -23,16 +23,16 @@ setDTthreads(n.threads)
 
 ## EVALUATE EFFECTS ############################################################
 
-marginals <- c("full","ten_loc")
-draw.ids <- as.character(1:1000)
-draw.ids <- as.character(1:100)
-
 map_res <- switch(region,
                   amz = 5000,
-                  cam = 2000)
+                  cam = 2500)
+
+marginals <- c("full","ten_loc")
+draw.ids <- as.character(1:1000)
+# draw.ids <- as.character(1:100)
 
 message("Aggregating observations …")
-data.proc <- readRDS(paste0(path.data.proc, region, ".data.proc.rds"))
+data.proc <- readRDS(file.data)
 
 coord_bins <- bin_cols(data.proc, c("ea_east", "ea_north"), c(map_res, map_res))
 data.proc[, `:=`(ea_east.bin = coord_bins$ea_east.bin,
@@ -46,21 +46,28 @@ names(id.list) <- map.units$group.label
 
 rm(data.proc)
 
-effects <- list()
+# Define aggregation function: transform to response scale, then marginalize
+# over geographic area (i.e. group identity).
+agg.fun <- function(x) mean(inv_logit(x))
+
+effects.mar <- list()
 for(i in seq_along(marginals)) {
   ds <- open_dataset(paste0(path.arrow, "marginal=", marginals[i]), format = "arrow")
   message(paste0("Evaluating effects for region `", region,
                    "` over marginal `", marginals[i], "` (",
                    length(draw.ids), " draws) …"))
-  effects[[i]] <- summarize_predictions(ds,
-                                   ids = id.list,
-                                   draw.ids = draw.ids,
-                                   draw.chunk = 100,
-                                   clamp = link_cll(c(.Machine$double.eps, 1-.Machine$double.eps)),
-                                   n.threads = n.threads
-                                   )
+  effects.mar[[i]] <- aggregate_variables(ds,
+                                          fun = agg.fun,
+                                          ids = id.list,
+                                          draw.ids = draw.ids,
+                                          draw.chunk = 100,
+                                          # draw.chunk = 1000,
+                                          agg.size = 5e6,
+                                          n.threads = n.threads
+                                          )
 }
-names(effects) <- marginals
+names(effects.mar) <- marginals
+effects.mar$groups <- groups
 
 message(paste0("Saving outputs to `", file.effects, "` …"))
-saveRDS(effects, file.effects)
+saveRDS(effects.mar, file.effects)
