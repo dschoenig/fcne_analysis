@@ -62,30 +62,10 @@ rrc.draws_matrix <- function(x,
   if(is.null(select)){
     select <- intersect(colnames(x), colnames(cf))
   }
-  arc <- trans(x[, select]) - trans(cf[, select])
-  return(arc)
-}
-
-rr <- function(eta, bl, linkinv = identity) {
-  if(is_rvar(bl)) {
-    rr <- linkinv(eta)
-  }
-  if(is.character(bl)) {
-    eta.l <- linkinv(eta)
-    rr <- eta.l / extract_variable(eta.l, bl)
-  }
-  if(is.numeric(bl)) {
-    bl.name <- colnames(eta)[bl]
-    eta.l <- linkinv(eta)
-    rr <- eta.l / extract_variable(eta.l, bl.name)
-  }
-  return(rr)
-}
-
-rrc <- function(eta, bl, linkinv = identity) {
-  rrc <- rr(eta = eta, bl = bl, linkinv = linkinv) - 1
+  rrc <- (trans(x[, select]) - trans(cf[, select])) / trans(cf[, select])
   return(rrc)
 }
+
 
 # model_overview <- function(models, path = "../results/models/", prefix = "") {
 #   # models: Character vector containing the names of the models to be loaded.

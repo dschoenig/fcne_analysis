@@ -44,7 +44,7 @@ map.anchor <- c(ea_east = floor(min(data.map$ea_east / map.res)) * map.res,
 
 maps <- 
   data.table(
-    name = c("all",
+    extent = c("all",
              "it_c",
              "it",
              "pa_c",
@@ -88,7 +88,7 @@ for(i in seq_along(partials)) {
   ds <- open_dataset(paste0(path.arrow, "partial=", name.par),
                      format = "arrow")
   message(paste0("Evaluating effects for region `", region,
-                 "`, map `", maps$name[map.id],
+                 "`, map `", maps$extent[map.id],
                  "`, using (partial) linear predictor `", name.par,
                  "` (", length(draw.ids), " draws) …"))
   effects.geo[[i]] <- aggregate_variables(ds,
@@ -106,7 +106,7 @@ for(i in seq_along(partials)) {
 names(effects.geo) <- partials
 effects.geo$map.units <- map.units
 
-file.effects <- paste0(path.effects, prefix.file.effects, maps$name[map.id], ".rds")
+file.effects <- paste0(path.effects, prefix.file.effects, maps$extent[map.id], ".rds")
 
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(effects.geo, file.effects)
