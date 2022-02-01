@@ -101,13 +101,13 @@ post.marginals <- list(full = b.full,
                        cov0_ov0 = b.full[-para.cov_ov])
 
 marginal.ids <- list(full = data.pred[,id],
-                cov0 = data.pred[,id],
-                it0 = data.pred[it_type != "none", id],
-                pa0 = data.pred[pa_type != "none", id],
-                ov0 = data.pred[overlap != "none", id],
-                cov0_it0 = data.pred[it_type != "none", id],
-                cov0_pa0 = data.pred[pa_type != "none", id],
-                cov0_ov0 = data.pred[overlap != "none", id])
+                     cov0 = data.pred[,id],
+                     it0 = data.pred[it_type != "none", id],
+                     pa0 = data.pred[pa_type != "none", id],
+                     ov0 = data.pred[overlap != "none", id],
+                     cov0_it0 = data.pred[it_type != "none", id],
+                     cov0_pa0 = data.pred[pa_type != "none", id],
+                     cov0_ov0 = data.pred[overlap != "none", id])
 
 message(paste0("Evaluating the linear predictor for model ", region, ".m3, ",
         "using draws from the posterior distribution.\n"))
