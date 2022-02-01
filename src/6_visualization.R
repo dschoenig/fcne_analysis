@@ -1,7 +1,7 @@
 library(data.table)
 library(posterior)
 library(sf)
-library(ggplot)
+library(ggplot2)
 library(ggdist)
 
 source("utilities.R")
@@ -20,11 +20,11 @@ path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.effects.tenure <- paste0(path.effects, region, ".eff.tenure.rds")
-file.effects.location <- paste0(path.effects, region, ".eff.location.rds")
+prefix.file.effects <- paste0(region, ".eff.riskchange.")
+file.effects.geo <- paste0(path.effects, prefix.file.effects, "geo.rds")
+file.effects.tenure <- paste0(path.effects, prefix.file.effects, "tenure.rds")
 file.bg_adm0 <- paste0(path.data, "map_bg/gadm36_levels.gpkg")
 
-set_cpu_count(n.threads)
 setDTthreads(n.threads)
 
 ## CRS / LIMITS
@@ -38,41 +38,103 @@ map_ylim <- list(cam = c(-90e4, 80e4))
 
 ## DATA PREPARATION
 
-effects.tenure <- readRDS(file.effects.tenure)
+it_c.arc.sum <- summarize_draws(rc.geo$it_c$arc,
+                                mean, 
+                                mode = Mode,
+                                median,
+                                sd,
+                                mad,
+                                \(x) hdi(x, mass = c(0.5, 0.95)),
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table()
 
-selg <- effects.tenure$groups[is.na(adm0) & n > 10000, group.id]
+it_c.arc <- summarize_draws(rc.geo$it_c$arc,
+                                mean, 
+                                mode = Mode,
+                                median,
+                                sd,
+                                mad,
+                                \(x) hdi(x, mass = c(0.5, 0.95)),
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(rc.geo$it_c$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
 
-selg <- c(1, effects.tenure$groups[adm0 == "SLV", group.id])
+it_c.rrc <- summarize_draws(rc.geo$it_c$rrc,
+                                mean, 
+                                mode = Mode,
+                                median,
+                                sd,
+                                mad,
+                                \(x) hdi(x, mass = c(0.5, 0.95)),
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(rc.geo$it_c$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
 
-selg <- c(1, effects.tenure$groups[it_type == "recognized", group.id])
+pa_c.arc <- summarize_draws(rc.geo$pa_c$arc,
+                                mean, 
+                                mode = Mode,
+                                median,
+                                sd,
+                                mad,
+                                \(x) hdi(x, mass = c(0.5, 0.95)),
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(rc.geo$pa_c$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
 
-selg <- c(1, effects.tenure$groups[!is.na(adm0) & it_type == "recognized", group.id])
+pa_c.rrc <- summarize_draws(rc.geo$pa_c$rrc,
+                                mean, 
+                                mode = Mode,
+                                median,
+                                sd,
+                                mad,
+                                \(x) hdi(x, mass = c(0.5, 0.95)),
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(rc.geo$pa_c$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
 
-summary(rrc(effects.tenure[[1]][,selg], "it_type.none:pa_type.none"), mean, median, sd)
+cov.arc <- summarize_draws(rc.geo$cov$arc,
+                                mean, 
+                                mode = Mode,
+                                median,
+                                sd,
+                                mad,
+                                \(x) hdi(x, mass = c(0.5, 0.95)),
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(rc.geo$cov$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
 
-data.fit[, risk := loc.means]
-risk.bl.reg <- mean(data.fit[it_type == "none" & pa_type == "none", risk])
-
-# data.fit <- data.fit[it_type != "none"]
-
-res <- 1e3
-corner <- c(min(data.fit$ed_east), min(data.fit$ed_north))
-corner <- floor(corner / res) * res
-bins.ea <- bin_cols(data.fit, c("ea_east", "ea_north"),
-                      rep(res, 2), corner,
-                      bin.names = c("ea_east.bin", "ea_north.bin"))
-data.fit[, `:=`(ea_east.bin = bins.ea[["ea_east.bin"]],
-                ea_north.bin = bins.ea[["ea_north.bin"]])]
-
-data.risk.e <- data.fit[, .(n = .N, risk = E(risk)), c("ea_east.bin", "ea_north.bin")]
-
-
-data.risk.e[, rrc.reg := risk/risk.bl.reg -1]
-
+cov.rrc <- summarize_draws(rc.geo$cov$rrc,
+                                mean, 
+                                mode = Mode,
+                                median,
+                                sd,
+                                mad,
+                                \(x) hdi(x, mass = c(0.5, 0.95)),
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(rc.geo$cov$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
 
 ## MAPS
 
-bg_adm0 <- st_read("~/projects/data/source/gadm/3.6/world/gadm36_levels.gpkg",
+bg_adm0 <- st_read(paste0(path.data, "map_bg/gadm36_levels.gpkg"),
                    query = "SELECT * FROM level0 
                             WHERE GID_0 IN ('ABW', 'AIA', 'ARG', 'ATG', 'BES', 
                                             'BHS', 'BLM', 'BLZ', 'BOL', 'BRA', 
@@ -91,34 +153,114 @@ bg_adm0 <- st_read("~/projects/data/source/gadm/3.6/world/gadm36_levels.gpkg",
 
 map_theme <-  
   theme_minimal() +
-  theme(panel.background = element_rect(fill = "grey97", colour = NA),
-        panel.grid = element_line(colour = "grey82")
+  theme(panel.background = element_rect(fill = "grey90", colour = NA),
+        panel.grid = element_line(colour = "grey75")
         # , legend.position = "bottom",
         # , legend.justification = "right"
         )
 
+ bins <-c(1, 0.5, 0.25, 0.1, 0.05, 0.01)
 
-map.risk <- 
-  ggplot(data.risk.e) +
-  geom_sf(data = bg_adm0, fill = "grey35", colour = "grey50", size = 0.5) +
-  geom_raster(mapping = aes(fill = risk,
-                            x = ea_east.bin, y = ea_north.bin)) +
+map.it_c.arc <- 
+  ggplot(it_c.arc[n >1]) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(fill = median,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
   coord_sf(crs = crs.ea$cam, expand = FALSE, 
            xlim = map_xlim$cam, ylim = map_ylim$cam) +
-  scale_fill_viridis_c(limits = c(0, 1)
-                       # , rescaler = rescaler_div_mean
-                       ) +
+  scale_fill_binned_diverging(palette = "Blue-Red 3", mid = 0,
+                              breaks = c(-bins, rev(bins))
+                                  # ,limits = c(-0.1, 0.1)
+                                  # ,oob = scales::squish
+                                  ) +
+  # scale_fill_viridis_c(limits = c(0, 1)
+  #                      # , rescaler = rescaler_div_mean
+  #                      ) +
   # scale_fill_gradientn(colours = scico(256, alpha = NULL,
   #                                        begin = 0, end = 1, direction = 1, "imola"),
   #                        rescaler = rescaler_div_mean,
   #                        limits = c(0,1),
   #                        oob = scales::squish) +
-  labs(fill = "Risk of forest loss", x = "Longitude", y = "Latitude") +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
   theme_minimal() +
   map_theme
-map.risk
+map.it_c.arc
+
+map.pa_c.arc <- 
+  ggplot(pa_c.arc[n >1]) +
+  geom_sf(data = bg_adm0, fill = "grey35", colour = "grey50", size = 0.5) +
+  geom_raster(mapping = aes(fill = median,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_continuous_diverging(palette = "Blue-Red 3", mid = 0, limits = c(-1, 1)) +
+  # scale_fill_viridis_c(limits = c(0, 1)
+  #                      # , rescaler = rescaler_div_mean
+  #                      ) +
+  # scale_fill_gradientn(colours = scico(256, alpha = NULL,
+  #                                        begin = 0, end = 1, direction = 1, "imola"),
+  #                        rescaler = rescaler_div_mean,
+  #                        limits = c(0,1),
+  #                        oob = scales::squish) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+map.pa_c.arc
+
+map.cov.arc <- 
+  ggplot(cov.arc[n >1]) +
+  geom_sf(data = bg_adm0, fill = "grey35", colour = "grey50", size = 0.5) +
+  geom_raster(mapping = aes(fill = median,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_binned_diverging(palette = "Blue-Red 3", mid = 0,
+                              breaks = c(-bins, rev(bins))
+                                  # ,limits = c(-0.1, 0.1)
+                                  # ,oob = scales::squish
+                                  ) +
+  # scale_fill_viridis_c(limits = c(0, 1)
+  #                      # , rescaler = rescaler_div_mean
+  #                      ) +
+  # scale_fill_gradientn(colours = scico(256, alpha = NULL,
+  #                                        begin = 0, end = 1, direction = 1, "imola"),
+  #                        rescaler = rescaler_div_mean,
+  #                        limits = c(0,1),
+  #                        oob = scales::squish) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+map.cov.arc
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+log_trans
+
+rescaler_div_log <- function(x,
+                             to = c(-1,1),
+                             from = range(x, na.rm = TRUE, finite = TRUE),
+                             mp = 0) {
+  x2 <- rescaler_div_mp(x, to, from, mp)
+  x2
+}
 
 rescaler_div_mp <- function(x, to = c(0, 1), from = range(x, na.rm = TRUE, finite = TRUE), mp = 0) {
   id.l <- which(x <= mp)

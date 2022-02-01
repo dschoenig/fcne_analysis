@@ -66,6 +66,34 @@ rrc.draws_matrix <- function(x,
   return(rrc)
 }
 
+Mode <- function(x, na.rm = FALSE) {
+  # Based on ggdist::Mode
+  if (na.rm) {
+    x = x[!is.na(x)]
+  }
+  else if (anyNA(x)) {
+    return(NA_real_)
+  }
+  if (is.integer(x)) {
+    ux = unique(x)
+    mod <- ux[which.max(tabulate(match(x, ux)))]
+  } else {
+    d = density(x, cut = 0)
+    mod <- d$x[which.max(d$y)]
+  }
+  return(mod)
+}
+
+hdi <- function(x, mass = c(0.5, 0.95)) {
+  hdi.l <- lapply(mass, \(mass) HDInterval::hdi(x, mass))
+  hdi <- do.call(c, hdi.l)
+  names(hdi) <- paste(rep(paste0("hdi", mass*100), each = 2),
+                 names(hdi),
+                 sep = ".")
+  return(hdi)
+}
+
+
 
 # model_overview <- function(models, path = "../results/models/", prefix = "") {
 #   # models: Character vector containing the names of the models to be loaded.
