@@ -8,7 +8,7 @@ n.threads <- as.integer(args[2])
 # n.threads <- 1
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.lp <- paste0(path.base, "models/gam/lp/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
@@ -29,7 +29,7 @@ draw.ids <- as.character(1:1000)
 message("Aggregating observations …")
 data.proc <- readRDS(file.data)
 
-# data.proc <- data.proc[1:1e5,]
+data.proc <- data.proc[1:1e5,]
 
 n.min <- 1
 groups.bl <-
@@ -108,8 +108,8 @@ for(i in seq_along(partial.idx)) {
                                           trans.fun = inv_cloglog,
                                           ids = partial.idx[[i]],
                                           draw.ids = draw.ids,
-                                          draw.chunk = 100,
-                                          # draw.chunk = 1000,
+                                          # draw.chunk = 100,
+                                          draw.chunk = 1000,
                                           agg.size = 1e6,
                                           n.threads = n.threads,
                                           gc = TRUE
