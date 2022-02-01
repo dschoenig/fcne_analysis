@@ -106,5 +106,5 @@ rc.tenure <- list(arc = eff.arc,
                   groups = groups)
 
 message(paste0("Saving outputs to `", file.effects.tenure, "` …"))
-saveRDS(rc.tenure, file.effects.geo)
+saveRDS(rc.tenure, file.effects.tenure)
 

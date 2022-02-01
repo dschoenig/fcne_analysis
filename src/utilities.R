@@ -93,8 +93,6 @@ hdi <- function(x, mass = c(0.5, 0.95)) {
   return(hdi)
 }
 
-
-
 # model_overview <- function(models, path = "../results/models/", prefix = "") {
 #   # models: Character vector containing the names of the models to be loaded.
 #   n <- length(models)
