@@ -118,3 +118,6 @@ for(i in seq_along(partial.idx)) {
 
 names(effects.partial) <- names(partial.idx)
 effects.partial$groups <- groups
+
+message(paste0("Saving outputs to `", file.effects, "` …"))
+saveRDS(effects.partial, file.effects)
