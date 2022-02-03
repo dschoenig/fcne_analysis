@@ -84,7 +84,7 @@ Mode <- function(x, na.rm = FALSE) {
   return(mod)
 }
 
-hdi <- function(x, mass = c(0.5, 0.95)) {
+hdi <- function(x, mass = 0.95) {
   hdi.l <- lapply(mass, \(mass) HDInterval::hdi(x, mass))
   hdi <- do.call(c, hdi.l)
   names(hdi) <- paste(rep(paste0("hdi", mass*100), each = 2),
