@@ -3,6 +3,7 @@ library(posterior)
 library(sf)
 library(ggplot2)
 library(ggdist)
+library(colorspace)
 
 source("utilities.R")
 
@@ -20,9 +21,11 @@ path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-prefix.file.effects <- paste0(region, ".eff.riskchange.")
-file.effects.geo <- paste0(path.effects, prefix.file.effects, "geo.rds")
-file.effects.tenure <- paste0(path.effects, prefix.file.effects, "tenure.rds")
+file.riskchange.geo <- paste0(path.effects, region, ".eff.riskchange.geo.rds")
+file.riskchange.tenure <- paste0(path.effects, region, ".eff.riskchange.tenure.rds")
+file.risk.geo.all <- paste0(path.effects, region, ".eff.risk.geo.all.rds")
+file.risk.geo.it_c <- paste0(path.effects, region, ".eff.risk.geo.it_c.rds")
+file.risk.geo.pa_c <- paste0(path.effects, region, ".eff.risk.geo.pa_c.rds")
 file.bg_adm0 <- paste0(path.data, "map_bg/gadm36_levels.gpkg")
 
 setDTthreads(n.threads)
@@ -38,23 +41,37 @@ map_ylim <- list(cam = c(-90e4, 80e4))
 
 ## DATA PREPARATION
 
-it_c.arc.sum <- summarize_draws(rc.geo$it_c$arc,
+r.geo.it_c <- readRDS(file.risk.geo.it_c)
+r.geo.all <- readRDS(file.risk.geo.all)
+rc.geo <- readRDS(file.riskchange.geo)
+
+str(r.geo.it_c, max.level=1)
+
+sum(it_c.arc[, abs(sd/mean)] > 1)
+
+all.r <- summarize_draws(r.geo.all$full,
                                 mean, 
-                                mode = Mode,
-                                median,
                                 sd,
-                                mad,
-                                \(x) hdi(x, mass = c(0.5, 0.95)),
                                 \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
-                as.data.table()
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(r.geo.all$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
+
+it_c.it0.r <- summarize_draws(r.geo.it_c$it0,
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                as.data.table() |>
+                setnames("variable", "group.label") |>
+                merge(rc.geo$it_c$map.units[, !"ids"],
+                      by = "group.label") |>
+                setnames("group.label", "rcell")
 
 it_c.arc <- summarize_draws(rc.geo$it_c$arc,
                                 mean, 
-                                mode = Mode,
-                                median,
                                 sd,
-                                mad,
-                                \(x) hdi(x, mass = c(0.5, 0.95)),
                                 \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
                 as.data.table() |>
                 setnames("variable", "group.label") |>
@@ -64,11 +81,7 @@ it_c.arc <- summarize_draws(rc.geo$it_c$arc,
 
 it_c.rrc <- summarize_draws(rc.geo$it_c$rrc,
                                 mean, 
-                                mode = Mode,
-                                median,
                                 sd,
-                                mad,
-                                \(x) hdi(x, mass = c(0.5, 0.95)),
                                 \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
                 as.data.table() |>
                 setnames("variable", "group.label") |>
@@ -78,11 +91,7 @@ it_c.rrc <- summarize_draws(rc.geo$it_c$rrc,
 
 pa_c.arc <- summarize_draws(rc.geo$pa_c$arc,
                                 mean, 
-                                mode = Mode,
-                                median,
                                 sd,
-                                mad,
-                                \(x) hdi(x, mass = c(0.5, 0.95)),
                                 \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
                 as.data.table() |>
                 setnames("variable", "group.label") |>
@@ -92,11 +101,7 @@ pa_c.arc <- summarize_draws(rc.geo$pa_c$arc,
 
 pa_c.rrc <- summarize_draws(rc.geo$pa_c$rrc,
                                 mean, 
-                                mode = Mode,
-                                median,
                                 sd,
-                                mad,
-                                \(x) hdi(x, mass = c(0.5, 0.95)),
                                 \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
                 as.data.table() |>
                 setnames("variable", "group.label") |>
@@ -104,33 +109,22 @@ pa_c.rrc <- summarize_draws(rc.geo$pa_c$rrc,
                       by = "group.label") |>
                 setnames("group.label", "rcell")
 
-cov.arc <- summarize_draws(rc.geo$cov$arc,
-                                mean, 
-                                mode = Mode,
-                                median,
-                                sd,
-                                mad,
-                                \(x) hdi(x, mass = c(0.5, 0.95)),
-                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
-                as.data.table() |>
-                setnames("variable", "group.label") |>
-                merge(rc.geo$cov$map.units[, !"ids"],
-                      by = "group.label") |>
-                setnames("group.label", "rcell")
 
-cov.rrc <- summarize_draws(rc.geo$cov$rrc,
-                                mean, 
-                                mode = Mode,
-                                median,
-                                sd,
-                                mad,
-                                \(x) hdi(x, mass = c(0.5, 0.95)),
-                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
-                as.data.table() |>
-                setnames("variable", "group.label") |>
-                merge(rc.geo$cov$map.units[, !"ids"],
-                      by = "group.label") |>
-                setnames("group.label", "rcell")
+bin.cols <- c("mean", "q2.5", "q25", "q75", "q97.5")
+it_c.arc[, (paste0(bin.cols, ".bin")) :=
+              lapply(.SD, \(x) as.factor(cut(x,
+                                   breaks = key.arc.breaks,
+                                   labels = FALSE))),
+            .SDcols = bin.cols]
+
+
+            mean.bin := as.factor(cut(mean, breaks = key.arc.breaks, labels = FALSE))]
+
+key.arc.breaks <- c(-1, -0.75, -0.5, -0.25, -0.10, -0.05, -0.01, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1)
+key.arc.colour <- diverging_hcl(length(key.arc.breaks) - 1, palette = "Blue-Red 3")
+names(key.arc.colour) <- as.character(1:(length(key.arc.breaks)-1))
+
+
 
 ## MAPS
 
@@ -151,6 +145,8 @@ bg_adm0 <- st_read(paste0(path.data, "map_bg/gadm36_levels.gpkg"),
            st_transform(crs.ea[[region]])
 
 
+it_c.arc[mean < -0.9]
+
 map_theme <-  
   theme_minimal() +
   theme(panel.background = element_rect(fill = "grey90", colour = NA),
@@ -159,22 +155,78 @@ map_theme <-
         # , legend.justification = "right"
         )
 
- bins <-c(1, 0.5, 0.25, 0.1, 0.05, 0.01)
+par(mfrow = c(2,1))
 
-map.it_c.arc <- 
-  ggplot(it_c.arc[n >1]) +
+map.all.r <- 
+  ggplot(all.r) +
   geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
-  geom_raster(mapping = aes(fill = median,
+  geom_raster(mapping = aes(
+                            fill = mean,
                             x = ea_east.bin, y = ea_north.bin),
               interpolate = TRUE) +
   geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
   coord_sf(crs = crs.ea$cam, expand = FALSE, 
            xlim = map_xlim$cam, ylim = map_ylim$cam) +
-  scale_fill_binned_diverging(palette = "Blue-Red 3", mid = 0,
-                              breaks = c(-bins, rev(bins))
+  scale_fill_viridis_c(limits = c(0,1), option = "D") +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+map.all.r
+
+map.all.r.q97.5 <- 
+  ggplot(all.r) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = q97.5,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_viridis_c(limits = c(0,1)) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+
+map.all.r.q97.5
+
+map.all.r.q2.5 <- 
+  ggplot(all.r) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = q97.5,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_viridis_c(limits = c(0,1)) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+
+map.all.r.q2.5
+
+library(patchwork)
+
+map.all.r + map.all.r.q2.5 + map.all.r.q97.5 + plot_layout(guides = 'collect')
+ 
+map.it_c.arc <- 
+  ggplot(it_c.arc[n >1]) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            # fill = mean.bin,
+                            fill = q75.bin,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_manual(values = key.arc.colour) +
+                              # breaks = c(-bins, rev(bins))
                                   # ,limits = c(-0.1, 0.1)
                                   # ,oob = scales::squish
-                                  ) +
+                                  # ) +
   # scale_fill_viridis_c(limits = c(0, 1)
   #                      # , rescaler = rescaler_div_mean
   #                      ) +
