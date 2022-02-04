@@ -1015,6 +1015,7 @@ ids_by_group <- function(data,
                          group.labels = NULL,
                          add.label = TRUE,
                          expand.label = TRUE,
+                         label.prefix = NULL,
                          ...){
   setDT(data)
   if(is.null(group.vars)) {
@@ -1049,6 +1050,9 @@ ids_by_group <- function(data,
     groups <- add_group_label(data = groups, cols = group.vars,
                               label.name = add.label,
                               expand.label = expand.label)
+  }
+  if(!is.null(label.prefix)) {
+    groups[[add.label]] <- paste0(label.prefix, groups[[add.label]])
   }
   return(groups)
 }
