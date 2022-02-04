@@ -144,12 +144,12 @@ if(model.id == 3) {
           by = overlap, k = k.def["ten_loc.ov"],
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
         # Tenure effects, discontinuous variations between countries
+        s(adm0, bs = "re") +
         s(adm0, it_type, bs = "re") +
         s(adm0, pa_type, bs = "re") +
         s(adm0, it_type, pa_type, bs = "re") +
         # Covariates
-        s(som_x, som_y, bs = 'gp',
-          by = adm0, k = k.def["som"],
+        s(som_x, som_y, bs = 'gp', k = 5*k.def["som"],
           xt = list(max.knots = max.knots.def["som"])),
         family = binomial(link = "cloglog"),
         data = data.mod,
@@ -210,12 +210,12 @@ if(model.id == 5) {
           by = overlap, k = k.def["ten_loc.ov"],
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
         # Tenure effects, discontinuous variations between countries
-        s(adm0, bs = "re") +
         s(adm0, it_type, bs = "re") +
         s(adm0, pa_type, bs = "re") +
         s(adm0, it_type, pa_type, bs = "re") +
         # Covariates
-        s(som_x, som_y, bs = 'gp', k = 5*k.def["som"],
+        s(som_x, som_y, bs = 'gp',
+          by = adm0, k = k.def["som"],
           xt = list(max.knots = max.knots.def["som"])),
         family = binomial(link = "cloglog"),
         data = data.mod,
@@ -225,7 +225,6 @@ if(model.id == 5) {
         control = gam.control(trace = TRUE, epsilon = conv.eps)
         )
 }
-
 
 
 b <- Sys.time()
