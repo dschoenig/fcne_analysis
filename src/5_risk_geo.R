@@ -18,7 +18,7 @@ if(!dir.exists(path.effects)) dir.create(path.effects)
 
 path.arrow <- paste0(path.lp, region, ".lp/")
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-prefix.file.effects <- paste0(region, ".eff.risk.geo.")
+prefix.file.effects <- paste0(region, ".risk.geo.")
 
 map.res <- switch(region,
                   amz = 5000,

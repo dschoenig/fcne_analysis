@@ -16,7 +16,7 @@ if(!dir.exists(path.effects)) dir.create(path.effects)
 
 path.arrow <- paste0(path.lp, region, ".lp/")
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.effects <- paste0(path.effects, region, ".eff.risk.tenure.overall.rds")
+file.effects <- paste0(path.effects, region, ".risk.tenure.rds")
 
 set_cpu_count(n.threads)
 setDTthreads(n.threads)
