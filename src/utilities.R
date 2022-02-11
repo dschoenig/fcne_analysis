@@ -1095,6 +1095,46 @@ summarize_predictions_by <-
 }
 
 
+extract_weights <- function(x, normalize = FALSE) {
+  w <- as.matrix(table(x))[,1]
+  if(normalize) {
+    w <- w / sum(w)
+  }
+  return(w)
+}
+
+
+weighted_avg <- function(x, ...) {
+  UseMethod("weighted_avg", x)
+}
+
+
+weighted_avg.draws_matrix <- function(x, w) {
+  y <-
+    x[,names(w)] %*% diag(w) |>
+    rowSums() |>
+    rvar()
+  return(y)
+}
+
+
+reweigh_posterior <- function(posterior, ...) {
+  UseMethod("reweigh_posterior", posterior)
+}
+
+
+reweigh_posterior.draws_matrix <- function(posterior, w.init, w.mod) {
+  w <- lapply(w.mod,
+              \(x) {
+                    w <- w.init[names(x)] * x
+                    w / sum(w)
+                    })
+  var.w <- lapply(w, \(w) weighted_avg(post.units, w)) |>
+                  as_draws_matrix()
+  return(var.w)
+}
+
+
 bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, bin.names = NULL, append = FALSE) {
   bins.l <- list()
   for (i in 1:length(columns)) {
@@ -1245,6 +1285,7 @@ embed_som <- function(som,
   }
   return(results)
 }
+
 
 quantization_error <- function(som, data = NULL, distances = NULL) {
   if(is.null(data)) {
@@ -1414,6 +1455,30 @@ evaluate_embedding <- function(data,
     results <- evaluation
   }
   return(results)
+}
+
+
+bmu_min_obs <- function(x, codes, obs.bmu, obs.min = 1) {
+  obs.bmu <- data.table(bmu = obs.bmu[[1]],
+                        n = obs.bmu[[2]])
+  dist.bmu <- colMeans((t(codes) - x)^2, na.rm = TRUE)
+  dist.bmu <- data.table(bmu = 1:length(dist.bmu),
+                     dist = dist.bmu)
+  bmus <- merge(dist.bmu, obs.bmu, "bmu")[order(dist)]
+  bmu.ids <- c(1, bmus[, n.c := cumsum(n)][n.c < obs.min, .I] + 1)
+  bmu.matched <- bmus$bmu[bmu.ids]
+  return(bmu.matched)
+}
+
+bmu_match_reference <- function(data, som, obs.bmu, obs.min, n.cores = 1) {
+  codes <- som$codes[[1]]
+  registerDoParallel(n.cores)
+  bmus.matched <-
+    foreach(i = 1:nrow(data)) %dopar% {
+      bmu_min_obs(x = data[i,], codes = codes,
+                  obs.bmu = obs.bmu, obs.min = obs.min)
+    }
+  return(bmus.matched)
 }
 
 # GAM UTILITIES ################################################################

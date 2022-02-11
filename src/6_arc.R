@@ -3,7 +3,7 @@ source("utilities.R")
 args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 
-# region <- "cam"
+region <- "cam"
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -12,7 +12,7 @@ path.effects <- paste0(path.base, "models/gam/effects/")
 if(!dir.exists(path.effects)) dir.create(path.effects)
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-prefix.file.effects <- paste0(region, ".eff.riskchange.")
+prefix.file.effects <- paste0(region, ".riskchange.")
 file.effects.geo <- paste0(path.effects, prefix.file.effects, "geo.rds")
 file.effects.tenure <- paste0(path.effects, prefix.file.effects, "tenure.rds")
 
@@ -30,7 +30,7 @@ maps <-
 
 rc.geo <- list()
 for(i in seq_along(maps$name)) {
-  risk.geo <- readRDS(paste0(path.effects, region, ".eff.risk.geo.",
+  risk.geo <- readRDS(paste0(path.effects, region, ".risk.geo.",
                              maps$region[i], ".rds"))
   rc.geo[[i]] <-
     list(arc = arc(risk.geo[[maps$partial.factual[i]]],
@@ -51,7 +51,7 @@ gc()
 
 ## OVERALL RISK CHANGE DUE TO TENURE (ENTIRE STUDY REGION) #####################
 
-risk.ten <- readRDS(paste0(path.effects, region, ".eff.risk.tenure.overall.rds"))
+risk.ten <- readRDS(paste0(path.effects, region, ".risk.tenure.rds"))
 
 tenure <- 
   list(

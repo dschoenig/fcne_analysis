@@ -21,11 +21,11 @@ path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.riskchange.geo <- paste0(path.effects, region, ".eff.riskchange.geo.rds")
-file.riskchange.tenure <- paste0(path.effects, region, ".eff.riskchange.tenure.rds")
-file.risk.geo.all <- paste0(path.effects, region, ".eff.risk.geo.all.rds")
-file.risk.geo.it_c <- paste0(path.effects, region, ".eff.risk.geo.it_c.rds")
-file.risk.geo.pa_c <- paste0(path.effects, region, ".eff.risk.geo.pa_c.rds")
+file.riskchange.geo <- paste0(path.effects, region, ".riskchange.geo.rds")
+file.riskchange.tenure <- paste0(path.effects, region, ".riskchange.tenure.rds")
+file.risk.geo.all <- paste0(path.effects, region, ".risk.geo.all.rds")
+file.risk.geo.it_c <- paste0(path.effects, region, ".risk.geo.it_c.rds")
+file.risk.geo.pa_c <- paste0(path.effects, region, ".risk.geo.pa_c.rds")
 file.bg_adm0 <- paste0(path.data, "map_bg/gadm36_levels.gpkg")
 
 setDTthreads(n.threads)
@@ -70,7 +70,9 @@ it_c.it0.r <- summarize_draws(r.geo.it_c$it0,
                 setnames("group.label", "rcell")
 
 it_c.arc <- summarize_draws(rc.geo$it_c$arc,
-                                mean, 
+                                mean,
+                                Mode,
+                                hdi,
                                 sd,
                                 \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
                 as.data.table() |>
@@ -216,13 +218,19 @@ map.it_c.arc <-
   geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
   geom_raster(mapping = aes(
                             # fill = mean.bin,
-                            fill = q75.bin,
+                            fill = mean,
                             x = ea_east.bin, y = ea_north.bin),
               interpolate = TRUE) +
   geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
   coord_sf(crs = crs.ea$cam, expand = FALSE, 
            xlim = map_xlim$cam, ylim = map_ylim$cam) +
-  scale_fill_manual(values = key.arc.colour) +
+  scale_fill_continuous_diverging(palette = "Blue-Red 3",
+                              limits = c(-0.5, 0.5),
+                              oob = scales::squish)
+  # scale_fill_binned_diverging(palette = "Blue-Red 3", n.breaks = 8,
+  #                             limits = c(-0.5, 0.5),
+  #                             oob = scales::squish)
+  # scale_fill_manual(values = key.arc.colour) +
                               # breaks = c(-bins, rev(bins))
                                   # ,limits = c(-0.1, 0.1)
                                   # ,oob = scales::squish
