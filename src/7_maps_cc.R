@@ -14,185 +14,21 @@ n.threads <- as.integer(args[2])
 region <- "cam"
 n.threads <- 4
 
-# path.base <- "/home/schoed/scratch/fcne_analysis/"
+path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
 path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
-file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.risk.tenure <- paste0(path.effects, region, ".risk.tenure.rds")
-file.risk.tenure_cov <- paste0(path.effects, region, ".risk.tenure_cov.rds")
-# file.riskchange.geo <- paste0(path.effects, region, ".riskchange.geo.rds")
-# file.riskchange.tenure <- paste0(path.effects, region, ".riskchange.tenure.rds")
-# file.risk.geo.all <- paste0(path.effects, region, ".risk.geo.all.rds")
-file.risk.geo.it_c <- paste0(path.effects, region, ".risk.geo.it_c.rds")
-# file.risk.geo.pa_c <- paste0(path.effects, region, ".risk.geo.pa_c.rds")
-# file.bg_adm0 <- paste0(path.data, "map_bg/gadm36_levels.gpkg")
+# file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
+file.data <- paste0(path.data.proc, region, ".data.fit.proc.n50.rds")
+file.riskchange.tenure <- paste0(path.effects, region, ".riskchange.tenure.rds")
+file.riskchange.tenure_areas <- paste0(path.effects, region, ".riskchange.tenure.rds")
+file.riskchange.geo <- paste0(path.effects, region, ".riskchange.geo.rds")
+file.risk.geo.all <- paste0(path.effects, region, ".risk.geo.all.rds")
 
 setDTthreads(n.threads)
 
-
-## BASELINES FOR COVARIATES
-
-data.proc <- readRDS(file.data)
-
-r.ten <- readRDS(file.risk.tenure)
-r.ten_cov <- readRDS(file.risk.tenure_cov)
-r.geo.it_c <- readRDS(file.risk.geo.it_c)
-
-str(r.ten, max.level = 1)
-str(r.geo.it_c, max.level = 1)
-
-
-# Posterior for SOM units, baseline observations
-post.units <- r.ten_cov$r$baseline
-
-# Initial weights based on no. of observations for each BMU
-n.units <- data.proc[it_type == "none" & pa_type == "none",
-                     .(n = .N), som_bmu
-                     ][order(som_bmu)]
-w.units <- n.units$n
-names(w.units) <- as.character(n.units$som_bmu)
-
-
-# Reweigh based on the reference BMUs for each point observation
-
-# groups <- r.ten$groups[is.na(adm0) & is.na(pa_type)]
-# id.list <- groups$ids
-# names(id.list) <- groups$group.label
-id.list <- r.ten$groups$ids
-names(id.list) <- r.ten$groups$group.label
-ids.units <- data.proc[, .(id, som_bmu.bl)]
-w.points <-
-  lapply(id.list,
-         \(x) {ids.units[id %in% x,
-                         extract_weights(as.character(unlist(som_bmu.bl)))]
-         })
-
-r.bl.ten <- reweigh_posterior(post.units, w.units, w.points)
-
-# selg <- r.ten$groups[is.na(pa_type) & it_type == "not_recognized", group.label]
-# selg <- r.ten$groups[is.na(it_type) & pa_type == "direct_use", group.label]
-# selg <- r.ten$groups[is.na(adm0), group.label]
-selg <- r.ten$groups[adm0 == "MEX", group.label]
-arc.ten <- arc(r.ten$full, r.bl.ten, selg)
-rrc.ten <- rrc(r.ten$full, r.bl.ten, selg)
-
-summary(rrc.ten, mean, median, Mode)
-summary(rrc.ten)
-
-
-
-
-
-## TESTING STUFF
-
-
-id.list <- groups$ids
-names(id.list) <- groups$group.label
-
-post.units <- r.ten_cov$r$baseline
-
-
-
-# Initial weights based on no. of observations for each BMU
-w.units <- n.units$n
-names(w.init) <- as.character(n.units$som_bmu)
-
-# Reweigh based on the reference BMUs for each point observation
-w.points <-
-  lapply(id.list,
-         \(x) {
-           ids.units[id %in% x,
-                     extract_weights(as.character(unlist(som_bmu.bl)))]
-         })
-
-
-# Compute baseline by reweighting posterior for reference observations
-r.geo.bl <- reweigh_posterior(post.units, w.init, w.mod)
-
-
-
-
-summary(var.w)
-
-summary(arc(r.geo.it_c$full[,1:1000], var.w), mode = Mode, hdi) |>
-summarize(mean(mode))
-
-
-extract_weights <- function(x, normalize = FALSE) {
-  w <- as.matrix(table(x))[,1]
-  if(normalize) {
-    w <- w / sum(w)
-  }
-  return(w)
-}
-
-
-weighted_avg <- function(x, ...) {
-  UseMethod("weighted_avg", x)
-}
-
-weighted_avg.draws_matrix <- function(x, w) {
-  y <-
-    x[,names(w)] %*% diag(w) |>
-    rowSums() |>
-    rvar()
-  return(y)
-}
-
-reweigh_posterior <- function(posterior, ...) {
-  UseMethod("reweigh_posterior", posterior)
-}
-
-reweigh_posterior.draws_matrix <- function(posterior, w.init, w.mod) {
-  w <- lapply(w.mod,
-              \(x) {
-                    w <- w.init[names(x)] * x
-                    w / sum(w)
-                    })
-  var.w <- lapply(w, \(w) weighted_avg(post.units, w)) |>
-                  as_draws_matrix()
-  return(var.w)
-}
-
-  w.id <-
-
-w.u
-w.idx <- lapply(id.list, \(x) ids.units[id %in% x, extract_weights(as.character(unlist(som_bmu.bl)))])
-
-
-  idx.units <- ids.units[1:10,]
-
-  idx.units[, (bmu = as.character(unlist(som_bmu.bl))), by = id]
-  idx.units[, (bmu = as.character(unlist(som_bmu.bl))), by = id][, (n = .N), by = c("id", "V1")]
-
-  sel <- names(w.id)
-  w.c <- w.u[sel] * w.id
-  w.avg <- post.units[, names(w.c)] %*% diag(w.c / sum(w.c)) |>
-           rowSums()
-
-  |>
-           rvar(w.avg)
- 
-post.units[names(w[[1]]))
-
-
-
-
-           as.matrix(ncol = 1)
-
-           summary(as_draws_matrix(w.avg))
-          
-  
-
-  i=1
-  
-
-
-
-}
 
 
 ## CRS / LIMITS
@@ -203,5 +39,300 @@ crs.ea <-
 map_xlim <- list(cam = c(-80e4, 120e4))
 map_ylim <- list(cam = c(-90e4, 80e4))
 
+
+## MAPS
+
+bg_adm0 <- st_read(paste0(path.data, "map_bg/gadm36_levels.gpkg"),
+                   query = "SELECT * FROM level0 
+                            WHERE GID_0 IN ('ABW', 'AIA', 'ARG', 'ATG', 'BES', 
+                                            'BHS', 'BLM', 'BLZ', 'BOL', 'BRA', 
+                                            'BRB', 'CHL', 'COL', 'CRI', 'CUB', 
+                                            'CUW', 'CYM', 'DMA', 'DOM', 'ECU', 
+                                            'FLK', 'GLP', 'GRD', 'GTM', 'GUF', 
+                                            'GUY', 'HND', 'HTI', 'JAM', 'KNA', 
+                                            'LCA', 'MAF', 'MEX', 'MSR', 'MTQ', 
+                                            'NIC', 'PAN', 'PER', 'PRI', 'PRY', 
+                                            'SGS', 'SLV', 'SUR', 'SXM', 'TCA', 
+                                            'TTO', 'UMI', 'URY', 'VCT', 
+                                            'VEN', 'VGB', 'VIR', 'XCL')"
+                   ) |>
+           st_transform(crs.ea[[region]])
+
+r.geo.all <- readRDS(file.risk.geo.all)
+r.geo.all.sum <- summarize_draws(r.geo.all$full,
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+             as.data.table() |>
+             setnames("variable", "group.label") |>
+             merge(r.geo.all$map.units[, !"ids"],
+                   by = "group.label") |>
+             setnames("group.label", "rcell")
+
+
+rc.geo <- readRDS(file.riskchange.geo)
+
+arc.geo.all.sum <- summarize_draws(rc.geo$all$arc,
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                   as.data.table() |>
+                   setnames("variable", "group.label") |>
+                   merge(rc.geo$all$map.units[, !"ids"],
+                         by = "group.label") |>
+                   setnames("group.label", "rcell")
+
+rrc.geo.all.sum <- summarize_draws(rc.geo$all$rrc,
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                   as.data.table() |>
+                   setnames("variable", "group.label") |>
+                   merge(rc.geo$all$map.units[, !"ids"],
+                         by = "group.label") |>
+                   setnames("group.label", "rcell")
+
+
+arc.geo.it_c.sum <- summarize_draws(rc.geo$it_c$arc,
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                   as.data.table() |>
+                   setnames("variable", "group.label") |>
+                   merge(rc.geo$it_c$map.units[, !"ids"],
+                         by = "group.label") |>
+                   setnames("group.label", "rcell")
+
+arc.geo.pa_c.sum <- summarize_draws(rc.geo$pa_c$arc,
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                   as.data.table() |>
+                   setnames("variable", "group.label") |>
+                   merge(rc.geo$pa_c$map.units[, !"ids"],
+                         by = "group.label") |>
+                   setnames("group.label", "rcell")
+
+
+
+rcell.it_rec <- rc.geo$it$map.units[it_type == "recognized", group.label]
+arc.geo.it_rec.sum <- summarize_draws(rc.geo$it$arc[,rcell.it_rec],
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                   as.data.table() |>
+                   setnames("variable", "group.label") |>
+                   merge(rc.geo$it$map.units[group.label %in% rcell.it_rec, !"ids"],
+                         by = "group.label") |>
+                   setnames("group.label", "rcell")
+
+rcell.it_notrec <- rc.geo$it$map.units[it_type == "not_recognized", group.label]
+arc.geo.it_notrec.sum <- summarize_draws(rc.geo$it$arc[,rcell.it_notrec],
+                                mean, 
+                                sd,
+                                \(x) quantile2(x, c(0.25, 0.75, 0.025, 0.975)))|>
+                   as.data.table() |>
+                   setnames("variable", "group.label") |>
+                   merge(rc.geo$it$map.units[group.label %in% rcell.it_notrec, !"ids"],
+                         by = "group.label") |>
+                   setnames("group.label", "rcell")
+
+map_theme <-  
+  theme_minimal() +
+  theme(panel.background = element_rect(fill = "grey90", colour = NA),
+        panel.grid = element_line(colour = "grey75")
+        # , legend.position = "bottom",
+        # , legend.justification = "right"
+        )
+
+r.geo.all.map <- 
+  ggplot(r.geo.all.sum) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = mean,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_viridis_c(limits = c(0,1), option = "D") +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+r.geo.all.map
+
+arc.geo.all.map <- 
+  ggplot(arc.geo.all.sum) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = mean,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_fermenter(type = "div"
+                       , palette = 5, direction = -1, n.breaks = 13,
+                       # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+                       ,limits = c(-0.5, 0.5)
+                       # ,limits = c(-1, 1)
+                       ,oob = scales::squish
+                       ) +
+  # scale_fill_continuous_diverging(
+  #                                 # palette = "Blue-Red 2"
+  #                                 palette = "Purple-Green", rev = TRUE
+  #                                 ,mid = 0
+  #                                 # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                                 ,limits = c(-0.5, 0.5)
+  #                                 # ,limits = c(-1, 1)
+  #                                 ,oob = scales::squish
+  #                                 ) +
+  # scale_fill_binned_diverging(palette = "Blue-Red 3"
+  #                                 # ,n.breaks = 8
+  #                             # ,breaks = seq(-0.5, 0.5, 0.1),
+  #                                 # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                                 ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                                 ,limits = c(-0.51, 0.51)
+  #                                 # ,limits = c(-1, 1)
+  #                                 ,oob = scales::squish
+  #                                 ) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+arc.geo.all.map
+
+rrc.geo.all.map <- 
+  ggplot(rrc.geo.all.sum) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = mean,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_continuous_diverging(palette = "Blue-Red 3"
+                                  ,mid = 0 
+                                  # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+                                  # ,limits = c(-0.5, 0.5)
+                                  # ,limits = c(-1, 5)
+                                  # ,oob = scales::squish
+                                  ) +
+  # scale_fill_binned_diverging(palette = "Blue-Red 3"
+  #                                 # ,n.breaks = 8
+  #                             # ,breaks = seq(-0.5, 0.5, 0.1),
+  #                                 # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                                 ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                                 ,limits = c(-0.51, 0.51)
+  #                                 # ,limits = c(-1, 1)
+  #                                 ,oob = scales::squish
+  #                                 ) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+rrc.geo.all.map
+
+
+arc.geo.it_c.map <- 
+  ggplot(arc.geo.it_c.sum) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = mean,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_continuous_diverging(palette = "Blue-Red 3"
+                                  ,mid = 0
+                                  # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+                                  ,limits = c(-0.5, 0.5)
+                                  # ,limits = c(-1, 1)
+                                  ,oob = scales::squish
+                                  ) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+arc.geo.it_c.map
+
+
+
+
+arc.geo.it_rec.map <- 
+  ggplot(arc.geo.it_rec.sum) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = mean,
+                            x = ea_east.bin, y = ea_north.bin)
+              ,interpolate = TRUE
+              ) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_continuous_diverging(palette = "Blue-Red 3"
+                                  ,mid = 0
+                                  # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+                                  ,limits = c(-0.5, 0.5)
+                                  # ,limits = c(-1, 1)
+                                  ,oob = scales::squish
+                                  ) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+arc.geo.it_rec.map
+
+arc.geo.it_notrec.map <- 
+  ggplot(arc.geo.it_notrec.sum) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = mean,
+                            x = ea_east.bin, y = ea_north.bin)
+              ,interpolate = TRUE
+              ) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  scale_fill_continuous_diverging(palette = "Blue-Red 3"
+                                  ,mid = 0
+                                  # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+                                  ,limits = c(-0.5, 0.5)
+                                  # ,limits = c(-1, 1)
+                                  ,oob = scales::squish
+                                  ) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+arc.geo.it_notrec.map
+
+
+arc.geo.pa_c.map <- 
+  ggplot(arc.geo.pa_c.sum) +
+  geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
+  geom_raster(mapping = aes(
+                            fill = mean,
+                            x = ea_east.bin, y = ea_north.bin),
+              interpolate = TRUE) +
+  geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
+  coord_sf(crs = crs.ea$cam, expand = FALSE, 
+           xlim = map_xlim$cam, ylim = map_ylim$cam) +
+  # scale_fill_continuous_diverging(palette = "Blue-Red 3"
+  #                                 ,mid = 0
+  #                                 # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                                 ,limits = c(-0.5, 0.5)
+  #                                 # ,limits = c(-1, 1)
+  #                                 ,oob = scales::squish
+  #                                 ) +
+  scale_fill_binned_diverging(palette = "Blue-Red 3"
+                                  # ,n.breaks = 8
+                              ,breaks = seq(-0.5, 0.5, 0.1),
+                                  # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+                                  ,limits = c(-0.51, 0.51)
+                                  # ,limits = c(-1, 1)
+                                  ,oob = scales::squish
+                                  ) +
+  labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
+  theme_minimal() +
+  map_theme
+arc.geo.pa_c.map
 
 

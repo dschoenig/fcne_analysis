@@ -40,13 +40,13 @@ arc <- function(x, ...) {
 }
 
 arc.draws_matrix <- function(x,
-                             cf,
+                             ref,
                              select = NULL,
                              trans = identity) {
   if(is.null(select)){
-    select <- intersect(colnames(x), colnames(cf))
+    select <- intersect(colnames(x), colnames(ref))
   }
-  arc <- trans(x[, select]) - trans(cf[, select])
+  arc <- trans(x[, select]) - trans(ref[, select])
   return(arc)
 }
 
@@ -56,13 +56,13 @@ rrc <- function(x, ...) {
 }
 
 rrc.draws_matrix <- function(x,
-                             cf,
+                             ref,
                              select = NULL,
                              trans = identity) {
   if(is.null(select)){
-    select <- intersect(colnames(x), colnames(cf))
+    select <- intersect(colnames(x), colnames(ref))
   }
-  rrc <- (trans(x[, select]) - trans(cf[, select])) / trans(cf[, select])
+  rrc <- (trans(x[, select]) - trans(ref[, select])) / trans(ref[, select])
   return(rrc)
 }
 

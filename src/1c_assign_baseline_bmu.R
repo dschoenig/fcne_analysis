@@ -22,7 +22,8 @@ n.cores <- 4
 file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
 
-min.obs <- 100
+# min.obs <- 100
+min.obs <- 1
 
 ## Map covariates to SOM #######################################################
 
@@ -44,8 +45,7 @@ data.bmu.bl <-
 # lack of baseline observations)
 
 data.bmu.bl.mult <-
-  data.proc[!som_bmu %in% bl.bmu[n >= min.obs, som_bmu] &
-           (pa_type != "none" | it_type != "none")]
+  data.proc[!som_bmu %in% bl.bmu[n >= min.obs, som_bmu]]
 
 data.bmu.bl.mult$som_bmu.bl.mult <-
   scale_data_som(data.bmu.bl.mult[, .(tri, dist_set, dist_roads,
@@ -54,14 +54,14 @@ data.bmu.bl.mult$som_bmu.bl.mult <-
   bmu_match_reference(som.fit, bl.bmu[, .(som_bmu, n)], min.obs, 4)
 
 data.bmu <-
-  merge(data.proc, data.bmu.bl[, .(id, som_bmu.bl)], all = TRUE, sort = FALSE) |>
+  merge(data.proc[,!"som_bmu.bl"], data.bmu.bl[, .(id, som_bmu.bl)], all = TRUE, sort = FALSE) |>
   merge(data.bmu.bl.mult[, .(id, som_bmu.bl.mult)], all = TRUE, sort = FALSE)
 
 
 data.bmu[, som_bmu.bl := fifelse(unlist(lapply(som_bmu.bl, is.null)),
-                                  som_bmu.bl.mult, som_bmu.bl)]
+                                 som_bmu.bl.mult, som_bmu.bl)]
 
-sum(data.bmu$id != data.proc$id)
+sum(data.bmu$id != data.proc$id) == 0
 
 saveRDS(data.bmu[, !"som_bmu.bl.mult"], file.data.proc)
 
