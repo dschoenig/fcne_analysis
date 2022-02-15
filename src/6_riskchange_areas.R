@@ -38,7 +38,8 @@ id.list <- r.ten_areas$areas.it_pa$ids
 names(id.list) <- r.ten_areas$areas.it_pa$area.label
 ids.units <- data.proc[, .(id, som_bmu.bl, som_bmu.bl.w)
                        ][, lapply(.SD, unlist), id]
-# Reweigh baseline SOM for each group, based on what points they where assigned to
+# Reweigh baseline SOM units for each group, based on what points they where
+# assigned to
 w.points <-
   lapply(id.list,
          \(x) {

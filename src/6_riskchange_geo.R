@@ -22,7 +22,6 @@ path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.data <- paste0(path.data.proc, region, ".data.fit.proc.n50.rds")
 file.risk.tenure_cov <- paste0(path.effects, region, ".risk.tenure_cov.rds")
 prefix.file.risk.geo <- paste0(region, ".risk.geo.")
 file.riskchange <- paste0(path.effects, region, ".riskchange.geo.rds")
@@ -33,9 +32,6 @@ setDTthreads(n.threads)
 
 data.proc <- readRDS(file.data)
 
-data.proc[1:10, .(id, som_bmu.bl, som_bmu.bl.w)][,lapply(.SD, unlist), id]
-
-
 # Posterior for SOM units, baseline observations
 r.ten_cov <- readRDS(file.risk.tenure_cov)
 post.units <- r.ten_cov$r$baseline
@@ -44,7 +40,7 @@ post.units <- r.ten_cov$r$baseline
 maps <- c("all", "it_c", "pa_c", "it", "pa", "ov")
 rc.geo <- list()
 for(i in seq_along(maps)){
-  message(paste0("Calculating risk change for `", maps[i], "` …"))
+  message(paste0("Calculating risk change for map `", maps[i], "` …"))
   rc.map <- list()
   file.risk.geo <- paste0(path.effects, prefix.file.risk.geo, maps[i], ".rds")
   r.geo <- readRDS(file.risk.geo)
@@ -52,7 +48,8 @@ for(i in seq_along(maps)){
   names(id.list) <- r.geo$map.units$group.label
   ids.units <- data.proc[, .(id, som_bmu.bl, som_bmu.bl.w)
                          ][, lapply(.SD, unlist), id]
-  # Reweigh baseline SOM for each group, based on what points they where assigned to
+  # Reweigh baseline SOM units for each group, based on what points they where
+  # assigned to
   w.points <-
     lapply(id.list,
            \(x) {

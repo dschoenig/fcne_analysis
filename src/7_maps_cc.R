@@ -20,8 +20,7 @@ path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
-# file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.data <- paste0(path.data.proc, region, ".data.fit.proc.n50.rds")
+file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.riskchange.tenure <- paste0(path.effects, region, ".riskchange.tenure.rds")
 file.riskchange.tenure_areas <- paste0(path.effects, region, ".riskchange.tenure.rds")
 file.riskchange.geo <- paste0(path.effects, region, ".riskchange.geo.rds")
@@ -34,7 +33,8 @@ setDTthreads(n.threads)
 ## CRS / LIMITS
 
 crs.ea <- 
-  list(cam = st_crs('PROJCS["Central_America_Equidistant_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Equidistant_Conic"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900001"]]'))
+  list(cam = st_crs('PROJCS["Central_America_Albers_Equal_Area_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900002"]]'),
+       amz = st_crs('PROJCS["Amazon_Albers_Equal_Area_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",-5.59],PARAMETER["longitude_of_center",-62.05],PARAMETER["standard_parallel_1",3.81],PARAMETER["standard_parallel_2",-15.62],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900004"]]'))
 
 map_xlim <- list(cam = c(-80e4, 120e4))
 map_ylim <- list(cam = c(-90e4, 80e4))
@@ -161,45 +161,53 @@ r.geo.all.map <-
   map_theme
 r.geo.all.map
 
+
 arc.geo.all.map <- 
+  # ggplot(arc.geo.all.sum[rcell %in% rc.geo$all$map.units[n>10, group.label]]) +
   ggplot(arc.geo.all.sum) +
+  # ggplot(arc.geo.it_c.sum[rcell %in% rc.geo$all$map.units[n>10, group.label]]) +
+  # ggplot(arc.geo.it_rec.sum[rcell %in% rc.geo$it$map.units[n>10, group.label]]) +
+  # ggplot(arc.geo.it_notrec.sum[rcell %in% rc.geo$it$map.units[n>10, group.label]]) +
   geom_sf(data = bg_adm0, fill = "grey30", colour = NA) +
   geom_raster(mapping = aes(
                             fill = mean,
+                            # fill = q2.5,
+                            # fill = q97.5,
                             x = ea_east.bin, y = ea_north.bin),
               interpolate = TRUE) +
   geom_sf(data = bg_adm0, fill = NA, colour = "grey50", size = 0.5) +
   coord_sf(crs = crs.ea$cam, expand = FALSE, 
            xlim = map_xlim$cam, ylim = map_ylim$cam) +
-  scale_fill_fermenter(type = "div"
-                       , palette = 5, direction = -1, n.breaks = 13,
-                       # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
-                       ,limits = c(-0.5, 0.5)
-                       # ,limits = c(-1, 1)
-                       ,oob = scales::squish
-                       ) +
+  # scale_fill_fermenter(type = "div"
+  #                      , palette = 5, direction = -1, n.breaks = 13,
+  #                      # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                      ,limits = c(-0.5, 0.5)
+  #                      # ,limits = c(-1, 1)
+  #                      ,oob = scales::squish
+  #                      ) +
   # scale_fill_continuous_diverging(
-  #                                 # palette = "Blue-Red 2"
-  #                                 palette = "Purple-Green", rev = TRUE
+  #                                 palette = "Blue-Red 3"
+  #                                 # palette = "Purple-Green", rev = TRUE
   #                                 ,mid = 0
-  #                                 # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+  #                                 ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
   #                                 ,limits = c(-0.5, 0.5)
   #                                 # ,limits = c(-1, 1)
   #                                 ,oob = scales::squish
   #                                 ) +
-  # scale_fill_binned_diverging(palette = "Blue-Red 3"
-  #                                 # ,n.breaks = 8
-  #                             # ,breaks = seq(-0.5, 0.5, 0.1),
-  #                                 # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
-  #                                 ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
-  #                                 ,limits = c(-0.51, 0.51)
-  #                                 # ,limits = c(-1, 1)
-  #                                 ,oob = scales::squish
-  #                                 ) +
+  scale_fill_binned_diverging(palette = "Blue-Red 3"
+                                  # ,n.breaks = 8
+                              # ,breaks = seq(-0.5, 0.5, 0.1),
+                                  # ,breaks = c(-0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5)
+                                  ,breaks = c(-0.5, -0.25, -0.1, -0.01, 0.01, 0.1, 0.25, 0.5)
+                                  ,limits = c(-0.51, 0.51)
+                                  # ,limits = c(-1, 1)
+                                  ,oob = scales::squish
+                                  ) +
   labs(fill = "Absolute change in risk of forest loss", x = "Longitude", y = "Latitude") +
   theme_minimal() +
   map_theme
 arc.geo.all.map
+
 
 rrc.geo.all.map <- 
   ggplot(rrc.geo.all.sum) +
