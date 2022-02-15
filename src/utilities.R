@@ -1094,22 +1094,29 @@ summarize_predictions_by <-
   return(groups.summarized)
 }
 
+extract_weights <- function(x, ...) {
+  UseMethod("extract_weights", x)
+}
 
-extract_weights <- function(x, normalize = FALSE) {
-  w <- as.matrix(table(x))[,1]
-  if(normalize) {
-    w <- w / sum(w)
-  }
+
+extract_weights.data.table <- function(x, w.col = NULL, by.col = NULL, standardize = TRUE) {
+  if(is.null(w.col)) w.col <- names(x)[2]
+  if(is.null(by.col)) by.col <- names(x)[1]
+  w.expr <- parse(text = paste0("sum(", w.col, ")"))
+  w.dt <- x[, .(w = eval(w.expr)), by.col]
+  w <- w.dt$w
+  names(w) <- w.dt[[by.col]]
+  if(standardize) w <- w / sum(w)
   return(w)
 }
 
 
-weighted_avg <- function(x, ...) {
-  UseMethod("weighted_avg", x)
+weighted_sum <- function(x, ...) {
+  UseMethod("weighted_sum", x)
 }
 
 
-weighted_avg.draws_matrix <- function(x, w) {
+weighted_sum.draws_matrix <- function(x, w) {
   y <-
     x[,names(w)] %*% diag(w) |>
     rowSums() |>
@@ -1123,13 +1130,13 @@ reweigh_posterior <- function(posterior, ...) {
 }
 
 
-reweigh_posterior.draws_matrix <- function(posterior, w.init, w.mod) {
-  w <- lapply(w.mod,
-              \(x) {
-                    w <- w.init[names(x)] * x
-                    w / sum(w)
-                    })
-  var.w <- lapply(w, \(w) weighted_avg(post.units, w)) |>
+reweigh_posterior.draws_matrix <- function(posterior, w, w.init = NULL) {
+  if(is.null(w.init)) {
+    w.re <- w
+  } else {
+    w.re <- lapply(w.mod, \(x) w <- w.init[names(x)] * x)
+  }
+  var.w <- lapply(w.re, \(w) weighted_sum(posterior, w)) |>
                   as_draws_matrix()
   return(var.w)
 }

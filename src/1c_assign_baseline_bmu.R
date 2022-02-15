@@ -19,16 +19,17 @@ n.cores <- as.integer(args[2])
 region <- "cam"
 n.cores <- 4
 
-file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
+file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.n50.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
+file.data.bl <- paste0(path.data.proc, region, ".data.fit.bl.rds")
 
 # min.obs <- 100
+# min.obs <- 50
 min.obs <- 1
 
 ## Map covariates to SOM #######################################################
 
 som.fit <- readRDS(file.som)
-
 data.proc <- readRDS(file.data.proc)
 
 # DETERMINE BASELINE BMUs
@@ -61,8 +62,26 @@ data.bmu <-
 data.bmu[, som_bmu.bl := fifelse(unlist(lapply(som_bmu.bl, is.null)),
                                  som_bmu.bl.mult, som_bmu.bl)]
 
-sum(data.bmu$id != data.proc$id) == 0
+# Weights based on number of baseline observations for each BMU, calculated
+# seperately for each point observation (i.e. the sum of weights per point
+# observation is 1). This is only relevant if more than one baseline BMU is
+# assigned, which is only the case when the minimum number of baseline
+# observations is > 1.
 
-saveRDS(data.bmu[, !"som_bmu.bl.mult"], file.data.proc)
+id.bl <-
+  data.bmu[,
+           .(id, som_bmu.bl)
+           ][,
+             lapply(.SD, \(x) as.numeric(unlist(x))), by = id] |>
+  merge(bl.bmu[, .(som_bmu.bl = som_bmu, n.bmu = n)], by = "som_bmu.bl", sort = FALSE)
+id.bl[, n.id := sum(n.bmu), by = id][, w := n.bmu/n.id]
+data.bl <- id.bl[,.(som_bmu.bl = list(som_bmu.bl), som_bmu.bl.w = list(w)), id]
 
+sum(data.bl$id != data.proc$id) == 0
 
+data.proc <-
+  merge(data.proc[,!c("som_bmu.bl", "som_bmu.bl.w")],
+  # merge(data.proc,
+        data.bl, by = "id", all = TRUE, sort = FALSE)
+
+saveRDS(data.proc, file.data.proc)

@@ -32,25 +32,22 @@ data.proc <- readRDS(file.data)
 r.ten_cov <- readRDS(file.risk.tenure_cov)
 post.units <- r.ten_cov$r$baseline
 
-# Initial weights based on no. of observations for each BMU
-n.units <- data.proc[it_type == "none" & pa_type == "none",
-                     .(n = .N), som_bmu
-                     ][order(som_bmu)]
-w.units <- n.units$n
-names(w.units) <- as.character(n.units$som_bmu)
-
 rc.ten <- list()
 r.ten_areas <- readRDS(file.risk.tenure_areas)
 id.list <- r.ten_areas$areas.it_pa$ids
 names(id.list) <- r.ten_areas$areas.it_pa$area.label
-ids.units <- data.proc[, .(id, som_bmu.bl)]
-# Reweigh SOM units based on point observations in groups
+ids.units <- data.proc[, .(id, som_bmu.bl, som_bmu.bl.w)
+                       ][, lapply(.SD, unlist), id]
+# Reweigh baseline SOM for each group, based on what points they where assigned to
 w.points <-
   lapply(id.list,
-         \(x) {ids.units[id %in% x,
-                         extract_weights(as.character(unlist(som_bmu.bl)))]
+         \(x) {
+           extract_weights(ids.units[id %in% x],
+                           w.col = "som_bmu.bl.w",
+                           by.col = "som_bmu.bl",
+                           standardize = TRUE)
          })
-r.bl.ten <- reweigh_posterior(post.units, w.units, w.points)
+r.bl.ten <- reweigh_posterior(post.units, w = w.points)
 rc.ten$arc <- arc(r.ten_areas$r, r.bl.ten)
 rc.ten$rrc <- rrc(r.ten_areas$r, r.bl.ten)
 rc.ten$groups <- r.ten_areas$areas.it_pa
