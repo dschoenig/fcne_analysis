@@ -55,3 +55,4 @@ rc.ten$groups <- r.ten_areas$areas.it_pa
 
 message(paste0("Saving outputs to `", file.riskchange, "` …"))
 saveRDS(rc.ten, file.riskchange)
+

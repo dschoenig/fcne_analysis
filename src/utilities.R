@@ -1502,6 +1502,13 @@ lookup_smooths <- function(gam) {
   return(smooth.lu)
 }
 
+# PLOTTING HELPERS #############################################################
+
+label_arc <- function(x) {
+  per <- as.character(round(x * 100, 2))
+  per[which(x > 0)] <- paste0("+", per[which(x > 0)])
+  paste0(per, "%")
+}
 
 #diag_residuals <- function(model, 
 #                           residuals,
