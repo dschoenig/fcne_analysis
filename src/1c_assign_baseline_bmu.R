@@ -16,10 +16,10 @@ if(!dir.exists(path.data.proc)){
 
 region <- tolower(as.character(args[1]))
 n.cores <- as.integer(args[2])
-region <- "cam"
+region <- "amz"
 n.cores <- 4
 
-file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.n50.rds")
+file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
 file.data.bl <- paste0(path.data.proc, region, ".data.fit.bl.rds")
 
@@ -42,8 +42,9 @@ data.bmu.bl <-
   copy(data.proc)[som_bmu %in% bl.bmu[n >= min.obs, som_bmu]][,
                   som_bmu.bl := as.list(som_bmu)]
 
-# Observations to which multiple baseline BMUs have to be assigned (due to a
-# lack of baseline observations)
+# Observations to which a different (or multiple, if min.obs > 1) baseline
+# BMU(s) have to be assigned if there are not enough observations in the
+# first-order BMU.
 
 data.bmu.bl.mult <-
   data.proc[!som_bmu %in% bl.bmu[n >= min.obs, som_bmu]]

@@ -17,7 +17,7 @@ if(!dir.exists(path.data.proc)){
 
 region <- tolower(as.character(args[1]))
 n.cores <- as.integer(args[2])
-region <- "cam"
+region <- "amz"
 n.cores <- 4
 
 ## Map covariates to SOM #######################################################
@@ -30,7 +30,6 @@ som.fit <- readRDS(file.som)
 for(i in seq_along(datasets)) {
   file.data.int <- paste0(path.data.int, region, ".data.", datasets[i], ".int.rds")
   file.data.proc <- paste0(path.data.proc, region, ".data.", datasets[i], ".proc.rds")
- 
 
   message(paste0("Embedding observations from `", file.data.int, "` …"))
 
@@ -49,5 +48,5 @@ for(i in seq_along(datasets)) {
            ]
 
   saveRDS(data.int, file.data.proc)
-
 }
+
