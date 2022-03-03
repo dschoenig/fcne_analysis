@@ -29,9 +29,9 @@ k.reg <- list(cam = c(ten_loc.bl = 5000,
                       ten_loc.itpa = 1000,
                       ten_loc.ov = 500,
                       som = 1000),
-              amz = c(ten_loc.bl = 1000,
+              amz = c(ten_loc.bl = 5000,
                       ten_loc.itpa = 1000,
-                      ten_loc.ov = 1000,
+                      ten_loc.ov = 500,
                       som = 1000))
 # Increase number of maximum knots 10-fold (default: 2000)
 max.knots.reg <- list(cam = c(ten_loc.bl = 2e4,
@@ -73,7 +73,7 @@ a <- Sys.time()
 
 if(model.id == 0) {
   k.loc <- sum(k.def["ten_loc.bl"], 4 * k.def["ten_loc.itpa"], 4 * k.def["ten_loc.ov"]) 
-  max.knots.loc <- 10 * k.loc
+  max.knots.loc <- max.knots.def["ten_loc.bl"]
   model <-
     bam(forestloss ~
         s(ed_east, ed_north, bs = 'gp',
@@ -161,6 +161,7 @@ if(model.id == 3) {
 }
 
 if(model.id == 4) {
+  # Vary covariate effects by country
   model <-
     bam(forestloss ~
         # Tenure effects, continuous variation over geographic location
@@ -194,6 +195,7 @@ if(model.id == 4) {
 }
 
 if(model.id == 5) {
+  # Same as `4`, but with cloglog link
   model <-
     bam(forestloss ~
         # Tenure effects, continuous variation over geographic location
