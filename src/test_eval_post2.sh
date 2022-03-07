@@ -7,5 +7,4 @@
 
 module load StdEnv/2020 r/4.1.2
 
-export FLEXIBLAS=OPENBLAS
 Rscript 4_evaluate_lp.R AMZ 51 200
