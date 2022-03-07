@@ -8,7 +8,8 @@
 
 module load StdEnv/2020 r/4.1.2
 
+export FLEXIBLAS=OPENBLAS
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-# Rscript 3_posterior_simulation.R CAM $SLURM_CPUS_PER_TASK
 Rscript 3_posterior_simulation.R CAM $SLURM_CPUS_PER_TASK
+Rscript 3_posterior_simulation.R AMZ $SLURM_CPUS_PER_TASK
 

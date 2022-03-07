@@ -8,4 +8,5 @@
 
 module load StdEnv/2020 r/4.1.2
 
+export FLEXIBLAS=OPENBLAS
 Rscript 4_evaluate_lp.R CAM $SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_COUNT
