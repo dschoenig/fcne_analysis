@@ -9,7 +9,7 @@ library(arrow)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.lp <- paste0(path.base, "models/gam/lp/")
@@ -18,9 +18,20 @@ region <- tolower(as.character(args[1]))
 task_id <- as.integer(args[2])
 task_count <- as.integer(args[3])
 
-# region <- "cam"
+# region <- "amz"
 # task_id <- 1
 # task_count <- 200
+
+task_count <- 200
+# AMAZON refit because of timeout
+chunks.refit <-
+  c(10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+  27, 28, 29, 30, 31, 32, 33, 34, 35, 40, 41, 60,
+  78, 79, 80, 81, 82, 83, 84, 85, 86, 114, 115, 127,
+  128, 135, 156, 157, 158, 159, 161, 162, 163, 175,
+  176, 177, 178, 179, 180, 181, 182)
+task_id <- chunks.refit[task_id]
+
 
 file.gam <- paste0(path.gam, region, ".m3.rds")
 file.post <- paste0(path.gam, region,  ".m3.post.rds")
@@ -37,6 +48,7 @@ data <- readRDS(file.data)
 data.pred <- data[,.(id, forestloss, it_type, pa_type, overlap,
                      som_x, som_y, ed_east, ed_north, adm0)]
 rm(data)
+]
 
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
