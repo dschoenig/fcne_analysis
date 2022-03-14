@@ -9,7 +9,7 @@ library(arrow)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-path.base <- "../"
+# path.base <- "../"
 path.gam <- paste0(path.base, "models/gam/")
 path.data.proc <- paste0(path.base, "data/processed/")
 path.lp <- paste0(path.base, "models/gam/lp/")
@@ -48,7 +48,6 @@ data <- readRDS(file.data)
 data.pred <- data[,.(id, forestloss, it_type, pa_type, overlap,
                      som_x, som_y, ed_east, ed_north, adm0)]
 rm(data)
-]
 
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
