@@ -22,20 +22,10 @@ task_count <- as.integer(args[3])
 # task_id <- 1
 # task_count <- 200
 
-task_count <- 200
-# AMAZON refit because of timeout
-chunks.refit <-
-  c(10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-  27, 28, 29, 30, 31, 32, 33, 34, 35, 40, 41, 60,
-  78, 79, 80, 81, 82, 83, 84, 85, 86, 114, 115, 127,
-  128, 135, 156, 157, 158, 159, 161, 162, 163, 175,
-  176, 177, 178, 179, 180, 181, 182)
-task_id <- chunks.refit[task_id]
-
-
 file.gam <- paste0(path.gam, region, ".m3.rds")
 file.post <- paste0(path.gam, region,  ".m3.post.rds")
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
+
 
 ## EVALUATE LINEAR PREDICTOR BASED ON DRAWS FROM MODEL POSTERIOR ###############
 
