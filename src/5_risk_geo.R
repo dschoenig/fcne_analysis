@@ -62,8 +62,8 @@ maps <-
                       c("ea_east.bin", "ea_north.bin"), 
                       c("ea_east.bin", "ea_north.bin", "pa_type"), 
                       c("ea_east.bin", "ea_north.bin", "it_type", "pa_type")),
-    partial.factual = rep("full", 6),
-    partial.counterfactual = c("cov0", "it0", "it0", "pa0", "pa0", "ov0")
+    partial = rep("full", 6)
+    # , partial.counterfactual = c("cov0", "it0", "it0", "pa0", "pa0", "ov0")
     )
 
 map.units <- 
@@ -80,30 +80,27 @@ names(id.list) <- map.units$group.label
 rm(data.map)
 
 
-partials <- maps[map.id, c(partial.factual, partial.counterfactual)]
-
 effects.geo <- list()
-for(i in seq_along(partials)) {
-  name.par <- partials[i]
-  ds <- open_dataset(paste0(path.arrow, "partial=", name.par),
-                     format = "arrow")
-  message(paste0("Evaluating effects for region `", region,
-                 "`, map `", maps$extent[map.id],
-                 "`, using (partial) linear predictor `", name.par,
-                 "` (", length(draw.ids), " draws) …"))
-  effects.geo[[i]] <- aggregate_variables(ds,
-                                          agg.fun = E,
-                                          trans.fun = inv_cloglog,
-                                          ids = id.list,
-                                          draw.ids = draw.ids,
-                                          draw.chunk = 100,
-                                          # draw.chunk = 1000,
-                                          agg.size = 5e6,
-                                          n.threads = n.threads,
-                                          gc = TRUE
-                                          )
-}
-names(effects.geo) <- partials
+name.par <- maps[map.id, partial]
+ds <- open_dataset(paste0(path.arrow, "partial=", name.par),
+                   format = "arrow")
+message(paste0("Evaluating effects for region `", region,
+               "`, map `", maps$extent[map.id],
+               "`, using (partial) linear predictor `", name.par,
+               "` (", length(draw.ids), " draws) …"))
+effects.geo[[i]] <- aggregate_variables(ds,
+                                        agg.fun = E,
+                                        trans.fun = inv_cloglog,
+                                        ids = id.list,
+                                        draw.ids = draw.ids,
+                                        draw.chunk = 100,
+                                        # draw.chunk = 1000,
+                                        agg.size = 5e6,
+                                        n.threads = n.threads,
+                                        gc = TRUE
+                                        )
+
+names(effects.geo) <- name.par
 effects.geo$map.units <- map.units
 
 file.effects <- paste0(path.effects, prefix.file.effects, maps$extent[map.id], ".rds")

@@ -78,45 +78,29 @@ setcolorder(groups, c("group.id", "group.label", "adm0", "it_type", "pa_type"))
 
 rm(data.proc)
 
-
-partial.subset <- list(full = "TRUE",
-                       # cov0 = "TRUE",
-                       it0 = 'it_type != "none" & is.na(pa_type)',
-                       pa0 = 'pa_type != "none" & is.na(it_type)',
-                       ov0 = 'it_type != "none" & pa_type != "none"'
-                       )
-
-partial.idx <- list()
-for(i in seq_along(partial.subset)) {
-  partial.idx[[i]] <-
-    groups[eval(parse(text = partial.subset[[i]])), ids]
-  names(partial.idx[[i]]) <-
-    groups[eval(parse(text = partial.subset[[i]])), group.label]
-}
-names(partial.idx) <- names(partial.subset)
-
+id.list <- groups$ids
+names(id.list) <- groups$area.label
 
 effects.partial <- list()
-for(i in seq_along(partial.idx)) {
-  name.par <- names(partial.idx)[i]
-  ds <- open_dataset(paste0(path.arrow, "partial=", name.par), format = "arrow")
-  message(paste0("Evaluating effects for region `", region,
-                 "`, using (partial) linear predictor `", name.par,
-                 "` (", length(draw.ids), " draws) …"))
-  effects.partial[[i]] <- aggregate_variables(ds,
-                                          agg.fun = E,
-                                          trans.fun = inv_cloglog,
-                                          ids = partial.idx[[i]],
-                                          draw.ids = draw.ids,
-                                          draw.chunk = 100,
-                                          # draw.chunk = 1000,
-                                          agg.size = 1e6,
-                                          n.threads = n.threads,
-                                          gc = TRUE
-                                          )
-}
+name.par <- "full"
 
-names(effects.partial) <- names(partial.idx)
+ds <- open_dataset(paste0(path.arrow, "partial=", name.par), format = "arrow")
+message(paste0("Evaluating effects for region `", region,
+               "`, using (partial) linear predictor `", name.par,
+               "` (", length(draw.ids), " draws) …"))
+effects.partial[[i]] <- aggregate_variables(ds,
+                                        agg.fun = E,
+                                        trans.fun = inv_cloglog,
+                                        ids = id.list,
+                                        draw.ids = draw.ids,
+                                        draw.chunk = 100,
+                                        # draw.chunk = 1000,
+                                        agg.size = 1e6,
+                                        n.threads = n.threads,
+                                        gc = TRUE
+                                        )
+
+names(effects.partial) <- name.par
 effects.partial$groups <- groups
 
 message(paste0("Saving outputs to `", file.effects, "` …"))
