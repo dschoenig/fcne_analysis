@@ -103,5 +103,7 @@ effects.partial[[i]] <- aggregate_variables(ds,
 names(effects.partial) <- name.par
 effects.partial$groups <- groups
 
+gc()
+
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(effects.partial, file.effects)

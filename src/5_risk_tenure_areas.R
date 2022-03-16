@@ -56,5 +56,7 @@ effects.areas$r <- aggregate_variables(ds,
 
 effects.areas$areas.it_pa <- areas.it_pa
 
+gc()
+
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(effects.areas, file.effects)

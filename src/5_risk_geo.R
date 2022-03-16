@@ -105,5 +105,7 @@ effects.geo$map.units <- map.units
 
 file.effects <- paste0(path.effects, prefix.file.effects, maps$extent[map.id], ".rds")
 
+gc()
+
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(effects.geo, file.effects)

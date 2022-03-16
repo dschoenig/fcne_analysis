@@ -117,5 +117,7 @@ r.names <-
 names(risk.cc$r) <- r.names
 risk.cc$som.units <- som.units
 
+gc()
+
 message(paste0("Saving outputs to `", file.effects, "` …"))
 saveRDS(risk.cc, file.effects)
