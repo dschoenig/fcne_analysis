@@ -88,19 +88,18 @@ message(paste0("Evaluating effects for region `", region,
                "`, map `", maps$extent[map.id],
                "`, using (partial) linear predictor `", name.par,
                "` (", length(draw.ids), " draws) …"))
-effects.geo[[i]] <- aggregate_variables(ds,
-                                        agg.fun = E,
-                                        trans.fun = inv_cloglog,
-                                        ids = id.list,
-                                        draw.ids = draw.ids,
-                                        draw.chunk = 100,
-                                        # draw.chunk = 1000,
-                                        agg.size = 5e6,
-                                        n.threads = n.threads,
-                                        gc = TRUE
-                                        )
+effects.geo$r <- aggregate_variables(ds,
+                                     agg.fun = E,
+                                     trans.fun = inv_cloglog,
+                                     ids = id.list,
+                                     draw.ids = draw.ids,
+                                     draw.chunk = 100,
+                                     # draw.chunk = 1000,
+                                     agg.size = 5e6,
+                                     n.threads = n.threads,
+                                     gc = TRUE
+                                     )
 
-names(effects.geo) <- name.par
 effects.geo$map.units <- map.units
 
 file.effects <- paste0(path.effects, prefix.file.effects, maps$extent[map.id], ".rds")
