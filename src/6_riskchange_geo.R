@@ -12,8 +12,8 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-region <- "cam"
-n.threads <- 4
+# region <- "cam"
+# n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -59,8 +59,8 @@ for(i in seq_along(maps)){
                              standardize = TRUE)
            })
   r.bl.geo <- reweigh_posterior(post.units, w = w.points)
-  rc.map$arc <- arc(r.geo$full, r.bl.geo)
-  rc.map$rrc <- rrc(r.geo$full, r.bl.geo)
+  rc.map$arc <- arc(r.geo$r, r.bl.geo)
+  rc.map$rrc <- rrc(r.geo$r, r.bl.geo)
   rc.map$map.units <- r.geo$map.units
   rc.geo[[i]] <- rc.map
   rm(rc.map)

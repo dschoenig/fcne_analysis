@@ -8,8 +8,8 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-region <- "cam"
-n.threads <- 4
+# region <- "amz"
+# n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -17,7 +17,7 @@ path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
-file.data <- paste0(path.data.proc, region, ".data.fit.proc.n50.rds")
+file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.risk.tenure_cov <- paste0(path.effects, region, ".risk.tenure_cov.rds")
 file.risk.tenure <- paste0(path.effects, region, ".risk.tenure.rds")
 file.riskchange <- paste0(path.effects, region, ".riskchange.tenure.rds")
@@ -49,8 +49,8 @@ w.points <-
                            standardize = TRUE)
          })
 r.bl.ten <- reweigh_posterior(post.units, w = w.points)
-rc.ten$arc <- arc(r.ten$full, r.bl.ten)
-rc.ten$rrc <- rrc(r.ten$full, r.bl.ten)
+rc.ten$arc <- arc(r.ten$r, r.bl.ten)
+rc.ten$rrc <- rrc(r.ten$r, r.bl.ten)
 rc.ten$groups <- r.ten$groups
 
 message(paste0("Saving outputs to `", file.riskchange, "` …"))

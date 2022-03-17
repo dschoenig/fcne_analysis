@@ -8,8 +8,8 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-region <- "cam"
-n.threads <- 4
+# region <- "cam"
+# n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
