@@ -88,19 +88,18 @@ ds <- open_dataset(paste0(path.arrow, "partial=", name.par), format = "arrow")
 message(paste0("Evaluating effects for region `", region,
                "`, using (partial) linear predictor `", name.par,
                "` (", length(draw.ids), " draws) …"))
-effects.partial[[i]] <- aggregate_variables(ds,
-                                        agg.fun = E,
-                                        trans.fun = inv_cloglog,
-                                        ids = id.list,
-                                        draw.ids = draw.ids,
-                                        draw.chunk = 100,
-                                        # draw.chunk = 1000,
-                                        agg.size = 1e6,
-                                        n.threads = n.threads,
-                                        gc = TRUE
-                                        )
+effects.partial$r <- aggregate_variables(ds,
+                                         agg.fun = E,
+                                         trans.fun = inv_cloglog,
+                                         ids = id.list,
+                                         draw.ids = draw.ids,
+                                         draw.chunk = 100,
+                                         # draw.chunk = 1000,
+                                         agg.size = 1e6,
+                                         n.threads = n.threads,
+                                         gc = TRUE
+                                         )
 
-names(effects.partial) <- name.par
 effects.partial$groups <- groups
 
 message(paste0("Saving outputs to `", file.effects, "` …"))
