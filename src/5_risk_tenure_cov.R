@@ -5,7 +5,7 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-# region <- "cam"
+# region <- "amz"
 # n.threads <- 1
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
@@ -34,7 +34,7 @@ data.proc <- readRDS(file.data)
 
 extent_by_som <- 
   data.table(
-    extent = c("bl",   # Baseline
+    extent = c("bl",   # Baseline by forest type
                "it_c", # All IT combined
                "it",   # IT by type
                "pa_c", # ALL PA combined
@@ -46,12 +46,16 @@ extent_by_som <-
                'pa_type != "none"',
                'pa_type != "none"',
                'it_type != "none" & pa_type != "none"'),
-    group_vars = list(c("som_bmu", "som_x", "som_y", "it_type", "pa_type"), 
+    group_vars = list(c("som_bmu", "som_x", "som_y",
+                        "for_type", "it_type", "pa_type"), 
                       c("som_bmu", "som_x", "som_y"), 
-                      c("som_bmu", "som_x", "som_y", "it_type"), 
+                      c("som_bmu", "som_x", "som_y",
+                        "it_type"), 
                       c("som_bmu", "som_x", "som_y"), 
-                      c("som_bmu", "som_x", "som_y", "pa_type"), 
-                      c("som_bmu", "som_x", "som_y", "it_type", "pa_type", "overlap")))
+                      c("som_bmu", "som_x", "som_y",
+                        "pa_type"), 
+                      c("som_bmu", "som_x", "som_y",
+                        "it_type", "pa_type", "overlap")))
 
 som.units <- list()
 for(i in 1:nrow(extent_by_som)) {
@@ -64,7 +68,9 @@ for(i in 1:nrow(extent_by_som)) {
 names(som.units) <- extent_by_som$extent
 som.units <- rbindlist(som.units, fill = TRUE, idcol = "extent")
 som.units[, `:=`(group.id = 1:nrow(som.units),
-                 group.label = as.character(som_bmu))]
+                 group.label = fifelse(is.na(for_type),
+                                       as.character(som_bmu),
+                                       paste0(som_bmu, ":", for_type)))]
 som.units[, extent := factor(extent, levels = extent_by_som$extent)]
 setcolorder(som.units, c("extent", "group.label", "it_type", "pa_type",
                          "som_bmu", "som_x", "som_y", "n", "ids"))

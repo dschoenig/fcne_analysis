@@ -17,8 +17,8 @@ if(!dir.exists(path.data.proc)){
 
 region <- tolower(as.character(args[1]))
 n.cores <- as.integer(args[2])
-region <- "amz"
-n.cores <- 4
+# region <- "cam"
+# n.cores <- 4
 
 ## Map covariates to SOM #######################################################
 
@@ -49,4 +49,31 @@ for(i in seq_along(datasets)) {
 
   saveRDS(data.int, file.data.proc)
 }
+
+# Add variable to existing data set
+# for(i in seq_along(datasets)) {
+
+#   file.data.int <- paste0(path.data.int, region, ".data.", datasets[i], ".int.rds")
+#   file.data.proc <- paste0(path.data.proc, region, ".data.", datasets[i], ".proc.rds")
+  
+#   data.int <- readRDS(file.data.int)
+#   data.proc <- readRDS(file.data.proc)
+
+#   all(data.int$id == data.proc$id)
+
+#   merged <- merge(data.proc, data.int[, .(id, for_type)],
+#                   by = "id", all = TRUE, sort = FALSE)
+
+#   setcolorder(merged,
+#               c("id", "adm0",
+#                 "forestloss", "lossyear",
+#                 "primary_forest", "for_type",
+#                 "it", "it_type", "pa", "pa_type", "overlap",
+#                 "tri", "dist_set", "dist_roads", "dist_rivers",
+#                 "dens_roads", "dens_pop",
+#                 "lon", "lat",
+#                 "ed_east", "ed_north", "ea_east", "ea_north"))
+
+#   saveRDS(merged, file.data.proc)
+# }
 
