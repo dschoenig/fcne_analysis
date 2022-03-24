@@ -72,7 +72,8 @@ som.units[, `:=`(group.id = 1:nrow(som.units),
                                        as.character(som_bmu),
                                        paste0(som_bmu, ":", for_type)))]
 som.units[, extent := factor(extent, levels = extent_by_som$extent)]
-setcolorder(som.units, c("extent", "group.label", "it_type", "pa_type",
+setcolorder(som.units, c("group.id", "extent", "group.label",
+                         "for_type", "it_type", "pa_type", "overlap",
                          "som_bmu", "som_x", "som_y", "n", "ids"))
 
 id.list <- som.units$ids
