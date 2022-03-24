@@ -46,7 +46,10 @@ for(i in seq_along(maps)){
   r.geo <- readRDS(file.risk.geo)
   id.list <- r.geo$map.units$ids
   names(id.list) <- r.geo$map.units$group.label
-  ids.units <- data.proc[, .(id, som_bmu.bl, som_bmu.bl.w)
+  ids.units <- data.proc[,
+                         .(id,
+                           som_bmu.bl = paste0(som_bmu.bl, ":", for_type),
+                           som_bmu.bl.w)
                          ][, lapply(.SD, unlist), id]
   # Reweigh baseline SOM units for each group, based on what points they where
   # assigned to

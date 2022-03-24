@@ -29,57 +29,76 @@ draw.ids <- as.character(1:1000)
 message("Aggregating observations …")
 data.proc <- readRDS(file.data)
 
-# data.proc <- data.proc[1:1e5,]
+# data.proc <- data.proc[1:5e4,]
 
 n.min <- 1
-groups.bl <-
-  data.proc[it_type == "none" & pa_type == "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
-  subset(n >= n.min)
-groups.bl_adm <-
-  data.proc[it_type == "none" & pa_type == "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
-  subset(n >= n.min)
-groups.it <-
-  data.proc[it_type != "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("it_type")) |>
-  subset(n >= n.min)
-groups.pa <-
-  data.proc[pa_type != "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("pa_type")) |>
-  subset(n >= n.min)
-groups.it_pa <-
-  data.proc[it_type != "none" | pa_type != "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
-  subset(n >= n.min)
-groups.adm_it <-
-  data.proc[it_type != "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("adm0", "it_type")) |>
-  subset(n >= n.min)
-groups.adm_pa <-
-  data.proc[pa_type != "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("adm0", "pa_type")) |>
-  subset(n >= n.min)
-groups.adm_it_pa <-
-  data.proc[it_type != "none" | pa_type != "none"] |>
-  ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
-  subset(n >= n.min)
+forest_types <- c(all = "TRUE", primary = "for_type == 'primary'")
+groups <- list()
 
-groups <- rbindlist(list(groups.bl,
-                         groups.bl_adm,
-                         groups.it,
-                         groups.pa,
-                         groups.it_pa,
-                         groups.adm_it,
-                         groups.adm_pa,
-                         groups.adm_it_pa), fill = TRUE)
+for(i in seq_along(forest_types)) {
+
+  data.forest <- data.proc[eval(parse(text = forest_types[i]))]
+
+  groups.bl <-
+    data.forest[it_type == "none" & pa_type == "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
+    subset(n >= n.min)
+  groups.bl_adm <-
+    data.forest[it_type == "none" & pa_type == "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
+    subset(n >= n.min)
+  groups.it <-
+    data.forest[it_type != "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("it_type")) |>
+    subset(n >= n.min)
+  groups.pa <-
+    data.forest[pa_type != "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("pa_type")) |>
+    subset(n >= n.min)
+  groups.it_pa <-
+    data.forest[it_type != "none" | pa_type != "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("it_type", "pa_type")) |>
+    subset(n >= n.min)
+  groups.adm_it <-
+    data.forest[it_type != "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("adm0", "it_type")) |>
+    subset(n >= n.min)
+  groups.adm_pa <-
+    data.forest[pa_type != "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("adm0", "pa_type")) |>
+    subset(n >= n.min)
+  groups.adm_it_pa <-
+    data.forest[it_type != "none" | pa_type != "none"] |>
+    ids_by_group(id.col = "id", group.vars = c("adm0", "it_type", "pa_type")) |>
+    subset(n >= n.min)
+
+  groups[[names(forest_types)[i]]] <-
+    rbindlist(list(groups.bl,
+                   groups.bl_adm,
+                   groups.it,
+                   groups.pa,
+                   groups.it_pa,
+                   groups.adm_it,
+                   groups.adm_pa,
+                   groups.adm_it_pa), fill = TRUE)
+
+}
+
+groups <- rbindlist(groups, fill = TRUE, idcol = "for_type")
+
+groups[for_type == "all", for_type := NA]
+groups[!is.na(for_type), group.label := paste0("for_type.", for_type, ":",
+                                               group.label)]
 groups$group.id <- 1:nrow(groups)
-setcolorder(groups, c("group.id", "group.label", "adm0", "it_type", "pa_type"))
+
+setcolorder(groups, c("group.id", "group.label", "for_type",
+                      "adm0", "it_type", "pa_type"))
 
 rm(data.proc)
 
+
 id.list <- groups$ids
-names(id.list) <- groups$area.label
+names(id.list) <- groups$group.label
 
 effects.partial <- list()
 name.par <- "full"

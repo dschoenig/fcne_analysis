@@ -36,8 +36,12 @@ rc.ten <- list()
 r.ten_areas <- readRDS(file.risk.tenure_areas)
 id.list <- r.ten_areas$areas.it_pa$ids
 names(id.list) <- r.ten_areas$areas.it_pa$area.label
-ids.units <- data.proc[, .(id, som_bmu.bl, som_bmu.bl.w)
+ids.units <- data.proc[,
+                       .(id,
+                         som_bmu.bl = paste0(som_bmu.bl, ":", for_type),
+                         som_bmu.bl.w)
                        ][, lapply(.SD, unlist), id]
+
 # Reweigh baseline SOM units for each group, based on what points they where
 # assigned to
 w.points <-
