@@ -110,7 +110,7 @@ risk.cc$r <- list()
 for(i in 1:nrow(disagg.groups)) {
   som.units.s <- som.units[group.id %in% disagg.groups$ids[[i]], ]
   sel <- as.character(som.units.s$group.id)
-  var.names.new <- as.character(som.units.s$som_bmu)
+  var.names.new <- as.character(som.units.s$group.label)
   eff.sub <- effects.combined[,sel]
   colnames(eff.sub) <- var.names.new
   risk.cc$r[[i]] <- eff.sub
