@@ -8,8 +8,8 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-# region <- "cam"
-# n.threads <- 4
+region <- "cam"
+n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -38,9 +38,15 @@ id.list <- r.ten_areas$areas.it_pa$ids
 names(id.list) <- r.ten_areas$areas.it_pa$area.label
 ids.units <- data.proc[,
                        .(id,
-                         som_bmu.bl = paste0(som_bmu.bl, ":", for_type),
+                         for_type,
+                         som_bmu.bl,
                          som_bmu.bl.w)
-                       ][, lapply(.SD, unlist), id]
+                       ][,
+                         lapply(.SD, unlist), c("id", "for_type")
+                         ][,
+                           .(id,
+                             som_bmu.bl = paste0(som_bmu.bl, ":", for_type),
+                             som_bmu.bl.w)]
 
 # Reweigh baseline SOM units for each group, based on what points they where
 # assigned to
