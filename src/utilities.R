@@ -1508,10 +1508,10 @@ label_arc <- function(x, ndec = 0, psign = TRUE) {
   per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
   per[which(x > 0)] <- paste0("+", per[which(x > 0)])
   if(psign) {
-    return(paste0(per, "%"))
-  } else {
-    return(per)
+    per <- paste0(per, "%")
   }
+  per[is.na(x)] <- NA
+  return(per)
 }
 
 

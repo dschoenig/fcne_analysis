@@ -16,11 +16,13 @@ path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
 path.effects <- paste0(path.base, "models/gam/effects/")
+path.effects <- paste0(path.base, "models/gam/effects/prim/")
 path.figures <- paste0(path.base, "figures/")
 
 file.data.vis <- paste0(path.data.vis, "tenure_adm.rds")
 
 regions <- c("amz", "cam")
+regions <- c("cam")
 
 
 ## COLOURS AND LABELS
@@ -72,6 +74,12 @@ reg.lab$cam <-
 reg.lab$amz[, reg.label := factor(reg.label, levels = reg.label)]
 reg.lab$cam[, reg.label := factor(reg.label, levels = reg.label)]
 
+for.lab <-
+  data.table(for_type = c("primary", NA),
+             for.label = c("Primary forests", "All forests"))
+for.lab[, for.label := factor(for.label, levels = for.label)]
+
+
 
 ## EFFECT OF TENURE BY ADMINISTRATIVE AREA, FOREST TYPE ########################
 
@@ -105,14 +113,15 @@ for(i in seq_along(regions)) {
 
   rm(rc.ten)
 
-
   ten.sum[[region]]$arc <-
     expand.grid(cat.label = cat.lab$cat.label,
-                reg.label = reg.lab[[region]]$reg.label) |>
+                reg.label = reg.lab[[region]]$reg.label,
+                for.label = for.lab$for.label) |>
     as.data.table() |>
     merge(cat.lab, by = "cat.label", all = TRUE) |>
     merge(reg.lab[[region]], by = "reg.label", all = TRUE) |>
-    merge(arc.ten.sum[n >= 1000], by = c("it_type", "pa_type", "adm0"), all.x = TRUE)
+    merge(for.lab, by = "for.label", all = TRUE) |> 
+    merge(arc.ten.sum[n >= 1000], by = c("for_type", "it_type", "pa_type", "adm0"), all.x = TRUE)
 }
 
 
@@ -144,7 +153,7 @@ for(i in seq_along(regions)) {
       geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
                 size = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
-                    label = mean.label), colour = "grey5",
+                    label = label_arc(mean)), colour = "grey5",
                 size = 2.5) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
                    size = 0.3, colour = "grey5") +
@@ -194,8 +203,92 @@ for(i in seq_along(regions)) {
             # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
             panel.grid.major = element_blank()
             # axis.line = element_line(colour = "grey85")
-      )
+      ) +
+      facet_grid(rows
+
 }
+
+
+region <- "cam"
+
+  plots[[region]]$ten.arc <-
+  
+    # ggplot(ten.sum[[region]]$arc[it_type != "none" | pa_type != "none"]) +
+    ggplot(ten.sum[[region]]$arc[is.na(it_type) | is.na(pa_type)]) +
+      geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
+                size = 1, colour = "white") +
+      geom_text(aes(x = reg.label, y = cat.label,
+                    label = label_arc(mean, ndec = 1)), colour = "grey5",
+                size = 2.5) +
+      geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
+                   size = 0.3, colour = "grey5") +
+      # geom_segment(x = 0.5, y = 8.5, xend = 9.5, yend = 8.5, size = 0.2, colour = "grey35") +
+      # geom_segment(x = 0.5, y = 6.5, xend = 9.5, yend = 6.5, size = 1, colour = "grey50") +
+      # geom_segment(x = 0.5, y = 4.5, xend = 9.5, yend = 4.5, size = 1, colour = "grey50") +
+      scale_fill_continuous_divergingx(
+                                      # palette = "Blue-Red 3",
+                                      palette = "Roma"
+                                       ,rev = TRUE,
+                                       ,breaks = round(seq(-0.15, 0.15, 0.05),2)
+                                       ,labels = label_arc
+                                       # ,labels = c(paste0(seq(-15, 0, 5), "%"),
+                                       #             paste0("+", seq(5, 15, 5), "%"))
+                                       #             # "+5%", "≥ +10%"),
+                                       # ,limits = c(-0.075, 0.075)
+                                       # ,limits = c(-0.15, 0.15)
+                                       ,limits = c(-0.15, 0.15)
+                                       ,oob = scales::squish
+                                       ,na.value = "grey95"
+                                       ) +
+      scale_colour_manual(values = c("0" = "grey5", "1" = "grey95")) +
+      scale_x_discrete(position = "top") +
+      scale_y_discrete(limits = rev) +
+      coord_fixed() +
+      guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                   ticks.linewidth = 1,
+                                   frame.colour = "grey35",
+                                   frame.linewidth = 1,
+                                   barheight = 5,
+                                   barwidth = 1,
+                                   label.position = "left",
+                                   label.hjust = 1,
+                                   draw.ulim = FALSE,
+                                   draw.llim = FALSE),
+             colour = "none") +
+      labs(fill = "Absolute change in\nforest loss risk", x = NULL, y = NULL) +
+      theme_minimal(base_family = "IBMPlexSans") +
+      theme(
+            legend.position = "right",
+            legend.justification = c(0,1),
+            legend.spacing.y = unit(5, "mm"),
+            legend.title = element_text(size = 10),
+            axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
+                                       colour = "grey5"),
+            axis.text.y = element_text(hjust = 0, colour = "grey5"),
+            # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
+            panel.grid.major = element_blank(),
+            # axis.line = element_line(colour = "grey85")
+            strip.placement = "outside",
+            strip.text = element_text(hjust = 0.5, face = "bold", size = rel(1)),
+            strip.switch.pad.grid = unit(5, "mm")
+      ) +
+      facet_grid(rows = vars(for.label), drop = TRUE, switch = "y")
+
+
+
+
+
+combined.ten.arc <-
+  with(plots,
+       (cam$ten.arc + theme(axis.text.y = element_blank())) +
+       plot_layout(guides = "collect") +
+       plot_annotation(tag_levels = NULL) &
+       theme(legend.position = "right",
+             legend.justification = c(0,1),
+             legend.spacing.y = unit(5, "mm"),
+             legend.title = element_text(size = rel(0.75)),
+             legend.text = element_text(size = rel(0.75)))
+       )
 
 combined.ten.arc <-
   with(plots,
