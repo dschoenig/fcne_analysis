@@ -163,12 +163,6 @@ poly[[region]]$bg_coasts <- st_transform(bg_coasts, crs.ea[[region]])
 poly[[region]]$bg_is_limit <- st_intersection(poly[[region]]$bg, poly[[region]]$limit)
 
 
-# poly[[region]]$anot.adm0 <- data.frame(adm0 = c("BLZ", "CRI", "GTM", "HND",
-#                                  "MEX", "NIC", "PAN", "SLV"),
-#                         x = c(0.5, 3, -4.5, 2.75,
-#                               -4.75, 5, 8.75, -1.5) * 1e5,
-#                         y = c(3.5, -6.5, -1.5, 1.75,
-#                               5, -1.5, -5.25, -2.25) * 1e5)
 
 
 # Study region: ITs and PAs
