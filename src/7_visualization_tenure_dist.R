@@ -129,7 +129,3 @@ svg(paste0(path.figures, "fig3.svg"), width = 8.25, height = 3.5)
 combined.ten.arc.dens
 dev.off()
 
-
-
-
-

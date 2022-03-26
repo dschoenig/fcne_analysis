@@ -18,7 +18,8 @@ path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
 if(!dir.exists(path.data.vis)) dir.create(path.data.vis, recursive = TRUE)
 path.effects <- paste0(path.base, "models/gam/effects/")
-path.figures <- paste0(path.base, "figures/")
+path.figures <- paste0(path.base, "figures/prim/")
+if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
 
 file.data.vis <- paste0(path.data.vis, "maps.rds")
 
@@ -89,15 +90,15 @@ geo.sum <- list()
 # Prepare data for maps
 
 for(i in seq_along(regions)){
-
-  message(paste0("Preparing data for region `", region, "` …"))
     
   region <- regions[i]
+
+  message(paste0("Preparing data for region `", region, "` …"))
 
   file.risk.geo.all <- paste0(path.effects, region, ".risk.geo.all.rds")
   file.riskchange.geo <- paste0(path.effects, region, ".riskchange.geo.rds")
   file.limit <- paste0(path.data.raw, region, ".limit.gpkg")
-  file.areas <- paste0(path.data.raw, "raw/", region, ".areas_union.gpkg")
+  file.areas <- paste0(path.data.raw, region, ".areas_union.gpkg")
 
 
   # Treatment of auxilary geospatial data
@@ -178,10 +179,10 @@ for(i in seq_along(regions)){
 maps <- list()
 
 for(i in seq_along(regions)) {
+    
+  region <- regions[i]
 
   message(paste0("Preparing maps for region `", region, "` …"))
-
-  region <- regions[i]
 
   # Study region: ITs and PAs
 
@@ -327,7 +328,7 @@ maps.combined <-
        (amz$areas + cam$areas + plot_layout(guides = "collect")) / 
        (amz$risk + cam$risk + plot_layout(guides = "collect")) /
        (amz$arc + cam$arc + plot_layout(guides = "collect")) +
-       plot_annotation(tag_levels = "A") &
+       plot_annotation(tag_levels = "A", "", "B", "", "C", "") &
        theme(legend.position = "right",
              legend.justification = c(0,1),
              legend.spacing.y = unit(5, "mm"))
@@ -335,7 +336,7 @@ maps.combined <-
 
 maps.combined
 
-tiff(paste0(path.figures, "fig1.tif"), width = 8.25, height = 10, unit = "in", res = 300)
+tiff(paste0(path.figures, "maps.tif"), width = 8.25, height = 10, unit = "in", res = 300)
 maps.combined
 dev.off()
 
