@@ -18,7 +18,7 @@ path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
 if(!dir.exists(path.data.vis)) dir.create(path.data.vis, recursive = TRUE)
 path.effects <- paste0(path.base, "models/gam/effects/")
-path.figures <- paste0(path.base, "figures/prim/")
+path.figures <- paste0(path.base, "results/figures/")
 if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
 
 file.data.vis <- paste0(path.data.vis, "maps.rds")
@@ -82,99 +82,115 @@ map_theme <-
 
 ## EFFECTS IN GEOGRAPHICAL SPACE ###############################################
 
-
-poly <- list()
-geo.sum <- list()
-
-
-# Prepare data for maps
-
-for(i in seq_along(regions)){
-    
-  region <- regions[i]
-
-  message(paste0("Preparing data for region `", region, "` …"))
-
-  file.risk.geo.all <- paste0(path.effects, region, ".risk.geo.all.rds")
-  file.riskchange.geo <- paste0(path.effects, region, ".riskchange.geo.rds")
-  file.limit <- paste0(path.data.raw, region, ".limit.gpkg")
-  file.areas <- paste0(path.data.raw, region, ".areas_union.gpkg")
+if(!file.exists(file.data.vis)) {
+  
+  poly <- list()
+  geo.sum <- list()
 
 
-  # Treatment of auxilary geospatial data
+  # Prepare data for maps
 
-  message("Auxiliary geospatial data …")
+  for(i in seq_along(regions)){
+      
+    region <- regions[i]
 
-  poly[[region]] <- list()
+    message(paste0("Preparing data for region `", region, "` …"))
 
-  poly[[region]]$areas <-
-    st_read(file.areas) |>
-    st_transform(crs.ea[[region]])
-  poly[[region]]$areas$it_type <-
-    factor(poly[[region]]$areas$it_type, levels = c("recognized", "not_recognized"))
-
-  poly[[region]]$limit <-
-    st_read(file.limit) |>
-    st_transform(crs.ea[[region]])
-
-  poly[[region]]$bg <- st_transform(bg_adm0, crs.ea[[region]])
-  poly[[region]]$bg_coasts <- st_transform(bg_coasts, crs.ea[[region]])
-  poly[[region]]$bg_is_limit <- st_intersection(poly[[region]]$bg, poly[[region]]$limit)
-
-   
-  # Forest loss risk
-
-  message("Forest loss risk …")
-
-  r.geo <- readRDS(file.risk.geo.all)
-
-  r.geo.dt <-
-  as_draws_df(r.geo$r) |>
-  as.data.table() |>
-  melt(measure.vars = 1:ncol(r.geo$r),
-       variable.name = "group.label",
-       value.name = "risk")
-
-  geo.sum[[region]]$r <-
-    r.geo.dt[,
-         .(mean = mean(risk),
-           sd = sd(risk),
-           q2.5 = quantile(risk, 0.025),
-           q97.5 = quantile(risk, 0.975)),
-         by = group.label] |>
-    merge(r.geo$map.units[,-"ids"], by = "group.label")
-
-  rm(r.geo)
+    file.risk.geo.all <- paste0(path.effects, region, ".risk.geo.all.rds")
+    file.riskchange.geo <- paste0(path.effects, region, ".riskchange.geo.rds")
+    file.limit <- paste0(path.data.raw, region, ".limit.gpkg")
+    file.areas <- paste0(path.data.raw, region, ".areas_union.gpkg")
 
 
-  # Absolute change in risk (compared to baseline)
+    # Treatment of auxilary geospatial data
 
-  message("Absolute risk change …")
+    message("Auxiliary geospatial data …")
 
-  rc.geo <- readRDS(file.riskchange.geo)
+    poly[[region]] <- list()
 
-  arc.geo.dt <-
-  as_draws_df(rc.geo$all$arc) |>
-  as.data.table() |>
-  melt(measure.vars = 1:ncol(rc.geo$all$arc),
-       variable.name = "group.label",
-       value.name = "arc")
+    poly[[region]]$areas <-
+      st_read(file.areas) |>
+      st_transform(crs.ea[[region]])
+    poly[[region]]$areas$it_type <-
+      factor(poly[[region]]$areas$it_type, levels = c("recognized", "not_recognized"))
 
-  geo.sum[[region]]$arc <-
-    arc.geo.dt[,
-         .(mean = mean(arc),
-           sd = sd(arc),
-           q2.5 = quantile(arc, 0.025),
-           q97.5 = quantile(arc, 0.975)),
-         by = group.label] |>
-    merge(rc.geo$all$map.units[,-"ids"], by = "group.label")
+    poly[[region]]$limit <-
+      st_read(file.limit) |>
+      st_transform(crs.ea[[region]])
 
-  rm(rc.geo)
+    poly[[region]]$bg <- st_transform(bg_adm0, crs.ea[[region]])
+    poly[[region]]$bg_coasts <- st_transform(bg_coasts, crs.ea[[region]])
+    poly[[region]]$bg_is_limit <- st_intersection(poly[[region]]$bg, poly[[region]]$limit)
+
+     
+    # Forest loss risk
+
+    message("Forest loss risk …")
+
+    r.geo <- readRDS(file.risk.geo.all)
+
+    r.geo.dt <-
+    as_draws_df(r.geo$r) |>
+    as.data.table() |>
+    melt(measure.vars = 1:ncol(r.geo$r),
+         variable.name = "group.label",
+         value.name = "risk")
+
+    geo.sum[[region]]$r <-
+      r.geo.dt[,
+           .(mean = mean(risk),
+             sd = sd(risk),
+             q2.5 = quantile(risk, 0.025),
+             q97.5 = quantile(risk, 0.975)),
+           by = group.label] |>
+      merge(r.geo$map.units[,-"ids"], by = "group.label")
+
+    rm(r.geo)
+
+
+    # Absolute change in risk (compared to baseline)
+
+    message("Absolute risk change …")
+
+    rc.geo <- readRDS(file.riskchange.geo)
+
+    arc.geo.dt <-
+    as_draws_df(rc.geo$all$arc) |>
+    as.data.table() |>
+    melt(measure.vars = 1:ncol(rc.geo$all$arc),
+         variable.name = "group.label",
+         value.name = "arc")
+
+    geo.sum[[region]]$arc <-
+      arc.geo.dt[,
+           .(mean = mean(arc),
+             sd = sd(arc),
+             q2.5 = quantile(arc, 0.025),
+             q97.5 = quantile(arc, 0.975)),
+           by = group.label] |>
+      merge(rc.geo$all$map.units[,-"ids"], by = "group.label")
+
+    rm(rc.geo)
+
+  }
+
+  message(paste0("Storing summaries in `", file.data.vis, "` …"))
+
+  list(poly = poly,
+       geo.sum = geo.sum) |>
+  saveRDS(file.data.vis)
+
+} else {
+
+  message("Loading data for visualization …")
+  stored <- readRDS(file.data.vis)
+  attach(stored)
 
 }
 
 
-## MAPS
+
+## MAPS (POSTERIOR MEANS) ######################################################
 
 maps <- list()
 
@@ -313,31 +329,235 @@ for(i in seq_along(regions)) {
 
 }
 
-# message(paste0("Storing results in `", file.data.vis, "` …"))
 
-# list(poly = poly,
-#      geo.sum = geo.sum,
-#      maps = maps) |>
-# saveRDS(file.data.vis)
+## MAPS (0.025 QUANTILE) #######################################################
 
-# stored <- readRDS(file.data.vis)
-# attach(stored)
+maps.ci_l <- list()
+
+for(i in seq_along(regions)) {
+    
+  region <- regions[i]
+
+  message(paste0("Preparing maps for region `", region, "` (0.025 quantile) …"))
+
+  # Risk
+
+  maps.ci_l[[region]]$risk <- 
+    # r.dt.sum2[, .(wmean = (mean * n), n, ea_east.bin.bin, ea_north.bin.bin, group.label)
+    #           ][, .(mean = sum(wmean) / sum(n)), by = c("ea_east.bin.bin", "ea_north.bin.bin")] |>
+    ggplot(geo.sum[[region]]$r) +
+    geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.4) +
+    geom_raster(mapping = aes(
+                              fill = q2.5,
+                              x = ea_east.bin, y = ea_north.bin),
+                              # x = ea_east.bin.bin, y = ea_north.bin.bin),
+                interpolate = FALSE) +
+    geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.4) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey30", size = 0.3) +
+    scale_fill_continuous_sequential(palette = "Viridis",
+                                     rev = FALSE,
+                                     limits = c(0,1),
+                                     labels = scales::label_percent()) +
+                                     # ) +
+    coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+             xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+    scale_x_continuous(breaks = seq(-170, 0, 10)) +
+    scale_y_continuous(breaks = seq(-80, 30, 10)) +
+    annotation_scale(width_hint = 0.125, style = "ticks") +
+    guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                 ticks.linewidth = 1,
+                                 frame.colour = "grey35",
+                                 frame.linewidth = 1,
+                                 barheight = 7.5,
+                                 label.position = "left",
+                                 label.hjust = 1,
+                                 draw.ulim = FALSE,
+                                 draw.llim = FALSE)) +
+    labs(fill = "Forest loss risk", x = NULL, y = NULL) +
+    map_theme +
+    theme(legend.position = "right",
+          legend.justification = c(0,1),
+          legend.spacing.y = unit(5, "mm"))
+
+
+  # Absolute risk change
+
+  maps.ci_l[[region]]$arc <- 
+    # r.dt.sum2[, .(wmean = (mean * n), n, ea_east.bin.bin, ea_north.bin.bin, group.label)
+    #           ][, .(mean = sum(wmean) / sum(n)), by = c("ea_east.bin.bin", "ea_north.bin.bin")] |>
+    ggplot(geo.sum[[region]]$arc) +
+    geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.4) +
+    geom_raster(mapping = aes(
+                              fill = q2.5,
+                              # fill = q97.5,
+                              x = ea_east.bin, y = ea_north.bin),
+                              # x = ea_east.bin.bin, y = ea_north.bin.bin),
+                interpolate = FALSE) +
+    geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.4) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey30", size = 0.3) +
+    scale_fill_continuous_divergingx(palette = "Roma",
+                                     ,rev = TRUE,
+                                     ,breaks = seq(-0.2, 0.2, 0.05),
+                                     ,labels = c("≤ -20%", "", "-10%", "", 0,
+                                                 "", "+10%", "", "≥ +20%"),
+                                     # ,limits = c(-0.25, 0.25)
+                                     ,limits = c(-0.20, 0.20)
+                                     ,oob = scales::squish
+                                     ) +
+    coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+             xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+    scale_x_continuous(breaks = seq(-170, 0, 10)) +
+    scale_y_continuous(breaks = seq(-80, 30, 10)) +
+    annotation_scale(width_hint = 0.125, style = "ticks") +
+    guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                 ticks.linewidth = 1,
+                                 frame.colour = "grey35",
+                                 frame.linewidth = 1,
+                                 barheight = 7.5,
+                                 label.position = "left",
+                                 label.hjust = 1,
+                                 draw.ulim = FALSE,
+                                 draw.llim = FALSE)) +
+    labs(fill = "Absolute change in\nforest loss risk", x = NULL, y = NULL) +
+    map_theme +
+    theme(legend.position = "right",
+          legend.justification = c(0,1),
+          legend.spacing.y = unit(5, "mm"))
+
+}
+
+
+## MAPS (0.975 QUANTILE) #######################################################
+
+maps.ci_u <- list()
+
+for(i in seq_along(regions)) {
+    
+  region <- regions[i]
+
+  message(paste0("Preparing maps for region `", region, "` (0.975 quantile) …"))
+
+  # Risk
+
+  maps.ci_u[[region]]$risk <- 
+    ggplot(geo.sum[[region]]$r) +
+    geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.4) +
+    geom_raster(mapping = aes(
+                              fill = q97.5,
+                              x = ea_east.bin, y = ea_north.bin),
+                interpolate = FALSE) +
+    geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.4) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey30", size = 0.3) +
+    scale_fill_continuous_sequential(palette = "Viridis",
+                                     rev = FALSE,
+                                     limits = c(0,1),
+                                     labels = scales::label_percent()) +
+    coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+             xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+    scale_x_continuous(breaks = seq(-170, 0, 10)) +
+    scale_y_continuous(breaks = seq(-80, 30, 10)) +
+    annotation_scale(width_hint = 0.125, style = "ticks") +
+    guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                 ticks.linewidth = 1,
+                                 frame.colour = "grey35",
+                                 frame.linewidth = 1,
+                                 barheight = 7.5,
+                                 label.position = "left",
+                                 label.hjust = 1,
+                                 draw.ulim = FALSE,
+                                 draw.llim = FALSE)) +
+    labs(fill = "Forest loss risk", x = NULL, y = NULL) +
+    map_theme +
+    theme(legend.position = "right",
+          legend.justification = c(0,1),
+          legend.spacing.y = unit(5, "mm"))
+
+
+  # Absolute risk change
+
+  maps.ci_u[[region]]$arc <- 
+    ggplot(geo.sum[[region]]$arc) +
+    geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.4) +
+    geom_raster(mapping = aes(
+                              fill = q97.5,
+                              x = ea_east.bin, y = ea_north.bin),
+                interpolate = FALSE) +
+    geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.4) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey30", size = 0.3) +
+    scale_fill_continuous_divergingx(palette = "Roma",
+                                     ,rev = TRUE,
+                                     ,breaks = seq(-0.2, 0.2, 0.05),
+                                     ,labels = c("≤ -20%", "", "-10%", "", 0,
+                                                 "", "+10%", "", "≥ +20%"),
+                                     ,limits = c(-0.20, 0.20)
+                                     ,oob = scales::squish
+                                     ) +
+    coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+             xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+    scale_x_continuous(breaks = seq(-170, 0, 10)) +
+    scale_y_continuous(breaks = seq(-80, 30, 10)) +
+    annotation_scale(width_hint = 0.125, style = "ticks") +
+    guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                 ticks.linewidth = 1,
+                                 frame.colour = "grey35",
+                                 frame.linewidth = 1,
+                                 barheight = 7.5,
+                                 label.position = "left",
+                                 label.hjust = 1,
+                                 draw.ulim = FALSE,
+                                 draw.llim = FALSE)) +
+    labs(fill = "Absolute change in\nforest loss risk", x = NULL, y = NULL) +
+    map_theme +
+    theme(legend.position = "right",
+          legend.justification = c(0,1),
+          legend.spacing.y = unit(5, "mm"))
+
+}
+
 
 maps.combined <-
   with(maps,
        (amz$areas + cam$areas + plot_layout(guides = "collect")) / 
        (amz$risk + cam$risk + plot_layout(guides = "collect")) /
        (amz$arc + cam$arc + plot_layout(guides = "collect")) +
-       plot_annotation(tag_levels = "A", "", "B", "", "C", "") &
+       plot_annotation(tag_levels = list(c("A", "", "B", "", "C", "", "E", ""))) &
        theme(legend.position = "right",
              legend.justification = c(0,1),
              legend.spacing.y = unit(5, "mm"))
        )
 
-maps.combined
-
-tiff(paste0(path.figures, "maps.tif"), width = 8.25, height = 10, unit = "in", res = 300)
+tiff(paste0(path.figures, "maps.tif"), width = 8.25, height = 9, unit = "in", res = 300)
 maps.combined
 dev.off()
 
+
+maps.risk.ci.combined <-
+  with(maps.ci_l,
+       (amz$risk + cam$risk)) /
+  with(maps.ci_u,
+       (amz$risk + cam$risk)) +
+  plot_annotation(tag_levels = list(c("A", "", "B", ""))) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "right",
+        legend.justification = c(0,0.5),
+        legend.spacing.y = unit(5, "mm"))
+
+tiff(paste0(path.figures, "si.maps.risk.ci.tif"), width = 8.25, height = 6, unit = "in", res = 300)
+maps.risk.ci.combined
+dev.off()
+
+maps.arc.ci.combined <-
+  with(maps.ci_l,
+       (amz$arc + cam$arc)) /
+  with(maps.ci_u,
+       (amz$arc + cam$arc)) +
+  plot_annotation(tag_levels = list(c("A", "", "B", ""))) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "right",
+        legend.justification = c(0,0.5),
+        legend.spacing.y = unit(5, "mm"))
+
+tiff(paste0(path.figures, "si.maps.arc.ci.tif"), width = 8.25, height = 6, unit = "in", res = 300)
+maps.arc.ci.combined
+dev.off()
 
