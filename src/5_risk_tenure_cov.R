@@ -34,14 +34,16 @@ data.proc <- readRDS(file.data)
 
 extent_by_som <- 
   data.table(
-    extent = c("all",  # All observations
-               "bl",   # Baseline by forest type
-               "it_c", # All IT combined
-               "it",   # IT by type
-               "pa_c", # ALL PA combined
-               "pa",   # PA by type
-               "ov"),  # Overlapping regions by type
+    extent = c("all",   # All observations
+               "for_p", # Primary forest only
+               "bl",    # Baseline by forest type
+               "it_c",  # All IT combined
+               "it",    # IT by type
+               "pa_c",  # ALL PA combined
+               "pa",    # PA by type
+               "ov"),   # Overlapping regions by type
     subset = c('TRUE',
+               'for_type == "primary"',
                'it_type == "none" & pa_type =="none"',
                'it_type != "none"',
                'it_type != "none"',
@@ -49,6 +51,8 @@ extent_by_som <-
                'pa_type != "none"',
                'it_type != "none" & pa_type != "none"'),
     group_vars = list(c("som_bmu", "som_x", "som_y"),
+                      c("som_bmu", "som_x", "som_y",
+                        "for_type"), 
                       c("som_bmu", "som_x", "som_y",
                         "for_type", "it_type", "pa_type"), 
                       c("som_bmu", "som_x", "som_y"), 
