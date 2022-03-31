@@ -69,7 +69,7 @@ bg_coasts <- st_union(bg_adm0, is_coverage = TRUE)
 #                               5, -1.5, -5.25, -2.25) * 1e5)
 
 map_theme <-  
-  theme_minimal(base_family = "IBMPlexSans", base_size = 10) +
+  theme_minimal(base_family = "IBMPlexSans", base_size = 9) +
   theme(panel.background = element_rect(fill = "grey95", colour = NA),
         panel.grid = element_line(colour = "grey75"),
         legend.title = element_text(size = 10),
@@ -246,8 +246,6 @@ for(i in seq_along(regions)) {
   # Risk
 
   maps[[region]]$risk <- 
-    # r.dt.sum2[, .(wmean = (mean * n), n, ea_east.bin.bin, ea_north.bin.bin, group.label)
-    #           ][, .(mean = sum(wmean) / sum(n)), by = c("ea_east.bin.bin", "ea_north.bin.bin")] |>
     ggplot(geo.sum[[region]]$r) +
     geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.4) +
     geom_raster(mapping = aes(
@@ -257,11 +255,14 @@ for(i in seq_along(regions)) {
                 interpolate = FALSE) +
     geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.4) +
     geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey30", size = 0.3) +
-    scale_fill_continuous_sequential(palette = "Viridis",
-                                     rev = FALSE,
-                                     limits = c(0,1),
-                                     labels = scales::label_percent()) +
-                                     # ) +
+    # scale_fill_viridis_c(option = "E",
+    #                      limits = c(0,1),
+    #                      labels = scales::label_percent()) +
+    scale_fill_continuous_divergingx(palette = "Cividis",
+                                      rev = FALSE,
+                                      limits = c(0,1),
+                                      mid = 0.5,
+                                      labels = scales::label_percent()) +
     coord_sf(crs = crs.ea[[region]], expand = FALSE, 
              xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
     scale_x_continuous(breaks = seq(-170, 0, 10)) +
@@ -326,6 +327,48 @@ for(i in seq_along(regions)) {
     theme(legend.position = "right",
           legend.justification = c(0,1),
           legend.spacing.y = unit(5, "mm"))
+
+
+    # No of samples 
+    n.step <- switch(region, amz = 25, cam = 50)
+    n.limits <- 
+      with(geo.sum[[region]]$r, c(0, ceiling(max(n) / n.step) * n.step))
+           
+    maps[[region]]$n <- 
+      ggplot(geo.sum[[region]]$r) +
+      geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.4) +
+      geom_raster(mapping = aes(
+                                fill = n,
+                                x = ea_east.bin, y = ea_north.bin),
+                  interpolate = FALSE) +
+      geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.4) +
+      geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey30", size = 0.3) +
+      scale_fill_continuous_sequential(palette = "Viridis",
+                                       rev = FALSE,
+                                       limits = n.limits,
+                                       breaks = scales::breaks_width(n.step)) +
+                                       # labels = scales::label_percent()) +
+      coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+               xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+      scale_x_continuous(breaks = seq(-170, 0, 10)) +
+      scale_y_continuous(breaks = seq(-80, 30, 10)) +
+      annotation_scale(width_hint = 0.125, style = "ticks") +
+      guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                   ticks.linewidth = 1,
+                                   frame.colour = "grey35",
+                                   frame.linewidth = 1,
+                                   barheight = 7.5,
+                                   label.position = "left",
+                                   label.hjust = 1,
+                                   draw.ulim = FALSE,
+                                   draw.llim = FALSE)) +
+      # labs(fill = expression(N~km^{-2}), x = NULL, y = NULL) +
+      labs(fill = "No. of samples", x = NULL, y = NULL) +
+      map_theme +
+      theme(
+            legend.position = "right",
+            legend.justification = c(0,1),
+            legend.spacing.y = unit(5, "mm"))
 
 }
 
@@ -515,6 +558,7 @@ for(i in seq_along(regions)) {
 }
 
 
+
 maps.combined <-
   with(maps,
        (amz$areas + cam$areas + plot_layout(guides = "collect")) / 
@@ -560,4 +604,61 @@ maps.arc.ci.combined <-
 tiff(paste0(path.figures, "si.maps.arc.ci.tif"), width = 8.25, height = 6, unit = "in", res = 300)
 maps.arc.ci.combined
 dev.off()
+
+
+maps.n.combined <-
+  with(maps,
+       (amz$n + cam$n))  &
+  guides(fill = guide_colorbar(
+                               # ticks.colour = "grey95",
+                               ticks.colour = "grey35",
+                               ticks.linewidth = 1,
+                               frame.colour = "grey35",
+                               frame.linewidth = 1,
+                               barwidth = 7.5,
+                               draw.ulim = FALSE,
+                               draw.llim = FALSE
+                               )) &
+  theme(legend.position = "bottom",
+        # legend.justification = c(0,0),
+        legend.spacing.y = unit(2, "mm")
+  )
+
+tiff(paste0(path.figures, "si.maps.n.tif"), width = 8.25, height = 6, unit = "in", res = 300)
+maps.n.combined
+dev.off()
+
+
+# file.suffix <- c(".risk.geo.all", ".risk.geo.it", ".risk.geo.it_c", ".risk.geo.pa", ".risk.geo.pa_c", ".risk.geo.ov")
+
+# for(i in seq_along(regions)){
+#   region <- regions[i]
+#   map.res <- switch(region, amz = 5000, cam = 2500)
+#   for(j in seq_along(file.suffix)) {
+#     suff <- file.suffix[j]
+#     file <- paste0(path.effects, region, suff, ".rds")
+#     print(file)
+#     geo <- readRDS(file)
+#     geo$map.units[, n_km2 := n / ((map.res) / 1e3) ^2]
+#     setcolorder(geo$map.units, c("group.label", "ea_east.bin", "ea_north.bin", "n", "n_km2"))
+#     saveRDS(geo, file)
+#     rm(geo, file)
+#   }
+# }
+
+# for(i in seq_along(regions)){
+#   region <- regions[i]
+#   map.res <- switch(region, amz = 5000, cam = 2500)
+#   file.riskchange <- paste0(path.effects, region, ".riskchange.geo.rds")
+#   rc.geo <- readRDS(file.riskchange)
+#   for(j in 1:length(rc.geo)) {
+#     map.units <- rc.geo[[j]]$map.units
+#     map.units[, n_km2 := n / ((map.res) / 1e3) ^2]
+#     setcolorder(map.units, c("group.label", "ea_east.bin", "ea_north.bin", "n", "n_km2"))
+#     rc.geo[[j]]$map.units <- map.units
+#     print(rc.geo[[j]]$map.units) 
+#     rm(map.units)
+#   }
+#   saveRDS(rc.geo, file.riskchange)
+# }
 

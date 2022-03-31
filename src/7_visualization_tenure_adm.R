@@ -118,7 +118,8 @@ if(!file.exists(file.data.vis)) {
       merge(rc.ten$groups[, !"ids"],
             by = "group.label")
 
-    rm(rc.ten)
+    # Effect summaries. Combinations of tenure category and country with < 1000
+    # observations are excluded.
 
     ten.sum[[region]]$arc <-
       expand.grid(cat.label = cat.lab$cat.label,
@@ -131,7 +132,21 @@ if(!file.exists(file.data.vis)) {
       merge(arc.ten.sum[n >= 1000], by = c("for_type", "it_type", "pa_type", "adm0"), all.x = TRUE)
     # Mark where CI includes 0:
     ten.sum[[region]]$arc[, ci_0 := ifelse(q2.5 < 0 & q97.5 > 0, "yes", "no")]
-    ten.sum[[region]]$arc[, samfrac := n / 1e7]
+
+    # Overview of sample size per tenure category. All combinations are included.
+
+    ten.sum[[region]]$n <-
+      expand.grid(cat.label = cat.lab$cat.label,
+                  reg.label = reg.lab[[region]]$reg.label,
+                  for.label = for.lab$for.label) |>
+      as.data.table() |>
+      merge(cat.lab, by = "cat.label", all = TRUE) |>
+      merge(reg.lab[[region]], by = "reg.label", all = TRUE) |>
+      merge(for.lab, by = "for.label", all = TRUE) |> 
+      merge(rc.ten$groups[, !"ids"], by = c("for_type", "it_type", "pa_type", "adm0"), all.x = TRUE)
+    ten.sum[[region]]$n[, samfrac := n / 1e7]
+    
+    rm(rc.ten)
   }
 
   message(paste0("Storing summaries in `", file.data.vis, "` …"))
@@ -490,14 +505,14 @@ for(i in seq_along(regions)) {
                     ][order(for.label, cat.label, reg.label),
                         .(for.label, cat.label, reg.label,
                           Mean = 
-                            ifelse(is.na(mean),
-                                   "--",
-                                   label_arc(mean, 2, FALSE)),
+                            fifelse(is.na(mean),
+                                    "--",
+                                    label_arc(mean, 2, FALSE)),
                           CI =
-                            ifelse(is.na(mean),
-                                   "",
-                                   paste0(" (", label_arc(q2.5, 2, FALSE),
-                                          "; ", label_arc(q97.5, 2, FALSE), ")")))] |>
+                            fifelse(is.na(mean),
+                                    "",
+                                    paste0(" (", label_arc(q2.5, 2, FALSE),
+                                           "; ", label_arc(q97.5, 2, FALSE), ")")))] |>
     melt(measure.vars = c("Mean", "CI"),
          variable.name = "stat",
          value.name = "risk") |>
@@ -514,15 +529,24 @@ ten.n.t <- list()
 for(i in seq_along(regions)) {
   region <- regions[i]
   ten.n.t[[region]] <- 
-    ten.sum[[region]]$arc[it_type != "none" | pa_type != "none"
-                          ][order(for.label, cat.label, reg.label),
-                            .(for.label, cat.label, reg.label,
-                              samfrac.per = ifelse(is.na(samfrac),
-                                                   "--",
-                                                   format(round(samfrac * 100, 2),
-                                                          nsmall = 2,
-                                                          trim = TRUE)))] |>
-    dcast(for.label + cat.label ~ reg.label, value.var = "samfrac.per")
+    ten.sum[[region]]$n[it_type != "none" | pa_type != "none"
+                        ][order(for.label, cat.label, reg.label),
+                          .(for.label, cat.label, reg.label,
+                            N = 
+                              fifelse(is.na(n), "--", as.character(n)),
+                            Fraction =
+                              fifelse(is.na(samfrac),
+                                      "",
+                                      paste0("(",
+                                             format(round(samfrac * 100, 2),
+                                                    nsmall = 2,
+                                                    trim = TRUE),
+                                             "%)"))
+                            )] |>
+    melt(measure.vars = c("N", "Fraction"),
+         variable.name = "stat",
+         value.name = "sample") |>
+    dcast(for.label + cat.label + stat ~ reg.label, value.var = "sample")
   setnames(ten.n.t[[region]],
            c("for.label", "cat.label"),
            c("Forest type", "Tenure category"))

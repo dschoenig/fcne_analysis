@@ -73,6 +73,8 @@ map.units <-
   ids_by_group(id.col = "id",
                group.vars = maps$group_vars[[map.id]],
                expand.label = FALSE)
+map.units[, n_km2 := n / ((map.res) / 1e3) ^2]
+setcolorder(map.units, c("group.label", "ea_east.bin", "ea_north.bin", "n", "n_km2"))
 
 id.list <- map.units$ids
 names(id.list) <- map.units$group.label
