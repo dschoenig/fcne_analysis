@@ -16,13 +16,16 @@ path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
 path.effects <- paste0(path.base, "models/gam/effects/")
-path.effects <- paste0(path.base, "models/gam/effects/prim/")
-path.figures <- paste0(path.base, "figures/")
+# path.effects <- paste0(path.base, "models/gam/effects/prim/")
+path.figures <- paste0(path.base, "results/figures/")
+if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
+path.tables <- paste0(path.base, "results/tables/")
+if(!dir.exists(path.tables)) dir.create(path.tables, recursive = TRUE)
 
 file.data.vis <- paste0(path.data.vis, "tenure_adm.rds")
 
 regions <- c("amz", "cam")
-regions <- c("cam")
+# regions <- c("cam")
 
 
 ## COLOURS AND LABELS
@@ -61,7 +64,9 @@ reg.lab$amz <-
                       "VEN", NA),
              reg.label = c("Bolivia", "Brazil", "Colombia", "Ecuador",
                            "French Guiana", "Guyana", "Peru", "Suriname",
-                           "Venezuela", "Amazon")
+                           "Venezuela", 
+                           # "Amazon")
+                           "Region")
              )
 reg.lab$cam <-
   data.table(adm0 = c("BLZ", "CRI", "GTM", "HND",
@@ -69,7 +74,8 @@ reg.lab$cam <-
                       NA),
              reg.label = c("Belize", "Costa Rica", "Guatemala", "Honduras",
                            "Mexico", "Nicaragua", "Panama", "El Salvador",
-                           "Central America")
+                           # "Central America")
+                           "Region")
              )
 reg.lab$amz[, reg.label := factor(reg.label, levels = reg.label)]
 reg.lab$cam[, reg.label := factor(reg.label, levels = reg.label)]
@@ -83,47 +89,81 @@ for.lab[, for.label := factor(for.label, levels = for.label)]
 
 ## EFFECT OF TENURE BY ADMINISTRATIVE AREA, FOREST TYPE ########################
 
-ten.sum <- list()
+if(!file.exists(file.data.vis)) {
 
-for(i in seq_along(regions)) {
-  
-  region <- regions[i]
+  ten.sum <- list()
 
-  message(paste0("Preparing data for region `", region, "` …"))
-  
-  file.riskchange.tenure <- paste0(path.effects, region, ".riskchange.tenure.rds")
-  file.riskchange.tenure_areas <- paste0(path.effects, region, ".riskchange.tenure_areas.rds")
+  for(i in seq_along(regions)) {
+    
+    region <- regions[i]
 
+    message(paste0("Preparing data for region `", region, "` …"))
+    
+    file.riskchange.tenure <- paste0(path.effects, region, ".riskchange.tenure.rds")
+    file.riskchange.tenure_areas <- paste0(path.effects, region, ".riskchange.tenure_areas.rds")
 
-  # Tenure categories by administrative areas
+    # Tenure categories by administrative areas
 
-  message("Tenure category by administrative areas …")
+    message("Tenure category by administrative areas …")
 
-  rc.ten <- readRDS(file.riskchange.tenure)
+    rc.ten <- readRDS(file.riskchange.tenure)
 
-  arc.ten.sum <-
-    summarize_draws(rc.ten$arc,
-                                  mean, 
-                                  sd,
-                                  \(x) quantile2(x, c(0.025, 0.975)))|>
-                 as.data.table() |>
-                 setnames("variable", "group.label") |>
-                 merge(rc.ten$groups[, !"ids"],
-                       by = "group.label")
+    arc.ten.sum <-
+      summarize_draws(rc.ten$arc,
+                      mean, 
+                      sd,
+                      \(x) quantile2(x, c(0.025, 0.975)))|>
+      as.data.table() |>
+      setnames("variable", "group.label") |>
+      merge(rc.ten$groups[, !"ids"],
+            by = "group.label")
 
-  rm(rc.ten)
+    # Effect summaries. Combinations of tenure category and country with < 1000
+    # observations are excluded.
 
-  ten.sum[[region]]$arc <-
-    expand.grid(cat.label = cat.lab$cat.label,
-                reg.label = reg.lab[[region]]$reg.label,
-                for.label = for.lab$for.label) |>
-    as.data.table() |>
-    merge(cat.lab, by = "cat.label", all = TRUE) |>
-    merge(reg.lab[[region]], by = "reg.label", all = TRUE) |>
-    merge(for.lab, by = "for.label", all = TRUE) |> 
-    merge(arc.ten.sum[n >= 1000], by = c("for_type", "it_type", "pa_type", "adm0"), all.x = TRUE)
+    ten.sum[[region]]$arc <-
+      expand.grid(cat.label = cat.lab$cat.label,
+                  reg.label = reg.lab[[region]]$reg.label,
+                  for.label = for.lab$for.label) |>
+      as.data.table() |>
+      merge(cat.lab, by = "cat.label", all = TRUE) |>
+      merge(reg.lab[[region]], by = "reg.label", all = TRUE) |>
+      merge(for.lab, by = "for.label", all = TRUE) |> 
+      merge(arc.ten.sum[n >= 1000], by = c("for_type", "it_type", "pa_type", "adm0"), all.x = TRUE)
+    # Mark where CI includes 0:
+    ten.sum[[region]]$arc[, ci_0 := ifelse(q2.5 < 0 & q97.5 > 0, "yes", "no")]
+
+    # Overview of sample size per tenure category. All combinations are included.
+
+    ten.sum[[region]]$n <-
+      expand.grid(cat.label = cat.lab$cat.label,
+                  reg.label = reg.lab[[region]]$reg.label,
+                  for.label = for.lab$for.label) |>
+      as.data.table() |>
+      merge(cat.lab, by = "cat.label", all = TRUE) |>
+      merge(reg.lab[[region]], by = "reg.label", all = TRUE) |>
+      merge(for.lab, by = "for.label", all = TRUE) |> 
+      merge(rc.ten$groups[, !"ids"], by = c("for_type", "it_type", "pa_type", "adm0"), all.x = TRUE)
+    ten.sum[[region]]$n[, samfrac := n / 1e7]
+    
+    rm(rc.ten)
+  }
+
+  message(paste0("Storing summaries in `", file.data.vis, "` …"))
+
+  list(ten.sum = ten.sum) |>
+  saveRDS(file.data.vis)
+
+} else {
+
+  message("Loading data for visualization …")
+  stored <- readRDS(file.data.vis)
+  attach(stored)
+
 }
 
+
+## TENURE EFFECTS BY COUNTRY ###################################################
 
 plots <- list()
 
@@ -133,33 +173,25 @@ for(i in seq_along(regions)) {
 
   message(paste0("Preparing plots for region `", region, "` …"))
 
-  # Tenure categories by administrative areas
-
-  message("Tenure category by administrative areas …")
+  message("Tenure category by country …")
 
   sep.x <- nrow(reg.lab[[region]]) - 0.5
 
+  reg.title <- switch(region,
+                      cam = "Central America",
+                      amz = "Amazon")
 
-  ten.sum[[region]]$arc[,
-                        `:=`(mean.label = ifelse(is.na(mean),
-                                                 NA, label_arc(mean,
-                                                               ndec = 1,
-                                                               psign = FALSE)),
-                             mean.colour = as.factor(ifelse(abs(mean) >= 0.075, 1, 0)))]
-
-  plots[[region]]$ten.arc <-
-    # ggplot(ten.sum[[region]]$arc[it_type != "none" | pa_type != "none"]) +
-    ggplot(ten.sum[[region]]$arc[is.na(it_type) | is.na(pa_type)]) +
+  plots[[region]]$ten.arc$primary <-
+    ggplot(ten.sum[[region]]$arc[(is.na(it_type) | is.na(pa_type)) &
+                                 for_type == "primary"]) +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
                 size = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
-                    label = label_arc(mean)), colour = "grey5",
-                size = 2.5) +
+                    label = label_arc(mean, 1, FALSE),
+                    fontface = ci_0),
+                colour = "grey5", size = 2.5) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
                    size = 0.3, colour = "grey5") +
-      # geom_segment(x = 0.5, y = 8.5, xend = 9.5, yend = 8.5, size = 0.2, colour = "grey35") +
-      # geom_segment(x = 0.5, y = 6.5, xend = 9.5, yend = 6.5, size = 1, colour = "grey50") +
-      # geom_segment(x = 0.5, y = 4.5, xend = 9.5, yend = 4.5, size = 1, colour = "grey50") +
       scale_fill_continuous_divergingx(
                                       # palette = "Blue-Red 3",
                                       palette = "Roma"
@@ -171,11 +203,11 @@ for(i in seq_along(regions)) {
                                        #             # "+5%", "≥ +10%"),
                                        # ,limits = c(-0.075, 0.075)
                                        # ,limits = c(-0.15, 0.15)
-                                       ,limits = c(-0.10, 0.10)
+                                       ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
                                        ) +
-      scale_colour_manual(values = c("0" = "grey5", "1" = "grey95")) +
+      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain")) +
       scale_x_discrete(position = "top") +
       scale_y_discrete(limits = rev) +
       coord_fixed() +
@@ -183,48 +215,181 @@ for(i in seq_along(regions)) {
                                    ticks.linewidth = 1,
                                    frame.colour = "grey35",
                                    frame.linewidth = 1,
-                                   barheight = 3.5,
+                                   barheight = 5,
                                    barwidth = 1,
                                    label.position = "left",
                                    label.hjust = 1,
                                    draw.ulim = FALSE,
                                    draw.llim = FALSE),
-             colour = "none") +
-      labs(fill = "Absolute change in\nforest loss risk", x = NULL, y = NULL) +
+             fontface = "none") +
+      labs(subtitle = reg.title,
+           fill = "Absolute difference\nin forest loss risk",
+           y = "Primary forests\n", x = NULL) +
       theme_minimal(base_family = "IBMPlexSans") +
       theme(
             legend.position = "right",
             legend.justification = c(0,1),
             legend.spacing.y = unit(5, "mm"),
-            legend.title = element_text(size = 10),
+            legend.title = element_text(size = rel(0.75)),
+            legend.text = element_text(size = rel(0.75)),
             axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
                                        colour = "grey5"),
             axis.text.y = element_text(hjust = 0, colour = "grey5"),
             # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
             panel.grid.major = element_blank()
             # axis.line = element_line(colour = "grey85")
-      ) +
-      facet_grid(rows
+      )
+
+  plots[[region]]$ten.arc$other <-
+    ggplot(ten.sum[[region]]$arc[(is.na(it_type) | is.na(pa_type)) &
+                                 is.na(for_type)]) +
+      geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
+                size = 1, colour = "white") +
+      geom_text(aes(x = reg.label, y = cat.label,
+                    label = label_arc(mean, 1, FALSE),
+                    fontface = ci_0),
+                colour = "grey5", size = 2.5) +
+      geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
+                   size = 0.3, colour = "grey5") +
+      scale_fill_continuous_divergingx(
+                                      # palette = "Blue-Red 3",
+                                      palette = "Roma"
+                                       ,rev = TRUE,
+                                       ,breaks = round(seq(-0.15, 0.15, 0.05),2)
+                                       ,labels = label_arc
+                                       # ,labels = c(paste0(seq(-15, 0, 5), "%"),
+                                       #             paste0("+", seq(5, 15, 5), "%"))
+                                       #             # "+5%", "≥ +10%"),
+                                       # ,limits = c(-0.075, 0.075)
+                                       # ,limits = c(-0.15, 0.15)
+                                       ,limits = c(-0.15, 0.15)
+                                       ,oob = scales::squish
+                                       ,na.value = "grey95"
+                                       ) +
+      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain")) +
+      scale_x_discrete(position = "top") +
+      scale_y_discrete(limits = rev) +
+      coord_fixed() +
+      guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                   ticks.linewidth = 1,
+                                   frame.colour = "grey35",
+                                   frame.linewidth = 1,
+                                   barheight = 5,
+                                   barwidth = 1,
+                                   label.position = "left",
+                                   label.hjust = 1,
+                                   draw.ulim = FALSE,
+                                   draw.llim = FALSE),
+             fontface = "none") +
+      labs(fill = "Absolute difference\nin forest loss risk",
+           y = "All forests\n", x = NULL) +
+      theme_minimal(base_family = "IBMPlexSans") +
+      theme(
+            legend.position = "right",
+            legend.justification = c(0,1),
+            legend.spacing.y = unit(5, "mm"),
+            legend.title = element_text(size = rel(0.75)),
+            legend.text = element_text(size = rel(0.75)),
+            # axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
+            #                            colour = "grey5"),
+            axis.text.x = element_blank(),
+            axis.text.y = element_text(hjust = 0, colour = "grey5"),
+            # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
+            panel.grid.major = element_blank()
+            # axis.line = element_line(colour = "grey85")
+      )
 
 }
 
 
-region <- "cam"
+## TENURE EFFECTS BY COUNTRY (OVERLAPPING AREAS) ###############################
 
-  plots[[region]]$ten.arc <-
-  
-    # ggplot(ten.sum[[region]]$arc[it_type != "none" | pa_type != "none"]) +
-    ggplot(ten.sum[[region]]$arc[is.na(it_type) | is.na(pa_type)]) +
+plots.ov <- list()
+
+for(i in seq_along(regions)) {
+
+  region <- regions[i]
+
+  message(paste0("Preparing plots for region `", region, "` …"))
+
+  message("Tenure category by country (overlapping areas) …")
+
+  sep.x <- nrow(reg.lab[[region]]) - 0.5
+
+  reg.title <- switch(region,
+                      cam = "Central America",
+                      amz = "Amazon")
+
+  plots.ov[[region]]$ten.arc$primary <-
+    ggplot(ten.sum[[region]]$arc[it_type != "none" & pa_type != "none" &
+                                 for_type == "primary"]) +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
                 size = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
-                    label = label_arc(mean, ndec = 1)), colour = "grey5",
-                size = 2.5) +
+                    label = label_arc(mean, 1, FALSE),
+                    fontface = ci_0),
+                colour = "grey5", size = 2.5) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
                    size = 0.3, colour = "grey5") +
-      # geom_segment(x = 0.5, y = 8.5, xend = 9.5, yend = 8.5, size = 0.2, colour = "grey35") +
-      # geom_segment(x = 0.5, y = 6.5, xend = 9.5, yend = 6.5, size = 1, colour = "grey50") +
-      # geom_segment(x = 0.5, y = 4.5, xend = 9.5, yend = 4.5, size = 1, colour = "grey50") +
+      scale_fill_continuous_divergingx(
+                                      # palette = "Blue-Red 3",
+                                      palette = "Roma"
+                                       ,rev = TRUE,
+                                       ,breaks = round(seq(-0.15, 0.15, 0.05),2)
+                                       ,labels = label_arc
+                                       # ,labels = c(paste0(seq(-15, 0, 5), "%"),
+                                       #             paste0("+", seq(5, 15, 5), "%"))
+                                       #             # "+5%", "≥ +10%"),
+                                       # ,limits = c(-0.075, 0.075)
+                                       # ,limits = c(-0.15, 0.15)
+                                       ,limits = c(-0.15, 0.15)
+                                       ,oob = scales::squish
+                                       ,na.value = "grey95"
+                                       ) +
+      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain")) +
+      scale_x_discrete(position = "top") +
+      scale_y_discrete(limits = rev) +
+      coord_fixed() +
+      guides(fill = guide_colorbar(ticks.colour = "grey35",
+                                   ticks.linewidth = 1,
+                                   frame.colour = "grey35",
+                                   frame.linewidth = 1,
+                                   barheight = 5,
+                                   barwidth = 1,
+                                   label.position = "left",
+                                   label.hjust = 1,
+                                   draw.ulim = FALSE,
+                                   draw.llim = FALSE),
+             fontface = "none") +
+      labs(subtitle = reg.title,
+           fill = "Absolute difference\nin forest loss risk",
+           y = "Primary forests\n", x = NULL) +
+      theme_minimal(base_family = "IBMPlexSans") +
+      theme(
+            legend.position = "right",
+            legend.justification = c(0,1),
+            legend.spacing.y = unit(5, "mm"),
+            legend.title = element_text(size = rel(0.75)),
+            legend.text = element_text(size = rel(0.75)),
+            axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
+                                       colour = "grey5"),
+            axis.text.y = element_text(hjust = 0, colour = "grey5"),
+            # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
+            panel.grid.major = element_blank()
+            # axis.line = element_line(colour = "grey85")
+      )
+
+  plots.ov[[region]]$ten.arc$other <-
+    ggplot(ten.sum[[region]]$arc[it_type != "none" & pa_type != "none" &
+                                 is.na(for_type)]) +
+      geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
+                size = 1, colour = "white") +
+      geom_text(aes(x = reg.label, y = cat.label,
+                    label = label_arc(mean, 1, FALSE),
+                    fontface = ci_0),
+                colour = "grey5", size = 2.5) +
+      geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
+                   size = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
                                       # palette = "Blue-Red 3",
                                       palette = "Roma"
@@ -254,70 +419,136 @@ region <- "cam"
                                    label.hjust = 1,
                                    draw.ulim = FALSE,
                                    draw.llim = FALSE),
-             colour = "none") +
-      labs(fill = "Absolute change in\nforest loss risk", x = NULL, y = NULL) +
+             fontface = "none") +
+      labs(fill = "Absolute difference\nin forest loss risk",
+           y = "All forests\n", x = NULL) +
       theme_minimal(base_family = "IBMPlexSans") +
       theme(
             legend.position = "right",
             legend.justification = c(0,1),
             legend.spacing.y = unit(5, "mm"),
-            legend.title = element_text(size = 10),
-            axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
-                                       colour = "grey5"),
+            legend.title = element_text(size = rel(0.75)),
+            legend.text = element_text(size = rel(0.75)),
+            # axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
+            #                            colour = "grey5"),
+            axis.text.x = element_blank(),
             axis.text.y = element_text(hjust = 0, colour = "grey5"),
             # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
-            panel.grid.major = element_blank(),
+            panel.grid.major = element_blank()
             # axis.line = element_line(colour = "grey85")
-            strip.placement = "outside",
-            strip.text = element_text(hjust = 0.5, face = "bold", size = rel(1)),
-            strip.switch.pad.grid = unit(5, "mm")
-      ) +
-      facet_grid(rows = vars(for.label), drop = TRUE, switch = "y")
+      )
+
+}
 
 
-
-
+## COMBINE INDIVIDUAL PLOTS ####################################################
 
 combined.ten.arc <-
   with(plots,
-       (cam$ten.arc + theme(axis.text.y = element_blank())) +
-       plot_layout(guides = "collect") +
-       plot_annotation(tag_levels = NULL) &
-       theme(legend.position = "right",
-             legend.justification = c(0,1),
-             legend.spacing.y = unit(5, "mm"),
-             legend.title = element_text(size = rel(0.75)),
-             legend.text = element_text(size = rel(0.75)))
-       )
+       ((amz$ten.arc$primary + theme(axis.title.y = element_text(hjust = 0.5),
+                                     axis.title.x = element_text(hjust = 0))) +
+        (cam$ten.arc$primary + theme(axis.text.y = element_blank(),
+                                     axis.title.y = element_blank(),
+                                     axis.title.x = element_text(hjust = 0)))
+       ) /
+       ((amz$ten.arc$other + theme(axis.title.y = element_text(hjust = 0.5))) +
+        (cam$ten.arc$other + theme(axis.text.y = element_blank(),
+                                   axis.title.y = element_blank()))
+        # plot_layout(guides = "collect") +
+       )) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = NULL) &
+  theme(legend.position = "right",
+        legend.justification = c(0,1),
+        legend.spacing.y = unit(5, "mm"),
+        legend.title = element_text(size = rel(0.9)),
+        legend.text = element_text(size = rel(0.75)))
 
-combined.ten.arc <-
-  with(plots,
-       amz$ten.arc +
-       (cam$ten.arc + theme(axis.text.y = element_blank())) +
-       plot_layout(guides = "collect") +
-       plot_annotation(tag_levels = NULL) &
-       theme(legend.position = "right",
-             legend.justification = c(0,1),
-             legend.spacing.y = unit(5, "mm"),
-             legend.title = element_text(size = rel(0.75)),
-             legend.text = element_text(size = rel(0.75)))
-       )
-
-combined.ten.arc
-
-# tiff(paste0(path.figures, "fig2.tif"), width = 8.25, height = 4, unit = "in", res = 300)
-svg(paste0(path.figures, "fig2.svg"), width = 8.25, height = 3.5)
+svg(paste0(path.figures, "ten.arc.svg"), width = 9.25, height = 4.5)
 combined.ten.arc
 dev.off()
 
+combined.ten.arc.ov <-
+  with(plots.ov,
+       ((amz$ten.arc$primary + theme(axis.title.y = element_text(hjust = 0.5),
+                                     axis.title.x = element_text(hjust = 0))) +
+        (cam$ten.arc$primary + theme(axis.text.y = element_blank(),
+                                     axis.title.y = element_blank(),
+                                     axis.title.x = element_text(hjust = 0)))
+       ) /
+       ((amz$ten.arc$other + theme(axis.title.y = element_text(hjust = 0.5))) +
+        (cam$ten.arc$other + theme(axis.text.y = element_blank(),
+                                   axis.title.y = element_blank()))
+        # plot_layout(guides = "collect") +
+       )) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = NULL) &
+  theme(legend.position = "right",
+        legend.justification = c(0,1),
+        legend.spacing.y = unit(5, "mm"),
+        legend.title = element_text(size = rel(0.9)),
+        legend.text = element_text(size = rel(0.75)))
 
-ten.sum[[region]]$arc[,
-                      `:=`(mean.label = ifelse(is.na(mean),
-                                               NA, label_arc(mean,
-                                                             ndec = 1,
-                                                             psign = FALSE)),
-                           mean.colour = ifelse(abs(mean) >= 0.06, 1, 0))]
+svg(paste0(path.figures, "si.ten.arc.ov.svg"), width = 9.25, height = 4.5)
+combined.ten.arc.ov
+dev.off()
 
 
+## LOOKUP TABLES ###############################################################
+
+ten.arc.t <- list()
+
+for(i in seq_along(regions)) {
+  region <- regions[i]
+  ten.arc.t[[region]] <- 
+    ten.sum[[region]]$arc[it_type != "none" | pa_type != "none"
+                    ][order(for.label, cat.label, reg.label),
+                        .(for.label, cat.label, reg.label,
+                          Mean = 
+                            fifelse(is.na(mean),
+                                    "--",
+                                    label_arc(mean, 2, FALSE)),
+                          CI =
+                            fifelse(is.na(mean),
+                                    "",
+                                    paste0(" (", label_arc(q2.5, 2, FALSE),
+                                           "; ", label_arc(q97.5, 2, FALSE), ")")))] |>
+    melt(measure.vars = c("Mean", "CI"),
+         variable.name = "stat",
+         value.name = "risk") |>
+    dcast(for.label + cat.label + stat ~ reg.label, value.var = "risk")
+  setnames(ten.arc.t[[region]],
+           c("for.label", "cat.label", "stat"),
+           c("Forest type", "Tenure category", "Estimate"))
+  fwrite(ten.arc.t[[region]], paste0(path.tables, region, ".ten.arc.csv"))
+}
 
 
+ten.n.t <- list()
+
+for(i in seq_along(regions)) {
+  region <- regions[i]
+  ten.n.t[[region]] <- 
+    ten.sum[[region]]$n[it_type != "none" | pa_type != "none"
+                        ][order(for.label, cat.label, reg.label),
+                          .(for.label, cat.label, reg.label,
+                            N = 
+                              fifelse(is.na(n), "--", as.character(n)),
+                            Fraction =
+                              fifelse(is.na(samfrac),
+                                      "",
+                                      paste0("(",
+                                             format(round(samfrac * 100, 2),
+                                                    nsmall = 2,
+                                                    trim = TRUE),
+                                             "%)"))
+                            )] |>
+    melt(measure.vars = c("N", "Fraction"),
+         variable.name = "stat",
+         value.name = "sample") |>
+    dcast(for.label + cat.label + stat ~ reg.label, value.var = "sample")
+  setnames(ten.n.t[[region]],
+           c("for.label", "cat.label"),
+           c("Forest type", "Tenure category"))
+  fwrite(ten.n.t[[region]], paste0(path.tables, region, ".ten.n.csv"))
+}

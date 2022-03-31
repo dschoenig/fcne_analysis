@@ -7,6 +7,7 @@ library(ggspatial)
 library(ggpattern)
 library(patchwork)
 library(colorspace)
+library(KernSmooth)
 
 source("utilities.R")
 
@@ -16,9 +17,9 @@ path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
 path.effects <- paste0(path.base, "models/gam/effects/")
-path.figures <- paste0(path.base, "figures/")
+path.figures <- paste0(path.base, "results/figures/")
 
-file.data.vis <- paste0(path.data.vis, "tenure_adm.rds")
+file.data.vis <- paste0(path.data.vis, "tenure_adm_dist.rds")
 
 regions <- c("amz", "cam")
 
@@ -55,13 +56,21 @@ for(i in seq_along(regions)) {
   names(types) <- c("it.rec", "it.notrec", "pa.ind", "pa.dir")
 
   densities <- list()
-  for(i in seq_along(types)) {
-    selg <- rc.ten_areas$groups[eval(parse(text = types[i])), area.label]
+
+
+  for(j in seq_along(types)) {
+    selg <- rc.ten_areas$groups[eval(parse(text = types[j])), area.label]
 
     x <- seq(-1, 1, by = 0.001)
 
     dens <- apply(rc.ten_areas$arc[,selg], 1,
-                  \(draw) density(draw, from = min(x), to = max(x), n = length(x), bw = "nrd")$y)
+                  \(draw) density(draw, from = min(x), to = max(x),
+                                  # n = length(x), bw = "nrd")$y)
+                                  n = length(x), bw = "SJ")$y)
+                  # \(draw) KernSmooth::bkde(draw, gridsize = 2001,
+                  #                    range.x = c(-1, 1))$y)
+                  # \(draw) density_SJ(draw, gridsize = 2001,
+                  #                    range.x = c(-1, 1))$y)
     row.names(dens) <- 1:nrow(dens)
 
     dens <- as_draws_matrix(t(dens))
@@ -71,7 +80,7 @@ for(i in seq_along(regions)) {
       setnames("variable", "point")
     dens.sum[, point := as.integer(as.character(point))]
 
-    densities[[i]] <- 
+    densities[[j]] <- 
       merge(dens.sum,
             data.table(point = 1:length(x),
                        arc = x),
@@ -81,6 +90,7 @@ for(i in seq_along(regions)) {
   
   ten.sum[[region]]$arc.dens <- rbindlist(densities, idcol = "type")
 }
+
 
 combined.ten.arc.dens <- 
   list(amz = ten.sum$amz$arc.dens,
@@ -105,7 +115,7 @@ combined.ten.arc.dens <-
   #                    # , breaks = 0, labels = NULL) +
   #                    ) +
   scale_x_continuous(limits = c(-0.25, 0.4), labels = label_arc) +
-  scale_y_continuous(limits = c(0, 15)) +
+  scale_y_continuous(limits = c(0, NA), breaks = seq(0, 15, 5)) +
   labs(y = "Distribution of\nindividual areas (density)\n",
        x = "\nAbsolute change in forest loss risk",
        fill = NULL, colour = NULL, linetype = NULL) +
@@ -115,21 +125,18 @@ combined.ten.arc.dens <-
         legend.justification = c(0,1),
         # legend.spacing.y = unit(5, "mm"),
         axis.line = element_line(colour = "grey5"),
-        axis.title.y = element_text(hjust = 0),
+        axis.ticks = element_line(colour = "grey5"),
+        axis.title.y = element_text(hjust = 0.5),
         panel.grid = element_blank(),
+        panel.spacing.x = unit(10, "mm"),
         strip.text = element_text(hjust = 0, face = "bold", size = rel(1))
         ) +
   facet_grid(cols = vars(region),
              labeller = labeller(region = c(amz = "Amazon",
                                             cam = "Central America")))
 
-
 # tiff(paste0(path.figures, "fig2.tif"), width = 8.25, height = 4, unit = "in", res = 300)
-svg(paste0(path.figures, "fig3.svg"), width = 8.25, height = 3.5)
+svg(paste0(path.figures, "ten.arc.dens.svg"), width = 8.25, height = 3.5)
 combined.ten.arc.dens
 dev.off()
-
-
-
-
 

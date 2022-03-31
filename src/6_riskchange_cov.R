@@ -1,10 +1,6 @@
 library(data.table)
 library(posterior)
 library(parallel)
-# library(sf)
-# library(ggplot2)
-# library(ggdist)
-# library(colorspace)
 
 source("utilities.R")
 
@@ -12,19 +8,19 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-# region <- "cam"
-# n.threads <- 4
+region <- "cam"
+n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.effects <- paste0(path.base, "models/gam/effects/")
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.risk.tenure_cov <- paste0(path.effects, region, ".risk.tenure_cov.rds")
-prefix.file.risk.geo <- paste0(region, ".risk.geo.")
-file.riskchange <- paste0(path.effects, region, ".riskchange.geo.rds")
+# file.risk.tenure <- paste0(path.effects, region, ".risk.tenure.rds")
+file.riskchange <- paste0(path.effects, region, ".riskchange.tenure_cov.rds")
 
 setDTthreads(n.threads)
 
@@ -36,16 +32,29 @@ data.proc <- readRDS(file.data)
 r.ten_cov <- readRDS(file.risk.tenure_cov)
 post.units <- r.ten_cov$r$baseline
 
-# cl <- makeForkCluster(4)
-maps <- c("all", "it_c", "pa_c", "it", "pa", "ov")
-rc.geo <- list()
-for(i in seq_along(maps)){
-  message(paste0("Calculating risk change for map `", maps[i], "` …"))
-  rc.map <- list()
-  file.risk.geo <- paste0(path.effects, prefix.file.risk.geo, maps[i], ".rds")
-  r.geo <- readRDS(file.risk.geo)
-  id.list <- r.geo$map.units$ids
-  names(id.list) <- r.geo$map.units$group.label
+
+ten_cat <- 
+  data.table(
+    name = c("it_type.recognized", 
+             "it_type.not_recognized",
+             "pa_type.indirect_use",
+             "pa_type.direct_use"),
+    subset = c('it_type == "recognized" & is.na(pa_type)',
+               'it_type == "not_recognized" & is.na(pa_type)',
+               'is.na(it_type) & pa_type == "indirect_use"',
+               'is.na(it_type) & pa_type == "direct_use"')
+    )
+
+rc.ten_cov <- list()
+
+for(i in 1:nrow(ten_cat)){
+  message(paste0("Calculating risk change for tenure category `",
+                 ten_cat$name[i], "` …"))
+  rc.ten_cat <- list()
+  units.sub <- r.ten_cov$som.units[eval(parse(text = ten_cat$subset[i]))]
+  id.list <- units.sub$ids
+  names(id.list) <- units.sub$group.label
+
   ids.units <- data.proc[,
                          .(id,
                            for_type,
@@ -57,7 +66,7 @@ for(i in seq_along(maps)){
                              .(id,
                                som_bmu.bl = paste0(som_bmu.bl, ":", for_type),
                                som_bmu.bl.w)]
-  # Reweigh baseline SOM units for each group, based on which points they where
+  # Reweigh baseline SOM units for each group, based on what points they where
   # assigned to
   w.points <-
     lapply(id.list,
@@ -67,16 +76,17 @@ for(i in seq_along(maps)){
                              by.col = "som_bmu.bl",
                              standardize = TRUE)
            })
-  r.bl.geo <- reweigh_posterior(post.units, w = w.points)
-  rc.map$arc <- arc(r.geo$r, r.bl.geo)
-  rc.map$rrc <- rrc(r.geo$r, r.bl.geo)
-  rc.map$map.units <- r.geo$map.units
-  rc.geo[[i]] <- rc.map
-  rm(rc.map)
+  r.bl.ten_cat <- reweigh_posterior(post.units, w = w.points)
+
+  rc.ten_cat$arc <- arc(r.ten_cov$r[[ten_cat$name[i]]], r.bl.ten_cat)
+  rc.ten_cat$rrc <- rrc(r.ten_cov$r[[ten_cat$name[i]]], r.bl.ten_cat)
+  rc.ten_cat$som.units <- units.sub
+
+  rc.ten_cov[[i]] <- rc.ten_cat
+  rm(rc.ten_cat)
 }
 
-names(rc.geo) <- maps
+names(rc.ten_cov) <- ten_cat$name
 
 message(paste0("Saving outputs to `", file.riskchange, "` …"))
-saveRDS(rc.geo, file.riskchange)
-
+saveRDS(rc.ten_cov, file.riskchange)
