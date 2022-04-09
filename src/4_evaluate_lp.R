@@ -22,8 +22,8 @@ task_count <- as.integer(args[3])
 # task_id <- 1
 # task_count <- 200
 
-file.gam <- paste0(path.gam, region, ".m3.rds")
-file.post <- paste0(path.gam, region,  ".m3.post.rds")
+file.gam <- paste0(path.gam, region, ".m7.rds")
+file.post <- paste0(path.gam, region,  ".m7.post.rds")
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 
 
@@ -35,7 +35,7 @@ post <- readRDS(file.post)
 data <- readRDS(file.data)
 
 # Data for prediction
-data.pred <- data[,.(id, forestloss, it_type, pa_type, overlap,
+data.pred <- data[,.(id, forestloss, for_type, it_type, pa_type, overlap,
                      som_x, som_y, ed_east, ed_north, adm0)]
 rm(data)
 
@@ -48,69 +48,73 @@ silence <- gc()
 
 # Marginalize posterior over covariate effects
 
-# Lookup table for marginals
-
-smooth.lu <- lookup_smooths(gam)
-
-para.cov <- 
-  smooth.lu[grepl("s(som_x,som_y)", label, fixed = TRUE),
-            unlist(para)]
-para.it <- 
-  smooth.lu[grepl("it_type", label, fixed = TRUE) |
-            grepl("overlap", label, fixed = TRUE),
-            unlist(para)]
-para.pa <- 
-  smooth.lu[grepl("pa_type", label, fixed = TRUE) |
-            grepl("overlap", label, fixed = TRUE),
-            unlist(para)]
-para.ov <- 
-  smooth.lu[grepl("it_type", label, fixed = TRUE) |
-            grepl("pa_type", label, fixed = TRUE) |
-            grepl("overlap", label, fixed = TRUE),
-            unlist(para)]
-para.cov_it <- 
-  smooth.lu[
-            grepl("s(som_x,som_y)", label, fixed = TRUE) |
-            grepl("it_type", label, fixed = TRUE) |
-            grepl("overlap", label, fixed = TRUE),
-            unlist(para)]
-para.cov_pa <- 
-  smooth.lu[
-            grepl("s(som_x,som_y)", label, fixed = TRUE) |
-            grepl("pa_type", label, fixed = TRUE) |
-            grepl("overlap", label, fixed = TRUE),
-            unlist(para)]
-para.cov_ov <- 
-  smooth.lu[
-            grepl("s(som_x,som_y)", label, fixed = TRUE) |
-            grepl("it_type", label, fixed = TRUE) |
-            grepl("pa_type", label, fixed = TRUE) |
-            grepl("overlap", label, fixed = TRUE),
-            unlist(para)]
+# # Lookup table for marginals
+# 
+# smooth.lu <- lookup_smooths(gam)
+# 
+# para.cov <- 
+#   smooth.lu[grepl("s(som_x,som_y)", label, fixed = TRUE),
+#             unlist(para)]
+# para.it <- 
+#   smooth.lu[grepl("it_type", label, fixed = TRUE) |
+#             grepl("overlap", label, fixed = TRUE),
+#             unlist(para)]
+# para.pa <- 
+#   smooth.lu[grepl("pa_type", label, fixed = TRUE) |
+#             grepl("overlap", label, fixed = TRUE),
+#             unlist(para)]
+# para.ov <- 
+#   smooth.lu[grepl("it_type", label, fixed = TRUE) |
+#             grepl("pa_type", label, fixed = TRUE) |
+#             grepl("overlap", label, fixed = TRUE),
+#             unlist(para)]
+# para.cov_it <- 
+#   smooth.lu[
+#             grepl("s(som_x,som_y)", label, fixed = TRUE) |
+#             grepl("it_type", label, fixed = TRUE) |
+#             grepl("overlap", label, fixed = TRUE),
+#             unlist(para)]
+# para.cov_pa <- 
+#   smooth.lu[
+#             grepl("s(som_x,som_y)", label, fixed = TRUE) |
+#             grepl("pa_type", label, fixed = TRUE) |
+#             grepl("overlap", label, fixed = TRUE),
+#             unlist(para)]
+# para.cov_ov <- 
+#   smooth.lu[
+#             grepl("s(som_x,som_y)", label, fixed = TRUE) |
+#             grepl("it_type", label, fixed = TRUE) |
+#             grepl("pa_type", label, fixed = TRUE) |
+#             grepl("overlap", label, fixed = TRUE),
+#             unlist(para)]
 
 
 # Define marginals
 
 b.full <- 1:length(coef(gam))
-post.marginals <- list(full = b.full,
-                       cov0 = b.full[-para.cov],
-                       it0 = b.full[-para.it],
-                       pa0 = b.full[-para.pa],
-                       ov0 = b.full[-para.ov],
-                       cov0_it0 = b.full[-para.cov_it],
-                       cov0_pa0 = b.full[-para.cov_pa],
-                       cov0_ov0 = b.full[-para.cov_ov])
+post.marginals <- list(
+		       full = b.full
+                       # , cov0 = b.full[-para.cov]
+                       # , it0 = b.full[-para.it]
+                       # , pa0 = b.full[-para.pa]
+                       # , ov0 = b.full[-para.ov]
+                       # , cov0_it0 = b.full[-para.cov_it]
+                       # , cov0_pa0 = b.full[-para.cov_pa]
+                       # , cov0_ov0 = b.full[-para.cov_ov]
+		       )
 
-marginal.ids <- list(full = data.pred[,id],
-                     cov0 = data.pred[,id],
-                     it0 = data.pred[it_type != "none", id],
-                     pa0 = data.pred[pa_type != "none", id],
-                     ov0 = data.pred[overlap != "none", id],
-                     cov0_it0 = data.pred[it_type != "none", id],
-                     cov0_pa0 = data.pred[pa_type != "none", id],
-                     cov0_ov0 = data.pred[overlap != "none", id])
+marginal.ids <- list(
+		     full = data.pred[,id]
+                     # , cov0 = data.pred[,id]
+                     # , it0 = data.pred[it_type != "none", id]
+                     # , pa0 = data.pred[pa_type != "none", id]
+                     # , ov0 = data.pred[overlap != "none", id]
+                     # , cov0_it0 = data.pred[it_type != "none", id]
+                     # , cov0_pa0 = data.pred[pa_type != "none", id]
+                     # , cov0_ov0 = data.pred[overlap != "none", id]
+		     )
 
-message(paste0("Evaluating the linear predictor for model ", region, ".m3, ",
+message(paste0("Evaluating the linear predictor for model ", region, ".m7, ",
         "using draws from the posterior distribution.\n"))
 message(paste0("Processing rows ", row.chunks$from[task_id],
         " to ", row.chunks$to[task_id],

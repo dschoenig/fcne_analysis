@@ -68,9 +68,10 @@ max.discrete.bins <- 1e5 # Default for bivariate smooths is effectively 1e4
 
 data.proc <- readRDS(file.data.proc)
 data.mod <- 
-  as.data.frame(data.proc[, .(forestloss,
-                          for_type, it_type, pa_type, overlap, ed_east, ed_north,
-                          adm0, som_x, som_y)])
+  as.data.frame(data.proc[,
+  			  .(forestloss,
+                            for_type, it_type, pa_type, overlap, ed_east, ed_north,
+                            adm0, som_x, som_y)])
 data.mod$b0 <- model.matrix(~ 1, data.mod)
 rm(data.proc)
 

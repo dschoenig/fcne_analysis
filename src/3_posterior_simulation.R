@@ -16,8 +16,8 @@ seed <- 18980605
 
 ## SIMULATION FROM MULTIVARIATE NORMAL APPROXIMATION OF MODEL POSTERIOR ########
 
-file.model <- paste0(path.gam, region, ".m3.rds")
-file.post <- paste0(path.gam, region, ".m3.post.rds")
+file.model <- paste0(path.gam, region, ".m7.rds")
+file.post <- paste0(path.gam, region, ".m7.post.rds")
 
 # Load model
 model <- readRDS(file.model)
