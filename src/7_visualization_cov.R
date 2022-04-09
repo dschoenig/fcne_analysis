@@ -23,7 +23,7 @@ path.effects <- paste0(path.base, "models/gam/effects/")
 path.figures <- paste0(path.base, "results/figures/")
 if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
 
-file.data.vis <- paste0(path.data.vis, "cov.rds")
+file.data.vis <- paste0(path.data.vis, ".cov.rds")
 
 regions <- c("amz", "cam")
 
@@ -166,182 +166,201 @@ som_guide_fill <-
 title.wrap <- scales::label_wrap(20)
 
 
-
-som.sum <- list()
-
-for(i in seq_along(regions)){
-
-  region <- regions[i]
-
-  message(paste0("Preparing data for region `", region, "` …"))
-
-  file.som.fit <- paste0(path.som, region, ".som.1e6.rds")
-  file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-  file.risk.ten_cov <- paste0(path.effects, region, ".risk.tenure_cov.rds")
-  file.riskchange.ten_cov <- paste0(path.effects, region, ".riskchange.tenure_cov.rds")
+## EFFECTS IN COVARIATE SPACE ##################################################
 
 
-  # Forest loss risk
+if(!file.exists(file.data.vis)) {
 
-  message("Forest loss risk …")
+  som.sum <- list()
 
-  r.som <- readRDS(file.risk.ten_cov)
+  for(i in seq_along(regions)){
 
-  categories <- 
-    data.table(
-      name = c("for_type.all",
-               "for_type.primary"),
-      subset = c('cat == "all" & is.na(for_type) & is.na(it_type) & is.na(pa_type)',
-                 'cat == "for_p" & for_type == "primary" & is.na(it_type) & is.na(pa_type)')
-    )
+    region <- regions[i]
 
-  r.sum <- list()
+    message(paste0("Preparing data for region `", region, "` …"))
 
-  for(j in 1:nrow(categories)) {
-   
-    r.cat <- r.som$r[[categories$name[j ]]]
-    som.units <- r.som$som.units[eval(parse(text = categories$subset[j]))]
-    som.units[, som_bmu := as.character(som_bmu)]
+    file.som.fit <- paste0(path.som, region, ".som.1e6.rds")
+    file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
+    file.risk.ten_cov <- paste0(path.effects, region, ".risk.tenure_cov.rds")
+    file.riskchange.ten_cov <- paste0(path.effects, region, ".riskchange.tenure_cov.rds")
 
-    r.som.dt <-
-    as_draws_df(r.cat) |>
-    as.data.table() |>
-    melt(measure.vars = 1:ncol(r.cat),
-         variable.name = "som_bmu",
-         value.name = "risk")
-    r.som.dt[,
-             som_bmu := stri_split_fixed(som_bmu, ":", n = 2, simplify = TRUE)[,1]]
 
-    r.sum[[categories$name[j]]] <-
+    # Forest loss risk
+
+    message("Forest loss risk …")
+
+    r.som <- readRDS(file.risk.ten_cov)
+
+    categories <- 
+      data.table(
+        name = c("for_type.all",
+                 "for_type.primary"),
+        subset = c('cat == "all" & is.na(for_type) & is.na(it_type) & is.na(pa_type)',
+                   'cat == "for_p" & for_type == "primary" & is.na(it_type) & is.na(pa_type)')
+      )
+
+    r.sum <- list()
+
+    for(j in 1:nrow(categories)) {
+     
+      r.cat <- r.som$r[[categories$name[j ]]]
+      som.units <- r.som$som.units[eval(parse(text = categories$subset[j]))]
+      som.units[, som_bmu := as.character(som_bmu)]
+
+      r.som.dt <-
+      as_draws_df(r.cat) |>
+      as.data.table() |>
+      melt(measure.vars = 1:ncol(r.cat),
+           variable.name = "som_bmu",
+           value.name = "risk")
       r.som.dt[,
-           .(mean = mean(risk),
-             sd = sd(risk),
-             q2.5 = quantile(risk, 0.025),
-             q97.5 = quantile(risk, 0.975)),
-           by = som_bmu] |>
-      merge(som.units[, -c("ids", "cat")], by = "som_bmu") |>
-      setorder(som_x, som_y) |>
-      setcolorder(c("som_x", "som_y", "som_bmu"))
+               som_bmu := stri_split_fixed(som_bmu, ":", n = 2, simplify = TRUE)[,1]]
 
-  }
+      r.sum[[categories$name[j]]] <-
+        r.som.dt[,
+             .(mean = mean(risk),
+               sd = sd(risk),
+               q2.5 = quantile(risk, 0.025),
+               q97.5 = quantile(risk, 0.975)),
+             by = som_bmu] |>
+        merge(som.units[, -c("ids", "cat")], by = "som_bmu") |>
+        setorder(som_x, som_y) |>
+        setcolorder(c("som_x", "som_y", "som_bmu"))
 
-  som.sum[[region]]$r <- 
-  rbindlist(r.sum, idcol = "cat") |>
-  merge(cat.lab, by = c("for_type", "it_type", "pa_type"),
-        all.x = TRUE, all.y = FALSE, sort = FALSE)
+    }
 
-  
-  # Absolute change in risk (compared to baseline)
+    som.sum[[region]]$r <- 
+    rbindlist(r.sum, idcol = "cat") |>
+    merge(cat.lab, by = c("for_type", "it_type", "pa_type"),
+          all.x = TRUE, all.y = FALSE, sort = FALSE)
 
-  message("Absolute risk change …")
-  
-  rc.som <- readRDS(file.riskchange.ten_cov)
+    
+    # Absolute change in risk (compared to baseline)
 
-  categories <- 
-    c("it_type.recognized", "it_type.not_recognized",
-      "pa_type.indirect_use", "pa_type.direct_use")
+    message("Absolute risk change …")
+    
+    rc.som <- readRDS(file.riskchange.ten_cov)
 
-  arc.sum <- list()
+    categories <- 
+      c("it_type.recognized", "it_type.not_recognized",
+        "pa_type.indirect_use", "pa_type.direct_use")
 
-  for(j in seq_along(categories)) {
-   
-    rc.cat <- rc.som[[categories[j]]]
-    som.units <- rc.cat$som.units
-    som.units[, som_bmu := as.character(som_bmu)]
+    arc.sum <- list()
 
-    rc.som.dt <-
-    as_draws_df(rc.cat$arc) |>
-    as.data.table() |>
-    melt(measure.vars = 1:ncol(rc.cat$arc),
-         variable.name = "som_bmu",
-         value.name = "arc")
-    rc.som.dt[,
-             som_bmu := stri_split_fixed(som_bmu, ":", n = 2, simplify = TRUE)[,1]]
+    for(j in seq_along(categories)) {
+     
+      rc.cat <- rc.som[[categories[j]]]
+      som.units <- rc.cat$som.units
+      som.units[, som_bmu := as.character(som_bmu)]
 
-    arc.sum[[categories[j]]] <-
+      rc.som.dt <-
+      as_draws_df(rc.cat$arc) |>
+      as.data.table() |>
+      melt(measure.vars = 1:ncol(rc.cat$arc),
+           variable.name = "som_bmu",
+           value.name = "arc")
       rc.som.dt[,
-           .(mean = mean(arc),
-             sd = sd(arc),
-             q2.5 = quantile(arc, 0.025),
-             q97.5 = quantile(arc, 0.975)),
-           by = som_bmu] |>
-      merge(som.units[, -c("ids", "cat")], by = "som_bmu") |>
-      setorder(som_x, som_y) |>
-      setcolorder(c("som_x", "som_y", "som_bmu"))
-  }
+               som_bmu := stri_split_fixed(som_bmu, ":", n = 2, simplify = TRUE)[,1]]
 
-  som.sum[[region]]$arc <- 
-  rbindlist(arc.sum, idcol = "cat") |>
-  merge(cat.lab, by = c("for_type", "it_type", "pa_type"),
-        all.x = TRUE, all.y = FALSE, sort = FALSE)
- 
-  
-  # SOM unit coordinates in full covariate space
+      arc.sum[[categories[j]]] <-
+        rc.som.dt[,
+             .(mean = mean(arc),
+               sd = sd(arc),
+               q2.5 = quantile(arc, 0.025),
+               q97.5 = quantile(arc, 0.975)),
+             by = som_bmu] |>
+        merge(som.units[, -c("ids", "cat")], by = "som_bmu") |>
+        setorder(som_x, som_y) |>
+        setcolorder(c("som_x", "som_y", "som_bmu"))
+    }
 
-  message("Covariates …")
+    som.sum[[region]]$arc <- 
+    rbindlist(arc.sum, idcol = "cat") |>
+    merge(cat.lab, by = c("for_type", "it_type", "pa_type"),
+          all.x = TRUE, all.y = FALSE, sort = FALSE)
+   
+    
+    # SOM unit coordinates in full covariate space
 
-  som.fit <- readRDS(file.som.fit)
-  
-  bmu.coord <- as.data.table(som.fit$grid$pts)
-  setnames(bmu.coord, c("x", "y"), c("som_x", "som_y"))
-  bmu.coord[, som_bmu := as.character(1:nrow(bmu.coord))]
+    message("Covariates …")
 
-  codes <- som.fit$codes[[1]]
-  cols <- colnames(codes)
-  cols.z <- paste0(colnames(codes), ".z")
-  colnames(codes) <- cols.z
-  codes <- as.data.table(codes)
-  codes[,
-        (cols) :=
-          as.data.table(t(apply(.SD, 1,
-                                \(x) (x * som.fit$scale$sd) + som.fit$scale$mean))),
-        .SD = cols.z]
-  cov.trans.km <- c("dist_set", "dist_roads", "dist_rivers")
-  codes[,
-        (paste0(cov.trans.km, ".km")) :=
-        lapply(.SD, \(x) x/1000),
-        .SDcols = cov.trans.km]
-  codes <- cbind(codes, bmu.coord)
-  codes[, (cols) := lapply(.SD, \(x) ifelse(x < 0, 0, x)), .SDcols = cols]
+    som.fit <- readRDS(file.som.fit)
+    
+    bmu.coord <- as.data.table(som.fit$grid$pts)
+    setnames(bmu.coord, c("x", "y"), c("som_x", "som_y"))
+    bmu.coord[, som_bmu := as.character(1:nrow(bmu.coord))]
 
-  som.sum[[region]]$cov <- codes
+    codes <- som.fit$codes[[1]]
+    cols <- colnames(codes)
+    cols.z <- paste0(colnames(codes), ".z")
+    colnames(codes) <- cols.z
+    codes <- as.data.table(codes)
+    codes[,
+          (cols) :=
+            as.data.table(t(apply(.SD, 1,
+                                  \(x) (x * som.fit$scale$sd) + som.fit$scale$mean))),
+          .SD = cols.z]
+    cov.trans.km <- c("dist_set", "dist_roads", "dist_rivers")
+    codes[,
+          (paste0(cov.trans.km, ".km")) :=
+          lapply(.SD, \(x) x/1000),
+          .SDcols = cov.trans.km]
+    codes <- cbind(codes, bmu.coord)
+    codes[, (cols) := lapply(.SD, \(x) ifelse(x < 0, 0, x)), .SDcols = cols]
+
+    som.sum[[region]]$cov <- codes
 
 
-  # Number of samples
+    # Number of samples
 
-  message("No. of samples …")
+    message("No. of samples …")
 
-  data.proc <- readRDS(file.data.proc)
+    data.proc <- readRDS(file.data.proc)
 
-  sum.vars <- c("for_type", "it_type", "pa_type")
+    sum.vars <- c("for_type", "it_type", "pa_type")
 
-  n.sum <- list()
+    n.sum <- list()
 
-  for(i in seq_along(sum.vars)) {
-    # var.sel <- paste0("is.na(", sum.vars[i], ")")
-    n.sum[[i]] <- 
-      data.proc[,
-                .(n = .N),
-                by = c(sum.vars[i], "som_x", "som_y", "som_bmu")]
-  }
-  
-  n.sum[[length(sum.vars) + 1]] <-
-      data.proc[,
-                .(n = .N),
-                by = c("som_x", "som_y", "som_bmu")]
+    for(i in seq_along(sum.vars)) {
+      # var.sel <- paste0("is.na(", sum.vars[i], ")")
+      n.sum[[i]] <- 
+        data.proc[,
+                  .(n = .N),
+                  by = c(sum.vars[i], "som_x", "som_y", "som_bmu")]
+    }
+    
+    n.sum[[length(sum.vars) + 1]] <-
+        data.proc[,
+                  .(n = .N),
+                  by = c("som_x", "som_y", "som_bmu")]
 
-  som.sum[[region]]$n <-
-  rbindlist(n.sum, fill = TRUE) |>
-  subset((it_type != "none" | is.na(it_type)) &
-         (pa_type != "none" | is.na(pa_type)) &
-         (for_type != "other" | is.na(for_type))) |>
-  setcolorder(c("for_type", "it_type", "pa_type", "som_x", "som_y", "som_bmu")) |>
-  merge(cat.lab, by = c("for_type", "it_type", "pa_type"),
-        all.x = TRUE, all.y = FALSE, sort = FALSE) |>
-  setorder("cat.label", "som_x", "som_y", "som_bmu")
+    som.sum[[region]]$n <-
+    rbindlist(n.sum, fill = TRUE) |>
+    subset((it_type != "none" | is.na(it_type)) &
+           (pa_type != "none" | is.na(pa_type)) &
+           (for_type != "other" | is.na(for_type))) |>
+    setcolorder(c("for_type", "it_type", "pa_type", "som_x", "som_y", "som_bmu")) |>
+    merge(cat.lab, by = c("for_type", "it_type", "pa_type"),
+          all.x = TRUE, all.y = FALSE, sort = FALSE) |>
+    setorder("cat.label", "som_x", "som_y", "som_bmu")
+
+  } # End loop over regions
+
+  message(paste0("Storing summaries in `", file.data.vis, "` …"))
+
+  list(som.sum = som.sum) |>
+  saveRDS(file.data.vis)
+
+} else {
+
+  message("Loading data for visualization …")
+  stored <- readRDS(file.data.vis)
+  attach(stored)
 
 }
 
+
+## SOM HEATMAPS (POSTERIOR MEANS) ##############################################
 
 somvis <- list()
 
@@ -466,32 +485,208 @@ for(i in seq_along(regions)) {
 
 }
 
+
+## SOM HEATMAPS (0.025 QUANTILE) ###############################################
+
+somvis.ci_l <- list()
+
+for(i in seq_along(regions)) {
+    
+  region <- regions[i]
+
+  message(paste0("Preparing SOM visualization for region `", region,
+                 "` (0.025 quantile) …"))
+
+  # Risk
+
+  somvis.ci_l[[region]]$r <-
+    som.sum[[region]]$r |>
+    ggplot() +
+      geom_tile(aes(x = som_x, y = som_y, fill = q2.5)) +
+      scale_fill_continuous_sequential(palette = "Viridis",
+                                       rev = FALSE,
+                                       limits = c(0,0.4),
+                                       labels = scales::label_percent()) +
+      scale_x_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      scale_y_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      coord_fixed() +
+      som_guide_fill +
+      labs(fill = title.wrap("Forest loss risk"), x = "SOM 1", y = "SOM 2") +
+      facet_wrap(vars(cat.label), ncol = 2) +
+      som_theme
+
+  # Absolute risk change
+
+  somvis.ci_l[[region]]$arc <-
+    som.sum[[region]]$arc |>
+    ggplot() +
+      geom_tile(aes(x = som_x, y = som_y, fill = q2.5)) +
+      scale_fill_continuous_divergingx(palette = "Roma",
+                                       ,rev = TRUE
+                                       # , trans = scales::yj_trans(0)
+                                       ,breaks = seq(-0.2, 0.2, 0.05),
+                                       ,labels = c("≤ -20%", "", "-10%", "", 0,
+                                                   "", "+10%", "", "≥ +20%"),
+                                       ,limits = c(-0.20, 0.20)
+                                       ,oob = scales::squish
+                                       ) +
+      scale_x_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      scale_y_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      coord_fixed() +
+      som_guide_fill +
+      labs(fill = title.wrap("Absolute change in forest loss risk"),
+           x = "SOM 1", y = "SOM 2") +
+      facet_wrap(vars(cat.label), ncol = 2) +
+      som_theme
+
+}
+
+
+## SOM HEATMAPS (0.975 QUANTILE) ###############################################
+
+somvis.ci_u <- list()
+
+for(i in seq_along(regions)) {
+    
+  region <- regions[i]
+
+  message(paste0("Preparing SOM visualization for region `", region,
+                 "` (0.975 quantile) …"))
+
+  # Risk
+
+  somvis.ci_u[[region]]$r <-
+    som.sum[[region]]$r |>
+    ggplot() +
+      geom_tile(aes(x = som_x, y = som_y, fill = q97.5)) +
+      scale_fill_continuous_sequential(palette = "Viridis",
+                                       rev = FALSE,
+                                       limits = c(0,0.4),
+                                       labels = scales::label_percent()) +
+      scale_x_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      scale_y_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      coord_fixed() +
+      som_guide_fill +
+      labs(fill = title.wrap("Forest loss risk"), x = "SOM 1", y = "SOM 2") +
+      facet_wrap(vars(cat.label), ncol = 2) +
+      som_theme
+
+  # Absolute risk change
+
+  somvis.ci_u[[region]]$arc <-
+    som.sum[[region]]$arc |>
+    ggplot() +
+      geom_tile(aes(x = som_x, y = som_y, fill = q97.5)) +
+      scale_fill_continuous_divergingx(palette = "Roma",
+                                       ,rev = TRUE
+                                       # , trans = scales::yj_trans(0)
+                                       ,breaks = seq(-0.2, 0.2, 0.05),
+                                       ,labels = c("≤ -20%", "", "-10%", "", 0,
+                                                   "", "+10%", "", "≥ +20%"),
+                                       ,limits = c(-0.20, 0.20)
+                                       ,oob = scales::squish
+                                       ) +
+      scale_x_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      scale_y_continuous(limits = c(1, 100),
+                         breaks = c(25, 50, 75, 100)-0.5,
+                         labels = c(25, 50, 75, 100),
+                         expand = expansion(0, 0)) +
+      coord_fixed() +
+      som_guide_fill +
+      labs(fill = title.wrap("Absolute change in forest loss risk"),
+           x = "SOM 1", y = "SOM 2") +
+      facet_wrap(vars(cat.label), ncol = 2) +
+      som_theme
+
+}
+
+
+## EXPORT ######################################################################
+
+
 for(i in seq_along(regions)) {
   region <- regions[i]
+  
+  # Risk and absolute risk change
+
   som.r.arc.combined <-
     with(somvis[[region]],
          r / arc) +
     plot_layout(heights = c(1,2.1)) +
     plot_annotation(tag_levels = "A") &
     som_theme
+
   tiff(paste0(path.figures, "si.som.r.arc.", region, ".tif"),
        width = 6.7, height = 9, unit = "in", res = 300)
   print(som.r.arc.combined)
   dev.off()
-}
 
-for(i in seq_along(regions)) {
-  region <- regions[i]
+  som.r.arc.combined <-
+    with(somvis.ci_l[[region]],
+         r / arc) +
+    plot_layout(heights = c(1,2.1)) +
+    plot_annotation(tag_levels = "A") &
+    som_theme
+
+  tiff(paste0(path.figures, "si.som.r.arc.ci_l.", region, ".tif"),
+       width = 6.7, height = 9, unit = "in", res = 300)
+  print(som.r.arc.combined)
+  dev.off()
+
+  som.r.arc.combined <-
+    with(somvis.ci_u[[region]],
+         r / arc) +
+    plot_layout(heights = c(1,2.1)) +
+    plot_annotation(tag_levels = "A") &
+    som_theme
+
+  tiff(paste0(path.figures, "si.som.r.arc.ci_u.", region, ".tif"),
+       width = 6.7, height = 9, unit = "in", res = 300)
+  print(som.r.arc.combined)
+  dev.off()
+
+  # Covariates
+
   som.cov.combined <-
     with(somvis[[region]]$cov,
          tri + dist_set.km + dist_roads.km + dist_rivers.km + dens_pop + dens_roads +
          plot_layout(ncol = 2, nrow = 3) +
          plot_annotation(tag_levels = "A") &
          som_theme)
+
   tiff(paste0(path.figures, "si.som.cov.", region, ".tif"),
        width = 6.7, height = 7.5, unit = "in", res = 300)
   print(som.cov.combined)
   dev.off()
+
+  # Number of samples
+
+  tiff(paste0(path.figures, "si.som.cov.", region, ".tif"),
+       width = 6.7, height = 7.5, unit = "in", res = 300)
+  print(somvis[[region]]$n)
+  dev.off()
+
 }
 
 
