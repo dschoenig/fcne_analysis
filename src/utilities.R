@@ -1142,7 +1142,7 @@ reweigh_posterior.draws_matrix <- function(posterior, w, w.init = NULL) {
 }
 
 
-bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, bin.names = NULL, append = FALSE) {
+bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, bin.names = NULL, append = FALSE, right = TRUE) {
   bins.l <- list()
   for (i in 1:length(columns)) {
     if(is.null(bin.min)) {
@@ -1162,7 +1162,7 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, b
                     to =  b.upper, 
                     by = bin.res[i])
     b.center <- b.breaks[1:(length(b.breaks)-1)] + bin.res[i] / 2 
-    cuts <- cut(data[[columns[i]]], breaks = b.breaks, labels = FALSE)
+    cuts <- cut(data[[columns[i]]], breaks = b.breaks, labels = FALSE, right = right)
     bins.l[[i]] <- b.center[cuts]
   }
   if(is.null(bin.names)) {
@@ -1513,6 +1513,16 @@ label_arc <- function(x, ndec = 0, psign = TRUE) {
   per[is.na(x)] <- NA
   return(per)
 }
+
+label_per <- function(x, ndec = 0, psign = TRUE) {
+  per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
+  if(psign) {
+    per <- paste0(per, "%")
+  }
+  per[is.na(x)] <- NA
+  return(per)
+}
+
 
 
 #diag_residuals <- function(model, 

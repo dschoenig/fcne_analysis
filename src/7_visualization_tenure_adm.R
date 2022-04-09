@@ -35,6 +35,53 @@ col.div <- diverging_hcl(20, palette = "Purple-Green")
 c.plot <- col.div[c(3,17)]
 
 
+ten_theme <- 
+  theme_minimal(base_family = "IBMPlexSans", base_size = 7) +
+  theme(
+        panel.grid.major = element_blank(),
+        legend.position = "right",
+        legend.justification = c(0,1),
+        legend.title = element_text(size = rel(0.9), hjust = 0,
+                                    margin = margin(t = 3, b = 6)),
+        legend.text = element_text(size = rel(0.8)),
+        legend.spacing.y = unit(2, "pt"),
+        axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
+                                   colour = "grey5"),
+        axis.text.y = element_text(hjust = 0, colour = "grey5"),
+        )
+
+
+# theme_minimal(base_family = "IBMPlexSans") +
+#       theme(
+#             legend.position = "right",
+#             legend.justification = c(0,1),
+#             legend.spacing.y = unit(5, "mm"),
+#             legend.title = element_text(size = rel(0.75)),
+#             legend.text = element_text(size = rel(0.75)),
+#             axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
+#                                        colour = "grey5"),
+#             axis.text.y = element_text(hjust = 0, colour = "grey5"),
+#             # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
+#             panel.grid.major = element_blank()
+#             # axis.line = element_line(colour = "grey85")
+
+ten_guide_fill <-
+  guides(fill = guide_colorbar(
+                               ticks.colour = "grey5",
+                               ticks.linewidth = 1,
+                               frame.colour = "grey5",
+                               frame.linewidth = 0.5,
+                               barwidth = 0.5,
+                               barheight = 5,
+                               label.position = "left",
+                               label.hjust = 1,
+                               draw.ulim = FALSE,
+                               draw.llim = FALSE
+                               ))
+
+
+
+
 # Labels for tenure categories and administrative regions
 
 cat.lab <- 
@@ -63,7 +110,7 @@ reg.lab$amz <-
                       "GUF", "GUY", "PER", "SUR",
                       "VEN", NA),
              reg.label = c("Bolivia", "Brazil", "Colombia", "Ecuador",
-                           "French Guiana", "Guyana", "Peru", "Suriname",
+                           "French\nGuiana", "Guyana", "Peru", "Suriname",
                            "Venezuela", 
                            # "Amazon")
                            "Region")
@@ -85,6 +132,8 @@ for.lab <-
              for.label = c("Primary forests", "All forests"))
 for.lab[, for.label := factor(for.label, levels = for.label)]
 
+
+lab.wrap <- scales::label_wrap(10)
 
 
 ## EFFECT OF TENURE BY ADMINISTRATIVE AREA, FOREST TYPE ########################
@@ -182,122 +231,67 @@ for(i in seq_along(regions)) {
                       amz = "Amazon")
 
   plots[[region]]$ten.arc$primary <-
-    ggplot(ten.sum[[region]]$arc[(is.na(it_type) | is.na(pa_type)) &
-                                 for_type == "primary"]) +
+    ten.sum[[region]]$arc[(is.na(it_type) | is.na(pa_type)) &
+                          for_type == "primary"] |>
+    ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
                 size = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
                     label = label_arc(mean, 1, FALSE),
                     fontface = ci_0),
-                colour = "grey5", size = 2.5) +
+                colour = "grey5", size = 2) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
                    size = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
-                                      # palette = "Blue-Red 3",
-                                      palette = "Roma"
+                                       palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
                                        ,labels = label_arc
-                                       # ,labels = c(paste0(seq(-15, 0, 5), "%"),
-                                       #             paste0("+", seq(5, 15, 5), "%"))
-                                       #             # "+5%", "≥ +10%"),
-                                       # ,limits = c(-0.075, 0.075)
-                                       # ,limits = c(-0.15, 0.15)
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
                                        ) +
-      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain")) +
+      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
+                            guide = "none") +
       scale_x_discrete(position = "top") +
       scale_y_discrete(limits = rev) +
       coord_fixed() +
-      guides(fill = guide_colorbar(ticks.colour = "grey35",
-                                   ticks.linewidth = 1,
-                                   frame.colour = "grey35",
-                                   frame.linewidth = 1,
-                                   barheight = 5,
-                                   barwidth = 1,
-                                   label.position = "left",
-                                   label.hjust = 1,
-                                   draw.ulim = FALSE,
-                                   draw.llim = FALSE),
-             fontface = "none") +
+      ten_guide_fill +
       labs(subtitle = reg.title,
            fill = "Absolute difference\nin forest loss risk",
            y = "Primary forests\n", x = NULL) +
-      theme_minimal(base_family = "IBMPlexSans") +
-      theme(
-            legend.position = "right",
-            legend.justification = c(0,1),
-            legend.spacing.y = unit(5, "mm"),
-            legend.title = element_text(size = rel(0.75)),
-            legend.text = element_text(size = rel(0.75)),
-            axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
-                                       colour = "grey5"),
-            axis.text.y = element_text(hjust = 0, colour = "grey5"),
-            # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
-            panel.grid.major = element_blank()
-            # axis.line = element_line(colour = "grey85")
-      )
+      ten_theme
 
-  plots[[region]]$ten.arc$other <-
-    ggplot(ten.sum[[region]]$arc[(is.na(it_type) | is.na(pa_type)) &
-                                 is.na(for_type)]) +
+  plots[[region]]$ten.arc$all <-
+    ten.sum[[region]]$arc[(is.na(it_type) | is.na(pa_type)) &
+                          is.na(for_type)] |>
+    ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
                 size = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
                     label = label_arc(mean, 1, FALSE),
                     fontface = ci_0),
-                colour = "grey5", size = 2.5) +
+                colour = "grey5", size = 2) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
                    size = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
-                                      # palette = "Blue-Red 3",
-                                      palette = "Roma"
+                                       palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
                                        ,labels = label_arc
-                                       # ,labels = c(paste0(seq(-15, 0, 5), "%"),
-                                       #             paste0("+", seq(5, 15, 5), "%"))
-                                       #             # "+5%", "≥ +10%"),
-                                       # ,limits = c(-0.075, 0.075)
-                                       # ,limits = c(-0.15, 0.15)
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
                                        ) +
-      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain")) +
+      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
+                            guide = "none") +
       scale_x_discrete(position = "top") +
       scale_y_discrete(limits = rev) +
       coord_fixed() +
-      guides(fill = guide_colorbar(ticks.colour = "grey35",
-                                   ticks.linewidth = 1,
-                                   frame.colour = "grey35",
-                                   frame.linewidth = 1,
-                                   barheight = 5,
-                                   barwidth = 1,
-                                   label.position = "left",
-                                   label.hjust = 1,
-                                   draw.ulim = FALSE,
-                                   draw.llim = FALSE),
-             fontface = "none") +
+      ten_guide_fill +
       labs(fill = "Absolute difference\nin forest loss risk",
            y = "All forests\n", x = NULL) +
-      theme_minimal(base_family = "IBMPlexSans") +
-      theme(
-            legend.position = "right",
-            legend.justification = c(0,1),
-            legend.spacing.y = unit(5, "mm"),
-            legend.title = element_text(size = rel(0.75)),
-            legend.text = element_text(size = rel(0.75)),
-            # axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
-            #                            colour = "grey5"),
-            axis.text.x = element_blank(),
-            axis.text.y = element_text(hjust = 0, colour = "grey5"),
-            # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
-            panel.grid.major = element_blank()
-            # axis.line = element_line(colour = "grey85")
-      )
+      ten_theme
 
 }
 
@@ -321,152 +315,109 @@ for(i in seq_along(regions)) {
                       amz = "Amazon")
 
   plots.ov[[region]]$ten.arc$primary <-
-    ggplot(ten.sum[[region]]$arc[it_type != "none" & pa_type != "none" &
-                                 for_type == "primary"]) +
+    ten.sum[[region]]$arc[it_type != "none" & pa_type != "none" &
+                          for_type == "primary"] |>
+    ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
                 size = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
                     label = label_arc(mean, 1, FALSE),
                     fontface = ci_0),
-                colour = "grey5", size = 2.5) +
+                colour = "grey5", size = 2) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
                    size = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
-                                      # palette = "Blue-Red 3",
-                                      palette = "Roma"
+                                       palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
                                        ,labels = label_arc
-                                       # ,labels = c(paste0(seq(-15, 0, 5), "%"),
-                                       #             paste0("+", seq(5, 15, 5), "%"))
-                                       #             # "+5%", "≥ +10%"),
-                                       # ,limits = c(-0.075, 0.075)
-                                       # ,limits = c(-0.15, 0.15)
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
                                        ) +
-      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain")) +
+      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
+                            guide = "none") +
       scale_x_discrete(position = "top") +
       scale_y_discrete(limits = rev) +
       coord_fixed() +
-      guides(fill = guide_colorbar(ticks.colour = "grey35",
-                                   ticks.linewidth = 1,
-                                   frame.colour = "grey35",
-                                   frame.linewidth = 1,
-                                   barheight = 5,
-                                   barwidth = 1,
-                                   label.position = "left",
-                                   label.hjust = 1,
-                                   draw.ulim = FALSE,
-                                   draw.llim = FALSE),
-             fontface = "none") +
+      ten_guide_fill +
       labs(subtitle = reg.title,
            fill = "Absolute difference\nin forest loss risk",
            y = "Primary forests\n", x = NULL) +
-      theme_minimal(base_family = "IBMPlexSans") +
-      theme(
-            legend.position = "right",
-            legend.justification = c(0,1),
-            legend.spacing.y = unit(5, "mm"),
-            legend.title = element_text(size = rel(0.75)),
-            legend.text = element_text(size = rel(0.75)),
-            axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
-                                       colour = "grey5"),
-            axis.text.y = element_text(hjust = 0, colour = "grey5"),
-            # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
-            panel.grid.major = element_blank()
-            # axis.line = element_line(colour = "grey85")
-      )
+      ten_theme
 
-  plots.ov[[region]]$ten.arc$other <-
-    ggplot(ten.sum[[region]]$arc[it_type != "none" & pa_type != "none" &
-                                 is.na(for_type)]) +
+  plots.ov[[region]]$ten.arc$all <-
+    ten.sum[[region]]$arc[it_type != "none" & pa_type != "none" &
+                          is.na(for_type)] |>
+    ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mean),
                 size = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
                     label = label_arc(mean, 1, FALSE),
                     fontface = ci_0),
-                colour = "grey5", size = 2.5) +
+                colour = "grey5", size = 2) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 8.5,
                    size = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
-                                      # palette = "Blue-Red 3",
-                                      palette = "Roma"
+                                       palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
                                        ,labels = label_arc
-                                       # ,labels = c(paste0(seq(-15, 0, 5), "%"),
-                                       #             paste0("+", seq(5, 15, 5), "%"))
-                                       #             # "+5%", "≥ +10%"),
-                                       # ,limits = c(-0.075, 0.075)
-                                       # ,limits = c(-0.15, 0.15)
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
                                        ) +
-      scale_colour_manual(values = c("0" = "grey5", "1" = "grey95")) +
+      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
+                            guide = "none") +
       scale_x_discrete(position = "top") +
       scale_y_discrete(limits = rev) +
       coord_fixed() +
-      guides(fill = guide_colorbar(ticks.colour = "grey35",
-                                   ticks.linewidth = 1,
-                                   frame.colour = "grey35",
-                                   frame.linewidth = 1,
-                                   barheight = 5,
-                                   barwidth = 1,
-                                   label.position = "left",
-                                   label.hjust = 1,
-                                   draw.ulim = FALSE,
-                                   draw.llim = FALSE),
-             fontface = "none") +
+      ten_guide_fill +
       labs(fill = "Absolute difference\nin forest loss risk",
-           y = "All forests\n", x = NULL) +
-      theme_minimal(base_family = "IBMPlexSans") +
-      theme(
-            legend.position = "right",
-            legend.justification = c(0,1),
-            legend.spacing.y = unit(5, "mm"),
-            legend.title = element_text(size = rel(0.75)),
-            legend.text = element_text(size = rel(0.75)),
-            # axis.text.x = element_text(angle = 90, vjust = 0, hjust = 0,
-            #                            colour = "grey5"),
-            axis.text.x = element_blank(),
-            axis.text.y = element_text(hjust = 0, colour = "grey5"),
-            # panel.background = element_rect(fill = "grey85", colour = "grey85", size = 2),
-            panel.grid.major = element_blank()
-            # axis.line = element_line(colour = "grey85")
-      )
-
+           y = "Primary forests\n", x = NULL) +
+      ten_theme
 }
 
 
 ## COMBINE INDIVIDUAL PLOTS ####################################################
 
 combined.ten.arc <-
+
   with(plots,
-       ((amz$ten.arc$primary + theme(axis.title.y = element_text(hjust = 0.5),
-                                     axis.title.x = element_text(hjust = 0))) +
-        (cam$ten.arc$primary + theme(axis.text.y = element_blank(),
-                                     axis.title.y = element_blank(),
-                                     axis.title.x = element_text(hjust = 0)))
+       ((amz$ten.arc$primary & theme(axis.title.y = element_text(hjust = 0.5))) +
+        (cam$ten.arc$primary & theme(axis.text.y = element_blank(),
+                                     axis.title.y = element_blank()))
        ) /
-       ((amz$ten.arc$other + theme(axis.title.y = element_text(hjust = 0.5))) +
-        (cam$ten.arc$other + theme(axis.text.y = element_blank(),
-                                   axis.title.y = element_blank()))
-        # plot_layout(guides = "collect") +
+       ((amz$ten.arc$all & theme(axis.title.y = element_text(hjust = 0.5),
+                                 axis.text.x = element_blank())) +
+        (cam$ten.arc$all & theme(axis.title.y = element_blank(),
+                                 axis.text.y = element_blank(),
+                                 axis.text.x = element_blank()))
        )) +
   plot_layout(guides = "collect") +
   plot_annotation(tag_levels = NULL) &
-  theme(legend.position = "right",
-        legend.justification = c(0,1),
-        legend.spacing.y = unit(5, "mm"),
-        legend.title = element_text(size = rel(0.9)),
-        legend.text = element_text(size = rel(0.75)))
+  theme(legend.justification = c(0,1))
 
-svg(paste0(path.figures, "ten.arc.svg"), width = 9.25, height = 4.5)
+
+svg(paste0(path.figures, "ten.arc.svg"), width = 6.7, height = 3)
 combined.ten.arc
 dev.off()
+
+combined.ten.arc.ov <-
+  with(plots.ov,
+       ((amz$ten.arc$primary & theme(axis.title.y = element_text(hjust = 0.5))) +
+        (cam$ten.arc$primary & theme(axis.text.y = element_blank(),
+                                     axis.title.y = element_blank()))
+       ) /
+       ((amz$ten.arc$all & theme(axis.title.y = element_text(hjust = 0.5),
+                                 axis.text.x = element_blank())) +
+        (cam$ten.arc$all & theme(axis.title.y = element_blank(),
+                                 axis.text.y = element_blank(),
+                                 axis.text.x = element_blank()))
+       )) +
+  plot_layout(guides = "collect") +
+  plot_annotation(tag_levels = NULL) &
+  theme(legend.justification = c(0,1))
 
 combined.ten.arc.ov <-
   with(plots.ov,
@@ -479,7 +430,6 @@ combined.ten.arc.ov <-
        ((amz$ten.arc$other + theme(axis.title.y = element_text(hjust = 0.5))) +
         (cam$ten.arc$other + theme(axis.text.y = element_blank(),
                                    axis.title.y = element_blank()))
-        # plot_layout(guides = "collect") +
        )) +
   plot_layout(guides = "collect") +
   plot_annotation(tag_levels = NULL) &
@@ -489,7 +439,7 @@ combined.ten.arc.ov <-
         legend.title = element_text(size = rel(0.9)),
         legend.text = element_text(size = rel(0.75)))
 
-svg(paste0(path.figures, "si.ten.arc.ov.svg"), width = 9.25, height = 4.5)
+svg(paste0(path.figures, "si.ten.arc.ov.svg"), width = 6.7, height = 3)
 combined.ten.arc.ov
 dev.off()
 

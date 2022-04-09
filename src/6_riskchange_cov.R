@@ -8,8 +8,8 @@ args <- commandArgs(trailingOnly = TRUE)
 region <- tolower(args[1])
 n.threads <- as.integer(args[2])
 
-region <- "cam"
-n.threads <- 4
+# region <- "amz"
+# n.threads <- 4
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -35,15 +35,25 @@ post.units <- r.ten_cov$r$baseline
 
 ten_cat <- 
   data.table(
-    name = c("it_type.recognized", 
+    name = c(
+             "for_type.all",
+             "for_type.primary",
+             "it_type.recognized", 
              "it_type.not_recognized",
              "pa_type.indirect_use",
              "pa_type.direct_use"),
-    subset = c('it_type == "recognized" & is.na(pa_type)',
-               'it_type == "not_recognized" & is.na(pa_type)',
-               'is.na(it_type) & pa_type == "indirect_use"',
-               'is.na(it_type) & pa_type == "direct_use"')
+    subset = c('cat == "all" & is.na(for_type) & is.na(it_type) & is.na(pa_type)',
+               'cat == "for_p" & for_type == "primary" & is.na(it_type) & is.na(pa_type)',
+               'cat == "it" & it_type == "recognized" & is.na(pa_type)',
+               'cat == "it" & it_type == "not_recognized" & is.na(pa_type)',
+               'cat == "pa" & is.na(it_type) & pa_type == "indirect_use"',
+               'cat == "pa" & is.na(it_type) & pa_type == "direct_use"')
     )
+# for(i in 1:nrow(ten_cat)) {
+#   units.sub <- r.ten_cov$som.units[eval(parse(text = ten_cat$subset[i]))]
+#   print(units.sub)
+#   print(nrow(units.sub))
+# }
 
 rc.ten_cov <- list()
 
