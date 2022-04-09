@@ -1,6 +1,6 @@
 library(data.table)
 library(posterior)
-library(parallel)
+# library(parallel)
 
 source("utilities.R")
 

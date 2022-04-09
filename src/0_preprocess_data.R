@@ -83,7 +83,11 @@ for(i in 1:length(regions)) {
   saveRDS(data.fit.int, file.data.fit.int)
   saveRDS(data.val.int, file.data.val.int)
 
-  
+  # df <- readRDS(file.data.fit.int)
+  # dv <- readRDS(file.data.val.int)
+  # all(df$id == data.fit.int$id)
+  # all(dv$id == data.val.int$id)
+
   areas.it_pts <- fread(file.areas.it_pts)
   areas.it <- fread(file.areas.it)
   

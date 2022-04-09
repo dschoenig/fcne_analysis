@@ -1,6 +1,6 @@
 library(data.table)
 library(posterior)
-library(parallel)
+# library(parallel)
 # library(sf)
 # library(ggplot2)
 # library(ggdist)
