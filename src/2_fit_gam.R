@@ -18,6 +18,10 @@ if(length(args) < 3) {
 } else {
   n.threads <- as.integer(args[3])
 }
+# model.reg <- "cam"
+# model.id <- 6
+# n.threads <- c(2,1)
+
 
 if(!dir.exists(path.gam))
   dir.create(path.gam, recursive = TRUE)
@@ -25,20 +29,30 @@ if(!dir.exists(path.gam))
 file.data.proc <- paste0(path.data.proc, model.reg, ".data.fit.proc.rds")
 model.name <- paste0(model.reg, ".m", model.id)
 
-k.reg <- list(cam = c(ten_loc.bl = 5000,
+k.reg <- list(cam = c(
+                      # ten_loc.bl = 5000,
+                      ten_loc.bl = 2500,
+                      ten_loc.forp = 2500,
                       ten_loc.itpa = 1000,
                       ten_loc.ov = 500,
                       som = 1000),
-              amz = c(ten_loc.bl = 5000,
+              amz = c(
+                      # ten_loc.bl = 5000,
+                      ten_loc.bl = 2500,
+                      ten_loc.forp = 2500,
                       ten_loc.itpa = 1000,
                       ten_loc.ov = 500,
                       som = 1000))
 # Increase number of maximum knots 10-fold (default: 2000)
-max.knots.reg <- list(cam = c(ten_loc.bl = 2e4,
+max.knots.reg <- list(cam = c(
+                              ten_loc.bl = 2e4,
+                              ten_loc.forp = 2e4,
                               ten_loc.itpa = 2e4,
                               ten_loc.ov = 2e4,
                               som = 2e4),
-                      amz = c(ten_loc.bl = 2e4,
+                      amz = c(
+                              ten_loc.bl = 2e4,
+                              ten_loc.forp = 2e4,
                               ten_loc.itpa = 2e4,
                               ten_loc.ov = 2e4,
                               som = 2e4))
@@ -48,13 +62,14 @@ max.knots.reg <- list(cam = c(ten_loc.bl = 2e4,
 # Fitting parameters
 conv.eps <- 1e-7 # Default is 1e-7
 max.discrete.bins <- 1e5 # Default for bivariate smooths is effectively 1e4
+# max.discrete.bins <- 1e4 # Default for bivariate smooths is effectively 1e4
 
 ## FIT MODELS ##################################################################
 
 data.proc <- readRDS(file.data.proc)
 data.mod <- 
   as.data.frame(data.proc[, .(forestloss,
-                          it_type, pa_type, overlap, ed_east, ed_north,
+                          for_type, it_type, pa_type, overlap, ed_east, ed_north,
                           adm0, som_x, som_y)])
 data.mod$b0 <- model.matrix(~ 1, data.mod)
 rm(data.proc)
@@ -143,7 +158,7 @@ if(model.id == 3) {
         s(ed_east, ed_north, bs = 'gp',
           by = overlap, k = k.def["ten_loc.ov"],
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        # Tenure effects, discontinuous variations between countries
+        # Tenure effects, discontinuous variation between countries
         s(adm0, bs = "re") +
         s(adm0, it_type, bs = "re") +
         s(adm0, pa_type, bs = "re") +
@@ -177,7 +192,7 @@ if(model.id == 4) {
         s(ed_east, ed_north, bs = 'gp',
           by = overlap, k = k.def["ten_loc.ov"],
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        # Tenure effects, discontinuous variations between countries
+        # Tenure effects, discontinuous variation between countries
         s(adm0, it_type, bs = "re") +
         s(adm0, pa_type, bs = "re") +
         s(adm0, it_type, pa_type, bs = "re") +
@@ -211,13 +226,88 @@ if(model.id == 5) {
         s(ed_east, ed_north, bs = 'gp',
           by = overlap, k = k.def["ten_loc.ov"],
           xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        # Tenure effects, discontinuous variations between countries
+        # Tenure effects, discontinuous variation between countries
         s(adm0, it_type, bs = "re") +
         s(adm0, pa_type, bs = "re") +
         s(adm0, it_type, pa_type, bs = "re") +
         # Covariates
         s(som_x, som_y, bs = 'gp',
           by = adm0, k = k.def["som"],
+          xt = list(max.knots = max.knots.def["som"])),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        discrete = max.discrete.bins,
+        nthreads = n.threads,
+        control = gam.control(trace = TRUE, epsilon = conv.eps)
+        )
+}
+
+
+if(model.id == 6) {
+  # Same as `3`, but vary baseline risk by forest type
+  model <-
+    bam(forestloss ~
+        # Tenure effects, continuous variation over geographic location
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def["ten_loc.bl"],
+          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = for_type, k = k.def["ten_loc.forp"],
+          xt = list(max.knots = max.knots.def["ten_loc.forp"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def["ten_loc.ov"],
+          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
+        # Tenure effects, discontinuous variation between countries
+        s(adm0, bs = "re") +
+        s(adm0, it_type, bs = "re") +
+        s(adm0, pa_type, bs = "re") +
+        s(adm0, it_type, pa_type, bs = "re") +
+        # Covariates
+        s(som_x, som_y, bs = 'gp', k = 5*k.def["som"],
+          xt = list(max.knots = max.knots.def["som"])),
+        family = binomial(link = "cloglog"),
+        data = data.mod,
+        select = TRUE,
+        discrete = max.discrete.bins,
+        nthreads = n.threads,
+        control = gam.control(trace = TRUE, epsilon = conv.eps)
+        )
+}
+
+if(model.id == 7) {
+  # Same as `3`, but vary baseline risk by forest type, doubled k
+  model <-
+    bam(forestloss ~
+        # Tenure effects, continuous variation over geographic location
+        s(ed_east, ed_north, bs = 'gp',
+          k = k.def["ten_loc.bl"] * 2,
+          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = for_type, k = k.def["ten_loc.forp"] * 2,
+          xt = list(max.knots = max.knots.def["ten_loc.forp"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = it_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = pa_type, k = k.def["ten_loc.itpa"],
+          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+        s(ed_east, ed_north, bs = 'gp',
+          by = overlap, k = k.def["ten_loc.ov"],
+          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
+        # Tenure effects, discontinuous variation between countries
+        s(adm0, bs = "re") +
+        s(adm0, it_type, bs = "re") +
+        s(adm0, pa_type, bs = "re") +
+        s(adm0, it_type, pa_type, bs = "re") +
+        # Covariates
+        s(som_x, som_y, bs = 'gp', k = 5*k.def["som"],
           xt = list(max.knots = max.knots.def["som"])),
         family = binomial(link = "cloglog"),
         data = data.mod,
@@ -239,5 +329,4 @@ AIC(model)
 
 print("Saving fitted model …")
 saveRDS(model, paste0(path.gam, model.name, ".rds"))
-
 
