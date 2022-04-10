@@ -39,6 +39,8 @@ data.pred <- data[,.(id, forestloss, for_type, it_type, pa_type, overlap,
                      som_x, som_y, ed_east, ed_north, adm0)]
 rm(data)
 
+# data.pred <- data.pred[1:1e3,]
+
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
 
@@ -140,7 +142,12 @@ b-a
 
 gc()
 
+
 # Prepare export
+if(!is.list(lp)) {
+  lp <- list(lp)
+  names(lp) <- names(post.marginals)
+}
 lp.dt <-
   lapply(lp,
          FUN = \(x) {y <- as.data.table(t(x))
