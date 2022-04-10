@@ -138,6 +138,8 @@ lp <-
 b <- Sys.time()
 b-a
 
+gc()
+
 # Prepare export
 lp.dt <-
   lapply(lp,
