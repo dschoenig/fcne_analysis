@@ -288,10 +288,10 @@ if(model.id == 7) {
     bam(forestloss ~
         # Tenure effects, continuous variation over geographic location
         s(ed_east, ed_north, bs = 'gp',
-          k = k.def["ten_loc.bl"] * 2,
+          k = k.def["ten_loc.bl"],
           xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
         s(ed_east, ed_north, bs = 'gp',
-          by = for_type, k = k.def["ten_loc.forp"] * 2,
+          by = for_type, k = k.def["ten_loc.forp"],
           xt = list(max.knots = max.knots.def["ten_loc.forp"])) +
         s(ed_east, ed_north, bs = 'gp',
           by = it_type, k = k.def["ten_loc.itpa"],
@@ -308,7 +308,7 @@ if(model.id == 7) {
         s(adm0, pa_type, bs = "re") +
         s(adm0, it_type, pa_type, bs = "re") +
         # Covariates
-        s(som_x, som_y, bs = 'gp', k = 5*k.def["som"],
+        s(som_x, som_y, bs = 'gp', k = 2.5*k.def["som"],
           xt = list(max.knots = max.knots.def["som"])),
         family = binomial(link = "cloglog"),
         data = data.mod,
