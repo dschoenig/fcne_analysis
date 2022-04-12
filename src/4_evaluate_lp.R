@@ -44,6 +44,13 @@ rm(data)
 # Construct chunk overview
 row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
 
+# Recalculate missing parts
+# change_task_id <- c(44, 45, 54)
+# task_id <- change_task_id[task_id]
+# task_count <- 200
+# row.chunks <- chunk_seq(1, nrow(data.pred), ceiling(nrow(data.pred) / task_count))
+
+
 # Subset data
 data.pred <- data.pred[row.chunks$from[task_id]:row.chunks$to[task_id],]
 silence <- gc()
@@ -140,7 +147,7 @@ lp <-
 b <- Sys.time()
 b-a
 
-gc()
+silence <- gc()
 
 
 # Prepare export
