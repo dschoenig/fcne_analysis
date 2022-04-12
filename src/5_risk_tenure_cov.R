@@ -128,8 +128,8 @@ for(i in 1:nrow(disagg.groups)) {
 
 r.names <-
   disagg.groups[, paste0("for_type.", for_type, ":",
-                                       "it_type.", it_type, ":",
-                                       "pa_type.", pa_type)] |>
+                         "it_type.", it_type, ":",
+                         "pa_type.", pa_type)] |>
   stri_replace_all("", regex = "for_type.NA:") |>
   stri_replace_all("", regex = "it_type.NA:") |>
   stri_replace_all("", regex = ":pa_type.NA") |>

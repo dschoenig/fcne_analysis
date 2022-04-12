@@ -780,16 +780,22 @@ aggregate_variables.draws_matrix <-
   ids.dt <- data.table(group.label = names(ids),
                        group.id = 1:length(ids),
                        ids = ids)[order(group.id)]
-  ids.dt[,N:=unname(unlist(lapply(ids, length)))]
-  ids.dt[order(-N),Nc:=cumsum(N)]
+  ids.dt[,N := as.numeric(unname(unlist(lapply(ids, length))))]
+  ids.dt[order(-N), Nc := cumsum(N)]
   ids.dt[,
          `:=`(aggregate = ifelse(N < agg.size, TRUE, FALSE))
          ][aggregate == TRUE, 
            agg.id := ceiling(Nc / agg.size)]
   setkey(ids.dt, group.id)
-  setindex(ids.dt, agg.id)
+  # setindex(ids.dt, agg.id)
   agg.ids <- na.omit(unique(ids.dt[order(agg.id), agg.id]))
   single.ids <- ids.dt[aggregate == FALSE, group.id]
+  ids.dt.l <-
+    ids.dt[,
+           lapply(.SD, unlist), .SDcols = c("ids", "agg.id"),
+           by = "group.id"
+           ]
+  setnames(ids.dt.l, "ids", id.col)
   predictions.summarized <- matrix(NA, nrow = length(draw.ids), ncol = length(ids))
   dimnames(predictions.summarized)[1:2] <- list(draw.ids, ids.dt$group.label)
   predictions <- as.data.table(as_draws_df(predictions))
@@ -800,8 +806,15 @@ aggregate_variables.draws_matrix <-
          variable.name = id.col, value.name = value.column,
          variable.factor = FALSE)
   predictions <- predictions[, (draw.column) := as.factor(.draw)][,-".draw"]
-  setkeyv(predictions, id.col)
-  setindexv(predictions, draw.column)
+  setkeyv(predictions, draw.column)
+  if(is.factor(predictions[[id.col]]) &
+     !is.factor(ids.dt.l[[id.col]])) 
+    ids.dt.l[[id.col]] <- factor(as.character(ids.dt.l[[id.col]]))
+  if(is.character(predictions[[id.col]]) &
+     !is.character(ids.dt.l[[id.col]]))
+    ids.dt.l[[id.col]] <- as.character(ids.dt.l[[id.col]])
+  setkeyv(ids.dt.l, id.col)
+  setindexv(ids.dt.l, list("group.id", "agg.id"))
   if(!is.null(clamp)) {
     clamp.cond.l <- parse(text = paste(value.column, "< clamp[1]"))
     clamp.cond.u <- parse(text = paste(value.column, "> clamp[2]"))
@@ -819,16 +832,23 @@ aggregate_variables.draws_matrix <-
     prog.counter <- 0
   }
   for(i in seq_along(draw.chunks$from)) {
-    for(j in seq_along(single.ids)) {
-      ids.sum <- unlist(ids.dt[group.id == single.ids[j], ids])
-      draws.sum <- draw.ids[draw.chunks$from[i]:draw.chunks$to[i]]
-      chunk.summarized <- 
-        predictions[.(ids.sum)
-                    ][.(draws.sum),
-                      .(val = mean(eta)),
-                      by = draw.column,
-                      on = c(draw.column)
-                      ][, val]
+    draws.sum <- draw.ids[draw.chunks$from[i]:draw.chunks$to[i]]
+    predictions.draws <- predictions[.(draws.sum),
+                                     on = draw.column,
+                                     nomatch = NULL]
+    setkeyv(predictions, id.col)
+   for(j in seq_along(single.ids)) {
+      order.cond <- parse(text = paste0("order(", draw.column, ")"))
+      ids.sum <- ids.dt.l[.(single.ids[j]), on = "group.id"][[id.col]]
+      chunk.summarized <-
+        predictions.draws[.(ids.sum),
+                          nomatch = NULL,
+                          on = id.col
+                          ][,
+                            .(val = eval(agg.expr)),
+                            by = draw.column,
+                            ][eval(order.cond),
+                             val]
       if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
         predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i],
                                single.ids[j]] <- chunk.summarized
@@ -842,26 +862,16 @@ aggregate_variables.draws_matrix <-
       }
     }
     for(k in seq_along(agg.ids)) {
-      match.ids.groups <- 
-        ids.dt[.(agg.ids[k]),
-               lapply(.SD, unlist), .SDcols = "ids",
-               by = "group.id",
-               on = "agg.id"] |>
-        setnames("ids", id.col)
-      if(is.factor(predictions[[id.col]]))
-        match.ids.groups[[id.col]] <- factor(as.character(match.ids.groups[[id.col]]))
-      if(is.character(predictions[[id.col]]))
-        match.ids.groups[[id.col]] <- as.character(match.ids.groups[[id.col]])
-      setkeyv(match.ids.groups, id.col)
+      match.ids.groups <- ids.dt.l[.(agg.ids[k]), on = "agg.id"]
       chunk.summarized <-
-        merge(predictions,
-              match.ids.groups,
-              by = id.col,
-              all = FALSE,
-              allow.cartesian = TRUE)[,
-                                      .(val = eval(agg.expr)),
-                                      by = c(draw.column, "group.id")
-                                      ]
+        predictions.draws[match.ids.groups,
+                          nomatch = NULL,
+                          on = id.col,
+                          allow.cartesian = TRUE
+                          ][,
+                            .(val = eval(agg.expr)),
+                            by = c(draw.column, "group.id")
+                            ]
       setorderv(chunk.summarized, c(draw.column, "group.id"))
       if(nrow(chunk.summarized) > 0) {
         chunk.summarized <- dcast(chunk.summarized, cast.form, value.var = "val")
@@ -870,6 +880,8 @@ aggregate_variables.draws_matrix <-
         predictions.summarized[draw.cols, group.cols] <- 
           as.matrix(chunk.summarized[, -..draw.column])
       } else {
+        draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
+        group.cols <- match.ids.groups[, unique(group.id)]
         predictions.summarized[draw.cols, group.cols] <- NA
       }
       if(progress) {
@@ -932,9 +944,24 @@ aggregate_variables.FileSystemDataset <-
       ][aggregate == TRUE, 
         agg.id := ceiling(Nc / agg.size)]
   setkey(ids.dt, group.id)
-  setindex(ids.dt, agg.id)
+  # setindex(ids.dt, agg.id)
   agg.ids <- na.omit(unique(ids.dt[order(agg.id), agg.id]))
   single.ids <- ids.dt[aggregate == FALSE, group.id]
+  ids.dt.l <-
+    ids.dt[,
+           lapply(.SD, unlist), .SDcols = c("ids", "agg.id"),
+           by = "group.id"
+           ]
+  setnames(ids.dt.l, "ids", id.col)
+  id.sample <- collect(ds[1,id.col])[[id.col]]
+  if(is.factor(id.sample) &
+     !is.factor(ids.dt.l[[id.col]])) 
+    ids.dt.l[[id.col]] <- factor(as.character(ids.dt.l[[id.col]]))
+  if(is.character(id.sample) &
+     !is.character(ids.dt.l[[id.col]]))
+    ids.dt.l[[id.col]] <- as.character(ids.dt.l[[id.col]])
+  setkeyv(ids.dt.l, id.col)
+  setindexv(ids.dt.l, list("group.id", "agg.id"))
   predictions.summarized <- matrix(NA, nrow = length(draw.ids), ncol = length(ids))
   dimnames(predictions.summarized)[1:2] <- list(draw.ids, ids.dt$group.label)
   if(progress) {
@@ -971,11 +998,15 @@ aggregate_variables.FileSystemDataset <-
     agg.expr <- parse(text = paste0("agg.fun(", value.column,")"))
     id.cond <- parse(text = paste(id.col, "%in% ids.sum"))
     for(j in seq_along(single.ids)) {
-      ids.sum <- unlist(ids.dt[.(single.ids[j]), ids])
+      order.cond <- parse(text = paste0("order(", draw.column, ")"))
+      ids.sum <- ids.dt.l[.(single.ids[j]), on = "group.id"][[id.col]]
       chunk.summarized <-
         predictions.pulled[.(ids.sum),
                            .(val = eval(agg.expr)),
-                           by = draw.column][,val]
+                           by = draw.column,
+                           nomatch = NULL
+                           ][eval(order.cond),
+                             val]
       if(!is.null(chunk.summarized) & length(chunk.summarized) == draw.chunks$size[i]) {
         predictions.summarized[draw.chunks$from[i]:draw.chunks$to[i],
                                single.ids[j]] <- chunk.summarized
@@ -990,36 +1021,25 @@ aggregate_variables.FileSystemDataset <-
     order.cond <- parse(text = paste0("order(", draw.column, ", group.id)"))
     cast.form <- as.formula(paste(draw.column, "~ group.id"))
     for(k in seq_along(agg.ids)) {
-      match.ids.groups <- 
-        ids.dt[.(agg.ids[k]),
-               lapply(.SD, unlist), .SDcols = "ids",
-               by = "group.id",
-               on = "agg.id"] |>
-        setnames("ids", id.col)
-      if(is.factor(predictions.pulled[[id.col]]))
-        match.ids.groups[[id.col]] <- factor(as.character(match.ids.groups[[id.col]]))
-      if(is.character(predictions.pulled[[id.col]]))
-        match.ids.groups[[id.col]] <- as.character(match.ids.groups[[id.col]])
-      # ids.sum <- unique(match.ids.groups[id %in% unique(predictions.pulled$id), id])
-      # ids.sum <- match.ids.groups[, unique(id)]
-      setkeyv(match.ids.groups, id.col)
+      match.ids.groups <- ids.dt.l[.(agg.ids[k]), on = "agg.id"]
       chunk.summarized <-
-        merge(predictions.pulled,
-              match.ids.groups,
-              by = id.col,
-              all = FALSE,
-              allow.cartesian = TRUE)[,
-                                      .(val = eval(agg.expr)),
-                                      by = c(draw.column, "group.id")
-                                      ]
+        predictions.pulled[match.ids.groups,
+                           nomatch = NULL,
+                           allow.cartesian = TRUE
+                           ][ ,
+                             .(val = eval(agg.expr)),
+                             by = c(draw.column, "group.id")
+                             ]
       setorderv(chunk.summarized, c(draw.column, "group.id"))
       if(nrow(chunk.summarized) > 0) {
         chunk.summarized <- dcast(chunk.summarized, cast.form, value.var = "val")
-        group.cols <- as.integer(colnames(chunk.summarized[,-..draw.column]))
         draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
+        group.cols <- as.integer(colnames(chunk.summarized[,-..draw.column]))
         predictions.summarized[draw.cols, group.cols] <- 
           as.matrix(chunk.summarized[, -..draw.column])
       } else {
+        draw.cols <- draw.chunks$from[i]:draw.chunks$to[i]
+        group.cols <- match.ids.groups[, unique(group.id)]
         predictions.summarized[draw.cols, group.cols] <- NA
       }
       if(progress) {
