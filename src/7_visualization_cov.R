@@ -682,7 +682,7 @@ for(i in seq_along(regions)) {
 
   # Number of samples
 
-  tiff(paste0(path.figures, "si.som.cov.", region, ".tif"),
+  tiff(paste0(path.figures, "si.som.n.", region, ".tif"),
        width = 6.7, height = 7.5, unit = "in", res = 300)
   print(somvis[[region]]$n)
   dev.off()
