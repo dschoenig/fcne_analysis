@@ -11,7 +11,7 @@ library(colorspace)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
@@ -418,26 +418,6 @@ combined.ten.arc.ov <-
   plot_layout(guides = "collect") +
   plot_annotation(tag_levels = NULL) &
   theme(legend.justification = c(0,1))
-
-combined.ten.arc.ov <-
-  with(plots.ov,
-       ((amz$ten.arc$primary + theme(axis.title.y = element_text(hjust = 0.5),
-                                     axis.title.x = element_text(hjust = 0))) +
-        (cam$ten.arc$primary + theme(axis.text.y = element_blank(),
-                                     axis.title.y = element_blank(),
-                                     axis.title.x = element_text(hjust = 0)))
-       ) /
-       ((amz$ten.arc$other + theme(axis.title.y = element_text(hjust = 0.5))) +
-        (cam$ten.arc$other + theme(axis.text.y = element_blank(),
-                                   axis.title.y = element_blank()))
-       )) +
-  plot_layout(guides = "collect") +
-  plot_annotation(tag_levels = NULL) &
-  theme(legend.position = "right",
-        legend.justification = c(0,1),
-        legend.spacing.y = unit(5, "mm"),
-        legend.title = element_text(size = rel(0.9)),
-        legend.text = element_text(size = rel(0.75)))
 
 svg(paste0(path.figures, "si.ten.arc.ov.svg"), width = 6.7, height = 3)
 combined.ten.arc.ov

@@ -12,7 +12,7 @@ library(KernSmooth)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.data <- paste0(path.base, "data/")
 path.data.raw <- paste0(path.data, "raw/")
 path.data.proc <- paste0(path.data, "processed/")

@@ -19,10 +19,10 @@
 # Rscript 6_riskchange_areas.R CAM $SLURM_CPUS_PER_TASK
 # Rscript 6_riskchange_cov.R CAM $SLURM_CPUS_PER_TASK
 
-Rscript 6_riskchange_geo.R AMZ 4
-Rscript 6_riskchange_tenure.R AMZ 4
-Rscript 6_riskchange_areas.R AMZ 4
-Rscript 6_riskchange_cov.R AMZ 4
+# Rscript 6_riskchange_geo.R AMZ 4
+# Rscript 6_riskchange_tenure.R AMZ 4
+# Rscript 6_riskchange_areas.R AMZ 4
+# Rscript 6_riskchange_cov.R AMZ 4
 
 Rscript 6_riskchange_geo.R CAM 4
 Rscript 6_riskchange_tenure.R CAM 4

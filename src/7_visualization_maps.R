@@ -12,7 +12,7 @@ library(colorspace)
 source("utilities.R")
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
-# path.base <- "../"
+path.base <- "../"
 path.data <- paste0(path.base, "data/")
 path.data.raw <- paste0(path.data, "raw/")
 path.data.proc <- paste0(path.data, "processed/")
@@ -47,23 +47,6 @@ map_ylim <- list(cam = c(-90e4,  80e4), amz = c(-200e4, 185e4))
 
 # Resolution (for covariate maps only)
 map.res <- list(amz = 5000, cam = 2500)
-
-bg_adm0 <- st_read(paste0(path.data, "map_bg/gadm36_levels.gpkg"),
-                   query = "SELECT * FROM level0 
-                            WHERE GID_0 IN ('ABW', 'AIA', 'ARG', 'ATG', 'BES', 
-                                            'BHS', 'BLM', 'BLZ', 'BOL', 'BRA', 
-                                            'BRB', 'CHL', 'COL', 'CRI', 'CUB', 
-                                            'CUW', 'CYM', 'DMA', 'DOM', 'ECU', 
-                                            'FLK', 'GLP', 'GRD', 'GTM', 'GUF', 
-                                            'GUY', 'HND', 'HTI', 'JAM', 'KNA', 
-                                            'LCA', 'MAF', 'MEX', 'MSR', 'MTQ', 
-                                            'NIC', 'PAN', 'PER', 'PRI', 'PRY', 
-                                            'SGS', 'SLV', 'SUR', 'SXM', 'TCA', 
-                                            'TTO', 'UMI', 'URY', 'VCT', 
-                                            'VEN', 'VGB', 'VIR', 'XCL')"
-                   )
-
-bg_coasts <- st_union(bg_adm0, is_coverage = TRUE)
 
 
 # poly[[region]]$anot.adm0 <- data.frame(adm0 = c("BLZ", "CRI", "GTM", "HND",
@@ -219,6 +202,24 @@ if(!file.exists(file.data.vis)) {
   geo.sum <- list()
 
   # Prepare data for maps
+
+  bg_adm0 <- st_read(paste0(path.data, "map_bg/gadm36_levels.gpkg"),
+                     query = "SELECT * FROM level0 
+                              WHERE GID_0 IN ('ABW', 'AIA', 'ARG', 'ATG', 'BES', 
+                                              'BHS', 'BLM', 'BLZ', 'BOL', 'BRA', 
+                                              'BRB', 'CHL', 'COL', 'CRI', 'CUB', 
+                                              'CUW', 'CYM', 'DMA', 'DOM', 'ECU', 
+                                              'FLK', 'GLP', 'GRD', 'GTM', 'GUF', 
+                                              'GUY', 'HND', 'HTI', 'JAM', 'KNA', 
+                                              'LCA', 'MAF', 'MEX', 'MSR', 'MTQ', 
+                                              'NIC', 'PAN', 'PER', 'PRI', 'PRY', 
+                                              'SGS', 'SLV', 'SUR', 'SXM', 'TCA', 
+                                              'TTO', 'UMI', 'URY', 'VCT', 
+                                              'VEN', 'VGB', 'VIR', 'XCL')"
+                     )
+
+  bg_coasts <- st_union(bg_adm0, is_coverage = TRUE)
+
 
   for(i in seq_along(regions)){
       
