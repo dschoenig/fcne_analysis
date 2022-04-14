@@ -24,7 +24,7 @@
 # Rscript 7_visualization_tenure_adm.R AMZ 4
 # Rscript 7_visualization_tenure_dist.R AMZ 4
 
-Rscript 7_visualization_cov.R CAM 4
+# Rscript 7_visualization_cov.R CAM 4
 Rscript 7_visualization_maps.R CAM 4
-Rscript 7_visualization_tenure_adm.R CAM 4
-Rscript 7_visualization_tenure_dist.R CAM 4
+# Rscript 7_visualization_tenure_adm.R CAM 4
+# Rscript 7_visualization_tenure_dist.R CAM 4

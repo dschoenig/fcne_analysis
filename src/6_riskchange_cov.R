@@ -76,16 +76,18 @@ for(i in 1:nrow(ten_cat)){
                              .(id,
                                som_bmu.bl = paste0(som_bmu.bl, ":", for_type),
                                som_bmu.bl.w)]
+  setkey(ids.units, id)
+
   # Reweigh baseline SOM units for each group, based on what points they where
   # assigned to
   w.points <-
     lapply(id.list,
            \(x) {
-             extract_weights(ids.units[id %in% x],
-                             w.col = "som_bmu.bl.w",
-                             by.col = "som_bmu.bl",
-                             standardize = TRUE)
-           })
+                 extract_weights(ids.units[.(x)],
+                                 w.col = "som_bmu.bl.w",
+                                 by.col = "som_bmu.bl",
+                                 standardize = TRUE)
+                })
   r.bl.ten_cat <- reweigh_posterior(post.units, w = w.points)
 
   rc.ten_cat$arc <- arc(r.ten_cov$r[[ten_cat$name[i]]], r.bl.ten_cat)

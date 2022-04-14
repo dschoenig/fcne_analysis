@@ -23,7 +23,7 @@ path.effects <- paste0(path.base, "models/gam/effects/")
 path.figures <- paste0(path.base, "results/figures/")
 if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
 
-file.data.vis <- paste0(path.data.vis, ".cov.rds")
+file.data.vis <- paste0(path.data.vis, "cov.rds")
 
 regions <- c("amz", "cam")
 

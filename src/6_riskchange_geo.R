@@ -57,16 +57,18 @@ for(i in seq_along(maps)){
                              .(id,
                                som_bmu.bl = paste0(som_bmu.bl, ":", for_type),
                                som_bmu.bl.w)]
+  setkey(ids.units, id)
+
   # Reweigh baseline SOM units for each group, based on which points they where
   # assigned to
   w.points <-
     lapply(id.list,
            \(x) {
-             extract_weights(ids.units[id %in% x],
-                             w.col = "som_bmu.bl.w",
-                             by.col = "som_bmu.bl",
-                             standardize = TRUE)
-           })
+                 extract_weights(ids.units[.(x)],
+                                 w.col = "som_bmu.bl.w",
+                                 by.col = "som_bmu.bl",
+                                 standardize = TRUE)
+                })
   r.bl.geo <- reweigh_posterior(post.units, w = w.points)
   rc.map$arc <- arc(r.geo$r, r.bl.geo)
   rc.map$rrc <- rrc(r.geo$r, r.bl.geo)

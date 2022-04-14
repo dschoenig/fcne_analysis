@@ -110,7 +110,7 @@ reg.lab$amz <-
                       "GUF", "GUY", "PER", "SUR",
                       "VEN", NA),
              reg.label = c("Bolivia", "Brazil", "Colombia", "Ecuador",
-                           "French\nGuiana", "Guyana", "Peru", "Suriname",
+                           "French Guiana", "Guyana", "Peru", "Suriname",
                            "Venezuela", 
                            # "Amazon")
                            "Region")

@@ -1181,8 +1181,9 @@ reweigh_posterior.draws_matrix <- function(posterior, w, w.init = NULL) {
   } else {
     w.re <- lapply(w.mod, \(x) w <- w.init[names(x)] * x)
   }
-  var.w <- lapply(w.re, \(w) weighted_sum(posterior, w)) |>
-                  as_draws_matrix()
+  var.w <-
+    lapply(w.re, \(w) weighted_sum(posterior, w)) |>
+    as_draws_matrix()
   return(var.w)
 }
 
