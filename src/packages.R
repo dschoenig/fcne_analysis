@@ -8,7 +8,7 @@ install.packages(c(
                    "ggpattern",
                    "ggplot2",
                    "igraph",
-                   "KernSmooth"
+                   "KernSmooth",
                    "kohonen",
                    "mgcv",
                    "mvnfast",

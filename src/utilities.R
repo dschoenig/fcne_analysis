@@ -1318,9 +1318,9 @@ embed_som <- function(som,
       foreach(i = 1:nrow(data), .combine = rbind) %dopar% {
         bmu(data[i,], codes, bmu.rank = bmu.rank, dist = dist)
       }
-    bmus[,1:n.bmu] <- do.call(rbind, as.list(mapped[,1]))
+    bmus[,1:n.bmu] <- do.call(rbind, as.list(mapped[,1:n.bmu]))
     if(dist) {
-      bmu.dist[,1:n.bmu] <- do.call(rbind, as.list(mapped[,2]))
+      bmu.dist[,1:n.bmu] <- do.call(rbind, as.list(mapped[,1:n.bmu]))
     }
   }
   results <- list()
@@ -1362,7 +1362,7 @@ topological_error <- function(som, data = NULL, n.cores = 1, bmus = NULL) {
     data <- som$data[[1]]
   }
   if(is.null(bmus)){
-    bmus <- embed_som(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)
+    bmus <- embed_som(som = som, data = data, bmu.rank = c(1,2), n.cores = n.cores)$bmu
   }
   stopifnot({
              nrow(bmus) == nrow(data)
@@ -1415,6 +1415,18 @@ variance_explained <- function(som, data = NULL, n.cores = 1, qe = NULL) {
   return(var.ex)
 }
 
+                               som = NULL
+                               mapped = NULL
+                               family = gaussian
+                               combined = FALSE
+                               bs = "tp"
+                               k.max = NULL
+                               max.knots = NULL
+                               n.cores = 1
+                               approximate = TRUE
+                               ret.models = FALSE
+
+
 evaluate_embedding <- function(data,
                                som = NULL,
                                mapped = NULL,
@@ -1427,9 +1439,10 @@ evaluate_embedding <- function(data,
                                approximate = TRUE,
                                ret.models = FALSE) {
   if(is.null(som) & is.null(mapped))
-    stop("Most provide either `som` or `mapped`.")
+    stop("Must provide either `som` or `mapped`.")
   if(is.null(mapped)) {
-    mapped <- embed_som(som, data, n.cores = n.cores, bmu.rank = 1, grid.coord = TRUE)
+    embedding <- embed_som(som, data, n.cores = n.cores, bmu.rank = 1, grid.coord = TRUE)
+    mapped <- embedding$grid.coordinates[[1]]
   }
   data <- as.data.frame(data)
   k.mod <- min(nrow(unique(mapped)), k.max)
@@ -1457,6 +1470,7 @@ evaluate_embedding <- function(data,
         gam(data[,i] ~ s(mapped[,1], mapped[,2], bs = bs,
                          k = k.mod, xt = list(max.knots = max.knots.mod)),
             family = fam,
+            optimizer = "efs",
             method = "REML")
     } else {
       models[[i]] <-
@@ -1481,9 +1495,8 @@ evaluate_embedding <- function(data,
     models[[length(models) + 1]] <-
       gam(formulas,
           family = mvn(d = ncol(data)),
-          discrete = TRUE,
           method = "REML",
-          nthreads = n.cores)
+          optimizer = "efs")
   }
   for(i in 1:length(models)) {
     k[[i]] <- k.mod
@@ -1500,8 +1513,10 @@ evaluate_embedding <- function(data,
       (nobs(models[[i]]) - 1)/(var(w * (as.numeric(models[[i]]$y) - mean.y)) *
       (length(models[[i]]$y) - sum(models[[i]]$edf)))
   }
-  evaluation <- cbind(variable = vars, k = k, edf = edf,
-                      dev.expl = dev.expl, r.sq = r.sq)
+  evaluation <- list(variable = vars, k = k, edf = edf,
+                      dev.expl = dev.expl, r.sq = r.sq) |>
+                lapply(unlist) |>
+                as.data.frame()
   if(ret.models) {
     results <- list(evaluation = evaluation, models = models)
   } else {
