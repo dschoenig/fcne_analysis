@@ -6,7 +6,7 @@
 #SBATCH --mail-user=schonig.daniel@courrier.uqam.ca
 #SBATCH --mail-type=ALL
 
-module load StdEnv/2020 r/4.1.2
+module load StdEnv/2020 gcc/9.3.0 gdal/3.5.1 geos/3.10.2 udunits/2.2.28 r/4.3.1
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 Rscript 1a_fit_som.R AMZ $SLURM_CPUS_PER_TASK

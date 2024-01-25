@@ -16,11 +16,13 @@ if(!dir.exists(path.som)){
 
 region <- tolower(as.character(args[1]))
 n.cores <- as.integer(args[2])
+# region <- "cam"
+# n.cores <- 4
 
 # SOM parameters
-xdim <- 100
-ydim <- 100
-rlen <- 1000
+x.dim <- 100
+y.dim <- 100
+epochs <- 1000
 radius <- 100
 
 seed <- 19120623
@@ -32,69 +34,81 @@ message(paste0("Fitting SOM (", region, ", ", n.cores, " cores) …"))
 file.data.fit.int <- paste0(path.data, region, ".data.fit.int.rds")
 file.prefix.som <- paste0(path.som, region, ".som.")
 
-data <- readRDS(file.data.fit.int)
+data <-
+  readRDS(file.data.fit.int) |>
+  _[,
+    .(tri, dist_set, dist_roads,
+      dist_rivers, dens_pop, dens_roads)]
 
-cov.z <- scale(data[, .(tri, dist_set, dist_roads, dist_rivers,
-                        dens_pop, dens_roads)],
-               center = TRUE, scale = TRUE)
-scale <- list(mean = attr(cov.z, "scaled:center"),
-              sd = attr(cov.z, "scaled:scale"))
-rm(data)
 
 set.seed(seed)
-sam <- sample(1:nrow(cov.z), 1e6)
-train.1e4 <- cov.z[sam[1:1e4],]
-train.1e5 <- cov.z[sam[1:1e5],]
-train.1e6 <- cov.z[sam,]
+sam <- sample(1:nrow(data), 1e6)
+train.1e4 <- data[sam[1:1e4],]
+train.1e5 <- data[sam[1:1e5],]
+train.1e6 <- data[sam,]
 
-grid <- somgrid(xdim = xdim, ydim = ydim, 
-                topo = "rectangular", 
-                neighbourhood.fct = "gaussian")
+# # TEST CONFIG
+# x.dim <- 10
+# y.dim <- 10
+# epochs <- 100
+# radius <- 10
+# train.1e4 <- data[sam[1:10],]
+# train.1e5 <- data[sam[1:10],]
+# train.1e6 <- data[sam[1:10],]
+
 
 message("Small sample …")
 a <- Sys.time()
-som.1e4 <- som(train.1e4,
-               grid = grid, 
-               rlen = rlen,
-               radius = radius,
-               init = init_som(train.1e4, xdim, ydim),
-               mode = "pbatch", 
-               cores = n.cores,
-               normalizeDataLayers = FALSE)
+
+som.1e4 <-
+  egp_som(train.1e4,
+          topo = "rectangular",
+          x.dim = x.dim,
+          y.dim = y.dim,
+          epochs = epochs,
+          vars = c("tri", "dist_set", "dist_roads",
+                   "dist_rivers", "dens_pop", "dens_roads"),
+          parallel = n.cores)
+
 b <- Sys.time()
 print(b-a)
-som.1e4$scale <- scale
+
 saveRDS(som.1e4, paste0(file.prefix.som, "1e4.rds"))
+
 
 message("Medium sample …")
 a <- Sys.time()
-som.1e5 <- som(train.1e5,
-               grid = grid, 
-               rlen = rlen,
-               radius = radius,
-               init = init_som(train.1e5, xdim, ydim),
-               mode = "pbatch", 
-               cores = n.cores,
-               normalizeDataLayers = FALSE)
+
+som.1e5 <-
+  egp_som(train.1e5,
+          topo = "rectangular",
+          x.dim = x.dim,
+          y.dim = y.dim,
+          epochs = epochs,
+          vars = c("tri", "dist_set", "dist_roads",
+                   "dist_rivers", "dens_pop", "dens_roads"),
+          parallel = n.cores)
+
 b <- Sys.time()
 print(b-a)
-som.1e5$scale <- scale
+
 saveRDS(som.1e5, paste0(file.prefix.som, "1e5.rds"))
+
 
 message("Full sample …")
 a <- Sys.time()
-som.1e6 <- som(train.1e6,
-               grid = grid, 
-               rlen = rlen,
-               radius = radius,
-               init = init_som(train.1e6, xdim, ydim),
-               mode = "pbatch", 
-               cores = n.cores,
-               normalizeDataLayers = FALSE)
+
+som.1e6 <-
+  egp_som(train.1e6,
+          topo = "rectangular",
+          x.dim = x.dim,
+          y.dim = y.dim,
+          epochs = epochs,
+          vars = c("tri", "dist_set", "dist_roads",
+                   "dist_rivers", "dens_pop", "dens_roads"),
+          parallel = n.cores)
+
 b <- Sys.time()
 print(b-a)
-som.1e6$scale <- scale
-saveRDS(som.1e6, paste0(file.prefix.som, "1e6.rds"))
 
-rm(cov.z, grid, train.1e4, train.1e5, train.1e6,
-   som.1e4, som.1e5, som.1e6)
+saveRDS(som.1e6, paste0(file.prefix.som, "1e6.rds"))

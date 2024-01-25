@@ -3,6 +3,7 @@ library(mgcv)
 library(mvnfast)
 library(kohonen)
 library(Matrix)
+library(sf)
 library(spdep) # For poly2nb et al
 library(lwgeom) # For minimum bounding circle
 
@@ -14,7 +15,6 @@ som_init_pc <- function(grid, data) {
   init.pca <- prcomp(x = data, center = FALSE, scale = FALSE)
   init.min <- apply(init.pca$x[, 1:2], 2, min)
   init.max <- apply(init.pca$x[, 1:2], 2, max)
-library(mgcv)
   grid.min <- apply(grid$pts, 2, min)
   grid.max <- apply(grid$pts, 2, max)
   grid.scale <- grid.max - grid.min
@@ -1130,6 +1130,121 @@ get_weights <- function(cf.def,
   }
 }
 
+imbalance <- function(data,
+                      variables,
+                      id.trt,
+                      id.ref,
+                      type = "raw",
+                      w.trt = NULL,
+                      w.ref = NULL,
+                      measure = c("d_cohen",
+                                  "var_ratio",
+                                  "ks_stat",
+                                  "js_div"),
+                      js.type = "density",
+                      js.dens.n = 512,
+                      js.dens.bw = "SJ",
+                      js.disc.breaks = "FD") {
+
+  if(is.null(w.trt) & is.null(w.ref)) type <- "raw"
+
+  data <- as.data.table(data)[, variables, with = FALSE]
+  data[, (variables) := lapply(.SD, as.numeric), .SDcols = variables]
+
+  measure.eff.l <- list()
+  measure.raw.l <- list()
+
+  data.raw.f <- data[id.trt,]
+  data.raw.f[, .type := "trt"]
+  data.raw.cf <- data[id.ref,]
+  data.raw.cf[, .type := "ref"]
+
+  if(type != "raw") {
+    if(is.null(w.trt)) w.trt <- rep(1, length(id.trt)) / length(id.trt)
+    if(is.null(w.ref)) w.ref <- rep(1, length(id.ref)) / length(id.ref)
+    data.raw.f[, .w := w.trt]
+    data.raw.cf[, .w := w.ref]
+  }
+
+  data.raw <-
+    rbind(data.raw.f, data.raw.cf) |>
+  melt(measure.vars = variables,
+       variable.name = ".variable",
+       value.name = ".value")
+
+  rm(data.raw.f, data.raw.cf)
+
+  data.raw[, .type := factor(.type, levels = c("ref", "trt"))]
+
+
+  if(type %in% c("effective", "both")) {
+
+    measure.fun.eff <-
+      list("d_cohen" = d_cohen_w,
+           "var_ratio" = var_ratio_w,
+           "ks_stat" = ks_stat_w,
+           "js_div" = \(x, y, wx, wy) js_div_w(x, y, wx, wy,
+                                               type = js.type,
+                                               disc.breaks = js.disc.breaks,
+                                               dens.n = js.dens.n,
+                                               dens.bw = js.dens.bw))
+
+    m.i <- which(names(measure.fun.eff) %in% measure)
+    for(i in m.i) {
+      measure.eff.l[[i]] <-
+        data.raw[,
+                 .(.measure = names(measure.fun.eff[i]),
+                   .type = "effective",
+                   .imbalance = measure.fun.eff[[i]](x = .value[.type == "trt"],
+                                                     y = .value[.type == "ref"],
+                                                     wx = .w[.type == "trt"],
+                                                     wy = .w[.type == "ref"])),
+                 by = c(".variable")]
+    }
+    measure.names <- names(measure.fun.eff)
+  }
+
+  if(type %in% c("raw", "both")) {
+    measure.fun.raw <-
+      list("d_cohen" = d_cohen,
+           "var_ratio" = var_ratio,
+           "ks_stat" = ks_stat,
+           "js_div" = \(x, y) js_div(x, y,
+                                     type = js.type,
+                                     disc.breaks = js.disc.breaks,
+                                     dens.n = js.dens.n,
+                                     dens.bw = js.dens.bw))
+
+    m.i <- which(names(measure.fun.raw) %in% measure)
+    for(i in m.i) {
+      measure.raw.l[[i]] <-
+        data.raw[,
+                 .(.measure = names(measure.fun.raw[i]),
+                   .type = "raw",
+                   .imbalance = measure.fun.raw[[i]](x = .value[.type == "trt"],
+                                                     y = .value[.type == "ref"])),
+                 by = c(".variable")]
+    }
+    measure.names <- names(measure.fun.raw)
+  }
+
+
+  measures <-
+    rbindlist(c(measure.raw.l, measure.eff.l)) |>
+    dcast(.variable + .measure ~ .type, value.var = ".imbalance")
+
+  measures[,
+           `:=`(.variable = factor(.variable, levels = variables),
+                .measure = factor(.measure, levels = measure.names))]
+  setorderv(measures, c(".variable", ".measure"))
+
+  return(copy(measures))
+
+}
+
+
+
+
 
 imbalance_raw <- function(data,
                           variables,
@@ -1199,6 +1314,8 @@ imbalance_raw <- function(data,
 
 }
 
+
+
 egp_imbalance <- function(data,
                           variables,
                           cf.def,
@@ -1246,9 +1363,9 @@ egp_imbalance <- function(data,
             data,
             by = id.var,
             all = FALSE) |>
-     melt(measure.vars = variables,
-          variable.name = ".variable",
-          value.name = ".value")
+      melt(measure.vars = variables,
+           variable.name = ".variable",
+           value.name = ".value")
 
     data.eff <- data.eff[!is.na(group.col), env = env.w]
 
@@ -1268,10 +1385,10 @@ egp_imbalance <- function(data,
         data.eff[,
                  .(.measure = names(measure.fun.eff[i]),
                    .type = "effective",
-                   .imbalance = measure.fun.eff[[i]](x = .value[assign.col == assign.cat[1]],
-                                                     y = .value[assign.col == assign.cat[2]],
-                                                     wx = .w[assign.col == assign.cat[1]],
-                                                     wy = .w[assign.col == assign.cat[2]])),
+                   .imbalance = measure.fun.eff[[i]](x = .value[assign.col == assign.cat[2]],
+                                                     y = .value[assign.col == assign.cat[1]],
+                                                     wx = .w[assign.col == assign.cat[2]],
+                                                     wy = .w[assign.col == assign.cat[1]])),
                 by = c(group.var, ".variable"),
                 env = env.w]
     }
@@ -1323,8 +1440,8 @@ egp_imbalance <- function(data,
         data.raw[,
                .(.measure = names(measure.fun.raw[i]),
                  .type = "raw",
-                 .imbalance = measure.fun.raw[[i]](x = .value[assign.col == assign.cat[1]],
-                                                   y = .value[assign.col == assign.cat[2]])),
+                 .imbalance = measure.fun.raw[[i]](x = .value[assign.col == assign.cat[2]],
+                                                   y = .value[assign.col == assign.cat[1]])),
               by = c(group.var, ".variable"),
               env = env.w]
     }
