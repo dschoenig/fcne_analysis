@@ -7,9 +7,6 @@ source("utilities.R")
 ## Paths
 path.data <- "../data/intermediate/"
 path.som <- "../models/som/"
-if(!dir.exists(path.data)){
-  dir.create(path.data, recursive = TRUE)
-}
 if(!dir.exists(path.som)){
   dir.create(path.som, recursive = TRUE)
 }
