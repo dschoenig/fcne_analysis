@@ -23,7 +23,6 @@ region <- tolower(as.character(args[1]))
 datasets <- c("fit", "val")
 
 file.som <- paste0(path.som, region, ".som.1e6.rds")
-file.som <- paste0(path.som, region, ".som.1e4.rds")
 som.fit <- readRDS(file.som)
 
 for(i in seq_along(datasets)) {
@@ -31,6 +30,8 @@ for(i in seq_along(datasets)) {
   file.data.proc <- paste0(path.data.proc, region, ".data.", datasets[i], ".proc.rds")
 
   message(paste0("Embedding observations from `", file.data.int, "` …"))
+
+  a <- Sys.time()
 
   data.int <- readRDS(file.data.int)
 
@@ -46,6 +47,9 @@ for(i in seq_along(datasets)) {
               coord = TRUE,
               coord.names = c("som_x", "som_y"),
               list = TRUE)
+
+  b <- Sys.time()
+  print(b-a)
 
   data.int[,
            `:=`(som_bmu = embedded$som_bmu,
@@ -83,11 +87,12 @@ for(i in seq_along(datasets)) {
 #   saveRDS(merged, file.data.proc)
 # }
 
-variance_explained(som.fit)
-quantization_error(som.fit)
-topological_error(som.fit)
-unit_diff(data.int, unit.var = "som_bmu", group.var = "adm0")
+# variance_explained(som.fit)
+# quantization_error(som.fit)
+# topological_error(som.fit)
 
-data.int
+# unit_diff(data.int, unit.var = "som_bmu", group.var = "adm0")
+
+# data.int
 
 
