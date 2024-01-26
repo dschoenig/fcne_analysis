@@ -15,7 +15,7 @@ if(!dir.exists(path.data.proc)){
 }
 
 
-# region <- tolower(as.character(args[1]))
+region <- tolower(as.character(args[1]))
 # region <- "cam"
 
 ## Map covariates to SOM #######################################################
