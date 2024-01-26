@@ -15,16 +15,15 @@ if(!dir.exists(path.data.proc)){
 }
 
 
-region <- tolower(as.character(args[1]))
-n.cores <- as.integer(args[2])
+# region <- tolower(as.character(args[1]))
 # region <- "cam"
-# n.cores <- 4
 
 ## Map covariates to SOM #######################################################
 
 datasets <- c("fit", "val")
 
 file.som <- paste0(path.som, region, ".som.1e6.rds")
+file.som <- paste0(path.som, region, ".som.1e4.rds")
 som.fit <- readRDS(file.som)
 
 for(i in seq_along(datasets)) {
@@ -34,17 +33,24 @@ for(i in seq_along(datasets)) {
   message(paste0("Embedding observations from `", file.data.int, "` …"))
 
   data.int <- readRDS(file.data.int)
-  
-  mapped <- 
-    data.int[, .(tri, dist_set, dist_roads, dist_rivers, dens_pop, dens_roads)] |>
-    scale_data_som(som = som.fit) |>
-    embed_som(som = som.fit,
-              grid.coord = TRUE)
+
+  embedded <-
+    egp_embed(data.int[,
+                       .(tri, dist_set, dist_roads,
+                         dist_rivers, dens_pop, dens_roads)],
+              som.fit,
+              vars = c("tri", "dist_set", "dist_roads",
+                       "dist_rivers", "dens_pop", "dens_roads"),
+              scale = TRUE,
+              bmu.name = "som_bmu",
+              coord = TRUE,
+              coord.names = c("som_x", "som_y"),
+              list = TRUE)
 
   data.int[,
-           `:=`(som_bmu = mapped$bmu[,1],
-                som_x = mapped$grid.coordinates$bmu.1[,"x"],
-                som_y = mapped$grid.coordinates$bmu.1[,"y"])
+           `:=`(som_bmu = embedded$som_bmu,
+                som_x = embedded$som_x,
+                som_y = embedded$som_y)
            ]
 
   saveRDS(data.int, file.data.proc)
@@ -76,4 +82,12 @@ for(i in seq_along(datasets)) {
 
 #   saveRDS(merged, file.data.proc)
 # }
+
+variance_explained(som.fit)
+quantization_error(som.fit)
+topological_error(som.fit)
+unit_diff(data.int, unit.var = "som_bmu", group.var = "adm0")
+
+data.int
+
 
