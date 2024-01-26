@@ -19,7 +19,7 @@ if(length(args) < 3) {
   n.threads <- as.integer(args[3])
 }
 # model.reg <- "cam"
-# model.id <- 6
+# model.id <- 7
 # n.threads <- c(2,1)
 
 
@@ -69,7 +69,7 @@ max.discrete.bins <- 1e5 # Default for bivariate smooths is effectively 1e4
 data.proc <- readRDS(file.data.proc)
 data.mod <- 
   as.data.frame(data.proc[,
-  			  .(forestloss,
+                          .(forestloss,
                             for_type, it_type, pa_type, overlap, ed_east, ed_north,
                             adm0, som_x, som_y)])
 data.mod$b0 <- model.matrix(~ 1, data.mod)
