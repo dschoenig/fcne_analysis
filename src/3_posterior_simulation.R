@@ -8,6 +8,8 @@ source("utilities.R")
 
 region <- tolower(as.character(args[1]))
 n.threads <- ifelse(length(args) < 2, 1, as.integer(args[2]))
+# region <- "cam"
+# n.threads <- 4
 
 path.gam <- "../models/gam/"
 
@@ -19,15 +21,29 @@ seed <- 18980605
 file.model <- paste0(path.gam, region, ".m7.rds")
 file.post <- paste0(path.gam, region, ".m7.post.rds")
 
+paste0("Simulating 1000 draws from the approximate posterior distribution\n",
+       "of model ", file.model, " …") |>
+message()
+
 # Load model
 model <- readRDS(file.model)
 
+
+post <- 
+  egp_posterior_draw(model,
+                     n = 1000,
+                     unconditional = TRUE,
+                     package = "mvnfast",
+                     parallel = 4)
+
+
 # Posterior draws
 set.seed(seed)
-post <- rmvn(1000,
-             mu = coef(model),
-             sigma = vcov(model, unconditional = TRUE),
-             ncores = n.threads)
+post <-
+  mvnfast::rmvn(1000,
+                mu = coef(model),
+                sigma = vcov(model, unconditional = TRUE),
+                ncores = n.threads)
 colnames(post) <- names(coef(model))
 post <- as_draws_matrix(post)
 saveRDS(post, file.post)
