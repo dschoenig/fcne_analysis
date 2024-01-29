@@ -58,7 +58,7 @@ data.pred <- data.pred[row.chunks$from[task_id]:row.chunks$to[task_id],]
 silence <- gc()
 
 
-message(paste0("Evaluating the linear predictor for model ", region, ".m7, ",
+message(paste0("Generating predictions for model ", region, ".m7, ",
         "using draws from the posterior distribution.\n"))
 message(paste0("Processing rows ", row.chunks$from[task_id],
         " to ", row.chunks$to[task_id],
