@@ -1555,7 +1555,7 @@ egp_posterior_draw <- function(model,
     pred.wt <- weights
   }
   posterior <- Matrix(posterior)
-  data.dt <- as.data.table(copy(data))
+  data.dt <- copy(as.data.table(data))
   if(!id.var %in% names(data.dt)) {
     data.dt[, id.col := 1:.N, env = list(id.col = id.var)]
   }
@@ -1753,9 +1753,7 @@ egp_posterior_predict <- function(model,
   setindexv(predictions.dt, draw.var)
   if(is.numeric(parallel)) {
     dt.threads.old <- getDTthreads()
-    arrow.threads.old <- cpu_count()
     setDTthreads(parallel)
-    set_cpu_count(parallel)
   }
   if(is.null(draw.ids)) {
     draw.ids <- predictions.dt[, unique(draw.col), env = list(draw.col = draw.var)]

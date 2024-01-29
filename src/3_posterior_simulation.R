@@ -29,6 +29,8 @@ message()
 model <- readRDS(file.model)
 
 
+# Posterior draws
+set.seed(seed)
 post <- 
   egp_posterior_draw(model,
                      n = 1000,
@@ -36,26 +38,5 @@ post <-
                      package = "mvnfast",
                      parallel = 4)
 
-
-# Posterior draws
-set.seed(seed)
-post <-
-  mvnfast::rmvn(1000,
-                mu = coef(model),
-                sigma = vcov(model, unconditional = TRUE),
-                ncores = n.threads)
-colnames(post) <- names(coef(model))
-post <- as_draws_matrix(post)
 saveRDS(post, file.post)
 
-# # Posterior draws
-# set.seed(seed)
-# post <- mgcv::rmvn(1000,
-#                    mu = coef(model),
-#                    V = vcov(model, unconditional = TRUE))
-# colnames(post) <- names(coef(model))
-# post <- as_draws_matrix(post)
-# saveRDS(post, file.post)
-
-# rm(model, post)
-# gc()
