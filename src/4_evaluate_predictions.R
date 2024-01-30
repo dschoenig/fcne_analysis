@@ -1,5 +1,4 @@
 args <- commandArgs(trailingOnly = TRUE)
-
 library(mgcv)
 library(data.table)
 library(posterior)

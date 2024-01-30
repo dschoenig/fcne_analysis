@@ -670,6 +670,8 @@ egp_define_counterfactual <-
 
   bmu.ref <- data.dt[.(cf.ids), on = id.var]
 
+  if(progress) message("Assigning counterfactual observations …")
+
   if(is.null(compare.by)) {
 
     n.bmu <- integer(nrow(som$grid.nb))
@@ -682,12 +684,6 @@ egp_define_counterfactual <-
 
 
     if(nb.strategy == "sequential") {
-
-      dist = som$unit.dist
-      n = n.bmu
-      n.min = n.min
-      deg.max = deg.max
-
       nbh <-
         .nb_sequential(dist = som$unit.dist,
                        n = n.bmu,
@@ -711,9 +707,9 @@ egp_define_counterfactual <-
                 env = list(id.col = id.var,
                            cf.col = unit.name,
                            som.col = som.var)]
-    cf.bmu.dt[,
-              .n := as.integer(lapply(cf.col, length)),
-              env = list(cf.col = unit.name)]
+    # cf.bmu.dt[,
+    #           .n := as.integer(lapply(cf.col, length)),
+    #           env = list(cf.col = unit.name)]
 
     cf.ids.dt <-
       data.dt[.(cf.ids),
@@ -747,6 +743,13 @@ egp_define_counterfactual <-
  
     nbh.l <- list()
     cf.ids.l <- list()
+
+    if(progress) {
+      prog <- txtProgressBar(min = 0,
+                             max = nrow(comp),
+                             char = "=", width = NA, title = "Progress", style = 3)
+    }
+
     for(i in 1:nrow(comp)) {
       
       n.ref <- comp.bmu.cf[comp[i, compare.by, with = FALSE],
@@ -759,6 +762,13 @@ egp_define_counterfactual <-
       n.bmu[n.ref[, som.col, env = list(som.col = som.var)]] <- n.ref$.n
       n.bmu[is.na(n.bmu)] <- 0
 
+      if(nb.strategy == "sequential") {
+        nbh.l[[i]] <-
+          .nb_sequential(dist = som$unit.dist,
+                         n = n.bmu,
+                         n.min = n.min,
+                         deg.max = deg.max)$neighbourhood
+      }
       if(nb.strategy == "expand") {
         nbh.l[[i]] <-
           .nb_expand(A = som$grid.nb,
@@ -766,13 +776,7 @@ egp_define_counterfactual <-
                      n.min = n.min,
                      deg.max = deg.max)$neighbourhood
       }
-      if(nb.strategy == "expand") {
-        nbh.l[[i]] <-
-          .nb_sequential(dist = som$unit.dist,
-                         n = n.bmu,
-                         n.min = n.min,
-                         deg.max = deg.max)$neighbourhood
-      }
+
       
       cf.ids.l[[i]] <-
         data.dt[.(cf.ids),
@@ -786,6 +790,15 @@ egp_define_counterfactual <-
                                som.col = som.var,
                                cf.col = unit.name)]
 
+      if(progress) {
+        setTxtProgressBar(prog, i)
+      }
+
+    } # End loop over comparison groups
+
+
+    if(progress) {
+      close(prog)
     }
 
     comp[, `:=`(.nbh = nbh.l)]
@@ -817,14 +830,17 @@ egp_define_counterfactual <-
                                 .(cf.col),
                                 on = c(compare.by, som.var),
                                 env = list(cf.col = unit.name)])
- 
+
     cf.ids.dt <- 
       rbindlist(cf.ids.l, idcol = ".cfgrp") |>
       merge(comp[, -c(".n", ".nbh")], by = ".cfgrp") |>
       setcolorder(c(compare.by, unit.name, id.var)) |>
       DT(, -".cfgrp")
 
+
+
   }
+
 
   cf.ids.dt[,
             .n := unlist(lapply(id.col, length)),
@@ -845,6 +861,8 @@ egp_define_counterfactual <-
   setorderv(data.ret, id.var)
 
   # Groups
+
+  if(progress) message("Assigning groups …")
 
   id.names <- paste(id.var, assign.cat, sep = ".")
   geo.names.cf <- paste(geo.vars, assign.cat[1], sep = ".")
@@ -867,7 +885,7 @@ egp_define_counterfactual <-
 
   groups.long <-
     groups[,
-           .(id.fac = as.integer(unlist(cell.factual))),
+           .(id.fac = as.integer(unlist(id.fac))),
            by = group.name,
            env = list(id.fac = id.names[2])]
   groups.long[, .n.fac := .N, by = group.name]
@@ -881,18 +899,15 @@ egp_define_counterfactual <-
   units.fac <-
     cf.bmu.dt[,
                .(cf.col = as.integer(unlist(cf.col))),
-               by = id.var,
+               by = c(compare.by, id.var),
                env = list(cf.col = unit.name)
-               ][,
-                 .(id.fac = id.col,
-                   cf.col),
-                 env = list(id.fac = id.names[2],
-                            id.col = id.var,
-                            cf.col = unit.name)] |>
-    merge(SJ(cf.ids.dt[,
-                       .(cf.col, .n),
-                       env = list(cf.col = unit.name)]),
-          by = unit.name,
+               ]
+  setnames(units.fac, id.var, id.names[2])
+  sel.cf.ids <- c(compare.by, unit.name, ".n")
+  units.fac <-
+    units.fac |>
+    merge(SJ(cf.ids.dt[, ..sel.cf.ids]),
+          by = c(compare.by, unit.name),
           sort = FALSE,
           all.x = TRUE,
           all.y = FALSE) |>
@@ -909,17 +924,15 @@ egp_define_counterfactual <-
           by = id.names[2]) |>
     na.omit(".n")
 
-
   # REMOVE later
-  if(!all(data.fac$cell %in% units.fac$cell.factual)) warning("Not all treatment observations are considered.")
+  if(!all(data.fac[[id.var]] %in% units.fac[[id.names[2]]])) warning("Not all treatment observations are taken into account.")
 
   units.cf <-
     cf.ids.dt[,
                .(id.cf = as.integer(unlist(id.col))),
-               by = cf.col,
+               by = c(compare.by, unit.name),
                env = list(id.cf = id.names[1],
-                          id.col = id.var,
-                          cf.col = unit.name)
+                          id.col = id.var)
                ] |>
     merge(data.cf[,
                   .(id.cf = id.col,
@@ -933,6 +946,8 @@ egp_define_counterfactual <-
                              geo.y = geo.vars[2])],
           by = id.names[1])
 
+
+  if(progress) message("Calculating weights …")
 
   if(is.null(agg.size)) agg.size <- sum(units.fac$.n)
 
@@ -975,8 +990,6 @@ egp_define_counterfactual <-
           )
 
 
-  if(length(agg.ids) <= 1) progress <- FALSE
-
   if(progress) {
     prog <- txtProgressBar(min = 0,
                            max = length(agg.ids),
@@ -992,7 +1005,7 @@ egp_define_counterfactual <-
       dist.obs <-
         units.cf[SJ(units.fac[J(agg.ids[i]),
                     on = ".agg.id"]),
-                 on = unit.name,
+                 on = c(compare.by, unit.name),
                  allow.cartesian = TRUE
                  ][,
                    .(fac.id,
@@ -1001,8 +1014,7 @@ egp_define_counterfactual <-
                    .SDcols = c(geo.names.fac, geo.names.cf),
                    env = list(fac.id = id.names[2],
                               cf.id = id.names[1])]
-    dist.obs[,
-             .geosim := geo.fun(.dist)]
+      dist.obs[, .geosim := geo.fun(.dist)]
 
     } else {
 
@@ -1023,7 +1035,7 @@ egp_define_counterfactual <-
 
     dist.obs[,
              .w := .geosim / sum(.geosim),
-             by = cell.factual]
+             by = c(id.names[2])]
     setkeyv(dist.obs, id.names[2])
 
     weights <- groups.long[dist.obs, on = id.names[2], allow.cartesian = TRUE]
@@ -1064,7 +1076,7 @@ egp_define_counterfactual <-
 
   counterfactual <- list(data = data.ret,
                          groups = groups.comb,
-                         assignment = cf.bmu.dt[, -".n"],
+                         assignment = cf.bmu.dt,
                          units = cf.ids.dt[, -".n"],
                          compare.by = compare.by,
                          group.by = group.by,
@@ -1129,6 +1141,8 @@ get_weights <- function(cf.def,
     return(copy(w[group.col %in% group, env = env.w]))
   }
 }
+
+
 
 imbalance <- function(data,
                       variables,
