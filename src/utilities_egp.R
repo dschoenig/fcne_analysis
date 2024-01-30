@@ -1358,8 +1358,6 @@ egp_imbalance <- function(data,
          fac.col = id.names[2],
          cf.col = id.names[1])
 
-
-
   data <- data[, c(id.var, variables), with = FALSE]
   data[, (variables) := lapply(.SD, as.numeric), .SDcols = variables]
 
@@ -1412,7 +1410,6 @@ egp_imbalance <- function(data,
 
 
   if(type %in% c("raw", "both")) {
-
     data.raw.f <-
       merge(cf.w[assign.col == assign.cat[2],
                  .(group.col, id.col, assign.col),
@@ -1427,14 +1424,19 @@ egp_imbalance <- function(data,
             data,
             all.y = FALSE)
 
+
+    cf.groups <-
+      CJ(.id = data.raw.cf[[id.var]],
+         .group.id = unique(data.raw.f$group.id))
+    setnames(cf.groups, c(".id", ".group.id"), c(id.var, group.var))
+
     data.raw <-
       rbind(data.raw.f,
-            merge(CJ(cell = data.raw.cf$cell,
-                     group.id = unique(data.raw.f$group.id)),
+            merge(cf.groups,
                   data.raw.cf)) |>
-     melt(measure.vars = variables,
-          variable.name = ".variable",
-          value.name = ".value")
+      melt(measure.vars = variables,
+           variable.name = ".variable",
+           value.name = ".value")
 
     rm(data.raw.f, data.raw.cf)
 
@@ -1461,6 +1463,7 @@ egp_imbalance <- function(data,
     }
     measure.names <- names(measure.fun.raw)
   }
+
 
   cast.form <-
     as.formula(paste0(group.var, " + .variable + .measure ~ .type"))
