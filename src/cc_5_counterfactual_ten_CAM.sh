@@ -11,23 +11,23 @@ module load StdEnv/2023 gcc/12.3 gdal/3.7.2 geos/3.12.0 python/3.11.5 udunits/2.
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-Rscript 5_counterfactual_ten.R 4 af cam it all
-Rscript 5_counterfactual_ten.R 4 af cam it no_ov
-Rscript 5_counterfactual_ten.R 4 af cam it ov
+Rscript 5_counterfactual_ten.R 4 cam af it all
+Rscript 5_counterfactual_ten.R 4 cam af it no_ov
+Rscript 5_counterfactual_ten.R 4 cam af it ov
 
-Rscript 5_counterfactual_ten.R 4 af cam pa all
-Rscript 5_counterfactual_ten.R 4 af cam pa no_ov
-Rscript 5_counterfactual_ten.R 4 af cam pa ov
+Rscript 5_counterfactual_ten.R 4 cam af pa all
+Rscript 5_counterfactual_ten.R 4 cam af pa no_ov
+Rscript 5_counterfactual_ten.R 4 cam af pa ov
 
-Rscript 5_counterfactual_ten.R 4 af cam itpa all
+Rscript 5_counterfactual_ten.R 4 cam af itpa all
 
 
-Rscript 5_counterfactual_ten.R 4 pf cam it all
-Rscript 5_counterfactual_ten.R 4 pf cam it no_ov
-Rscript 5_counterfactual_ten.R 4 pf cam it ov
+Rscript 5_counterfactual_ten.R 4 cam pf it all
+Rscript 5_counterfactual_ten.R 4 cam pf it no_ov
+Rscript 5_counterfactual_ten.R 4 cam pf it ov
 
-Rscript 5_counterfactual_ten.R 4 pf cam pa all
-Rscript 5_counterfactual_ten.R 4 pf cam pa no_ov
-Rscript 5_counterfactual_ten.R 4 pf cam pa ov
+Rscript 5_counterfactual_ten.R 4 cam pf pa all
+Rscript 5_counterfactual_ten.R 4 cam pf pa no_ov
+Rscript 5_counterfactual_ten.R 4 cam pf pa ov
 
-Rscript 5_counterfactual_ten.R 4 pf cam itpa all
+Rscript 5_counterfactual_ten.R 4 cam pf itpa all
