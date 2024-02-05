@@ -2,6 +2,7 @@ library(data.table)
 
 ## Folders
 path.raw <- "../data/raw/"
+path.aux <- "../data/auxiliary/"
 path.int <- "../data/intermediate/"
 path.proc <- "../data/processed/"
 
@@ -71,6 +72,35 @@ for(i in 1:length(regions)) {
   # Remove samples with incomplete covariate information and cut sample to
   # 12 million
   data.int <- na.omit(vars)[1:(n.fit + n.val),]
+
+  # For Central America only: Flag points close to hurricane Otto (2016)
+
+  if(regions[i] == "cam") {
+
+    file.otto <- paste0(path.aux, "al162016_lin.gpkg")
+
+    crs.cam.ed <-
+      st_crs('PROJCS["Central_America_Equidistant_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Equidistant_Conic"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900001"]]')
+
+    traj.otto <-
+      st_read(file.otto) |>
+      st_transform(crs.cam.ed)
+    traj.otto.buf <-
+      traj.otto[traj.otto$SS > 0,] |>
+      st_union() |>
+      st_as_sf() |>
+      st_buffer(dist = 5e4)
+    pts.cri_nic <-
+      data.int[adm0 %in% c("CRI", "NIC"), .(id, ed_east, ed_north)] |>
+      st_as_sf(coords = c("ed_east", "ed_north")) |>
+      st_set_crs(crs.cam.ed)
+    pts.otto <-
+      st_intersection(pts.cri_nic, traj.otto.buf)
+    
+    data.int[id %in% pts.otto$id, hurr.otto := TRUE]
+    data.int[is.na(hurr.otto), hurr.otto := FALSE]
+
+  }
 
   # Randomly assign samples to fit and validation set
   set.seed(18470611)
