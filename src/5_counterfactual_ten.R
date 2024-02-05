@@ -38,6 +38,8 @@ path.base <- "../"
 path.som <- "../models/som/"
 path.data.proc <- paste0(path.base, "data/processed/")
 path.cf <- paste0(path.base, "models/cf/", region, "/")
+if(!dir.exists(path.cf))
+  dir.create(path.cf, recursive = TRUE)
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
