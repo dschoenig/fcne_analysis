@@ -169,3 +169,4 @@ print(b-a)
 message("Saving output …")
 
 saveRDS(cf.def, file.out)
+gc()
