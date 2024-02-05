@@ -202,6 +202,8 @@ egp_som <- function(data,
     }
   }
 
+  n.units <- x.dim * y.dim
+
   som.grid <- somgrid(xdim = x.dim,
                       ydim = y.dim, 
                       topo = topo)
@@ -261,6 +263,7 @@ egp_som <- function(data,
                                        dist = x)) |>
     rbindlist(idcol = "id.from")
 
+  som.fit$n.units <- n.units
   som.fit$grid.poly <- grid.poly
   som.fit$grid.nb <- grid.nb
   som.fit$init <- init
@@ -542,11 +545,11 @@ get_nb <- function(x) {x$grid.nb}
           dist.ord[nc >= n.min,
                    .(n.min.u = min(nc)),
                    by = id.from]) |>
-    DT(nc <= n.min.u,
-       .(neighbourhood = list(id.to),
-         n = unique(n.min.u),
-         degree = max(deg)),
-       by = id.from)
+    _[nc <= n.min.u,
+      .(neighbourhood = list(id.to),
+        n = unique(n.min.u),
+        degree = max(deg)),
+      by = id.from]
 
   return(as.list(nb.dt[, -"id.from"]))
 }
@@ -626,6 +629,7 @@ egp_define_counterfactual <-
            progress = TRUE) {
 
   data.dt <- as.data.table(data)
+  rm(data)
 
   if(!id.var %in% names(data.dt)) {
     data.dt[, id.col := 1:.N, env = list(id.col = id.var)]
@@ -835,7 +839,7 @@ egp_define_counterfactual <-
       rbindlist(cf.ids.l, idcol = ".cfgrp") |>
       merge(comp[, -c(".n", ".nbh")], by = ".cfgrp") |>
       setcolorder(c(compare.by, unit.name, id.var)) |>
-      DT(, -".cfgrp")
+      _[, -".cfgrp"]
 
 
 
@@ -946,6 +950,8 @@ egp_define_counterfactual <-
                              geo.y = geo.vars[2])],
           by = id.names[1])
 
+  rm(data.fac, data.cf)
+  gc()
 
   if(progress) message("Calculating weights …")
 
@@ -970,11 +976,15 @@ egp_define_counterfactual <-
       }
       pts.bb <- st_bbox(st_minimum_bounding_circle(pts))
       geo.range <- pts.bb[["xmax"]] - pts.bb[["xmin"]]
+      rm(pts.bb)
     }
   } else {
     geo.kernel = "nodist"
     geo.range <- 1
   }
+
+  rm(data.dt)
+  gc()
 
   dist.fun <- function(x) sqrt(rowSums((x[, 1:2] - x[, 3:4])^2))
 
@@ -1051,14 +1061,19 @@ egp_define_counterfactual <-
 
   }
 
+  rm(dist.obs)
+
   if(progress) {
     close(prog)
   }
 
   weights.cf <-
     rbindlist(weights.cf.l) |>
-    DT(, .(.w = sum(.w)),
-       by = c(group.name, id.names[1]))
+    _[, .(.w = sum(.w)),
+       by = c(group.name, id.names[1])]
+
+  rm(weights.cf.l)
+  gc()
 
   weights.cf[, .w := .w/sum(.w), by = group.name]
 
@@ -1070,6 +1085,9 @@ egp_define_counterfactual <-
                env = list(cf.id = id.names[1])
                ][order(group.col),
                  env = list(group.col = group.name)]
+
+  rm(weights.cf)
+  gc()
 
   groups.comb <- merge(groups, groups.cf)
   setcolorder(groups.comb, c(group.name, group.by.c, id.names[2], id.names[1], ".w")) 
@@ -1925,7 +1943,7 @@ egp_summarize_units <- function(predictions,
 
   unit.sum <-
     merge(units[, -id.var, with = FALSE], unit.sum, all.x = FALSE) |>
-    DT(, -".uid", with = FALSE)
+    _[, -".uid", with = FALSE]
   setindexv(unit.sum, ".draw")
   setorderv(unit.sum, c(compare.by, unit.var, ".draw"))
   return(unit.sum)
