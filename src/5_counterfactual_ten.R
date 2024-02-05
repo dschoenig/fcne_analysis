@@ -31,7 +31,7 @@ if(hurr_type == "no_otto" & region == "cam") {
 }
 
 
-paste0("Settings: ", paste(for_type, area_type, ov_type, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(area_type, for_type, ov_type, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"

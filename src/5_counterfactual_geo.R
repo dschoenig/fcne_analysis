@@ -33,7 +33,7 @@ map.res <- switch(region,
                   amz = 1e4,
                   cam = 5e3)
 
-paste0("Settings: ", paste(for_type, area_type, map.res, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(area_type, for_type, map.res, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
