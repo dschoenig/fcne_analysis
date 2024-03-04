@@ -663,6 +663,10 @@ egp_define_counterfactual <-
               env = list(id.col = id.var)]
   }
 
+  if(length(intersect(fac.ids, cf.ids)) > 0) {
+    stop("Some observations are assigned to both the factual and counterfactual.")
+  }
+
   # Reference SOM units
 
   data.dt <-
@@ -1074,6 +1078,9 @@ egp_define_counterfactual <-
 
   rm(weights.cf.l)
   gc()
+
+  
+  if(progress) message("Processing weights for each group …")
 
   weights.cf[, .w := .w/sum(.w), by = group.name]
 
