@@ -13,11 +13,11 @@ ov_type <- tolower(as.character(args[5]))
 hurr_type <- tolower(as.character(args[6]))
 
 # n.threads <- 1
-# region <- "amz"
+# region <- "cam"
 # for_type <- "af"
 # comp_sel <- "pa_mar"
 # ov_type <- "ov"
-# hurr_type <- NA
+# hurr_type <- "no_otto"
 
 setDTthreads(n.threads)
 

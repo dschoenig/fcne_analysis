@@ -97,8 +97,8 @@ for(i in 1:length(regions)) {
     pts.otto <-
       st_intersection(pts.cri_nic, traj.otto.buf)
     
-    data.int[id %in% pts.otto$id, hurr.otto := TRUE]
-    data.int[is.na(hurr.otto), hurr.otto := FALSE]
+    data.int[id %in% pts.otto$id, hurr_otto := TRUE]
+    data.int[is.na(hurr_otto), hurr_otto := FALSE]
 
   }
 
