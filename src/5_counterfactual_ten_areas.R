@@ -115,33 +115,33 @@ message()
 message("Defining counterfactual …")
 
 
-# a <- Sys.time()
-# cf.def <-
-#   egp_define_counterfactual(data = data,
-#                             som = som.fit,
-#                             cf.ids = cf.ids,
-#                             fac.ids = fac.ids,
-#                             compare.by = comp.by,
-#                             group.by = group.by,
-#                             som.var = "som_bmu",
-#                             geo.vars = c("ed_east", "ed_north"),
-#                             geo.kernel = "matern32",
-#                             geo.range = NULL,
-#                             id.var = "uid",
-#                             group.name = "group.id",
-#                             unit.name = "cf.unit",
-#                             assign.name = "assigned",
-#                             assign.cat = c("counterfactual", "factual"),
-#                             n.min = 1,
-#                             nb.strategy = "sequential",
-#                             deg.max = NULL,
-#                             agg.size = 1e6,
-#                             progress = TRUE)
-# b <- Sys.time()
+a <- Sys.time()
+cf.def <-
+  egp_define_counterfactual(data = data,
+                            som = som.fit,
+                            cf.ids = cf.ids,
+                            fac.ids = fac.ids,
+                            compare.by = comp.by,
+                            group.by = group.by,
+                            som.var = "som_bmu",
+                            geo.vars = c("ed_east", "ed_north"),
+                            geo.kernel = "matern32",
+                            geo.range = NULL,
+                            id.var = "uid",
+                            group.name = "group.id",
+                            unit.name = "cf.unit",
+                            assign.name = "assigned",
+                            assign.cat = c("counterfactual", "factual"),
+                            n.min = 1,
+                            nb.strategy = "sequential",
+                            deg.max = NULL,
+                            agg.size = 1e6,
+                            progress = TRUE)
+b <- Sys.time()
 
-# print(b-a)
+print(b-a)
 
-# message("Saving output …")
+message("Saving output …")
 
-# saveRDS(cf.def, file.out)
-# gc()
+saveRDS(cf.def, file.out)
+gc()
