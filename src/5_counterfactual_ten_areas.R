@@ -51,7 +51,7 @@ file.out <- paste0(path.cf, region, ".ten.areas.",
 
 data <- readRDS(file.data)
 
-# som.fit <- readRDS(file.som)
+som.fit <- readRDS(file.som)
 
 data <- data[comp == comp_sel]
 
