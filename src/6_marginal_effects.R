@@ -77,7 +77,6 @@ if(cf_type == "ten.areas") {
 }
 
 draw.chunks <- chunk_seq(1, 1000, 100)
-draw.chunks <- chunk_seq(1, 1000, 500)
 
 eval.mar.l <- list()
 
