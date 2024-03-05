@@ -16,13 +16,13 @@ area_type <- tolower(as.character(args[5]))
 ov_type <- tolower(as.character(args[6]))
 hurr_type <- tolower(as.character(args[7]))
 
-n.threads <- 4
-cf_type <- "geo"
-region <- "amz"
-for_type <- "af"
-area_type <- "pa"
-ov_type <- "na"
-hurr_type <- NA
+# n.threads <- 4
+# cf_type <- "geo"
+# region <- "amz"
+# for_type <- "af"
+# area_type <- "pa"
+# ov_type <- "na"
+# hurr_type <- NA
 
 if(cf_type == "geo") {
   ov_suf <- ""
