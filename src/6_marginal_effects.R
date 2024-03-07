@@ -6,8 +6,6 @@ library(dplyr)
 
 source("utilities.R")
 
-setDTthreads(4)
-
 n.threads <- as.integer(args[1])
 cf_type <- tolower(as.character(args[2]))
 region <- tolower(as.character(args[3]))
@@ -76,7 +74,9 @@ if(cf_type == "ten.areas") {
   setkey(dict.idx, id)
 }
 
-draw.chunks <- chunk_seq(1, 1000, 100)
+draw.chunks <- chunk_seq(1, 1000, 25)
+draw.chunks <- chunk_seq(1, 50, 25)
+group.chunks <- chunk_seq(1, nrow(cf$groups), 2500)
 
 eval.mar.l <- list()
 
@@ -87,6 +87,8 @@ for(i in seq_along(draw.chunks$from)) {
          " …") |>
   message()
 
+  message("  Load predictions …")
+
   a <- Sys.time()
 
   pred.draw <-
@@ -94,7 +96,6 @@ for(i in seq_along(draw.chunks$from)) {
     filter(.draw >= draw.chunks$from[i] & .draw <= draw.chunks$to[i]) |>
     select(.draw, id, forestloss) |>
     collect()
-
 
   if(cf_type == "ten.areas") {
     pred.draw <-
@@ -107,6 +108,14 @@ for(i in seq_along(draw.chunks$from)) {
   }
 
 
+  b <- Sys.time()
+  print(b-a)
+
+
+  message("  Evaluate marginal …")
+
+  a <- Sys.time()
+
   eval.fac <-
     egp_evaluate_factual(predictions = pred.draw,
                          cf.def = cf,
@@ -116,17 +125,37 @@ for(i in seq_along(draw.chunks$from)) {
                          agg.size = 1e6,
                          parallel = n.threads,
                          progress = TRUE)
+  
+  silence <- gc()
 
+  eval.cf.l <- list()
 
-  eval.cf <-
-    egp_evaluate_counterfactual(predictions = pred.draw,
-                                cf.def = cf,
-                                name = "counterfactual",
-                                pred.var = "forestloss",
-                                draw.chunk = NULL,
-                                agg.size = 1e6,
-                                parallel = n.threads,
-                                progress = TRUE)
+  for(j in seq_along(group.chunks$from)) {
+
+    if(length(group.chunks$from) > 1) {
+      paste0("  Groups ", group.chunks$from[j],
+         " to ", group.chunks$to[j],
+         " …") |>
+      message()
+    }
+
+    eval.cf.l[[j]] <-
+      egp_evaluate_counterfactual(predictions = pred.draw,
+                                  cf.def = cf,
+                                  name = "counterfactual",
+                                  group.eval = group.chunks$from[j]:group.chunks$to[j],
+                                  pred.var = "forestloss",
+                                  draw.chunk = NULL,
+                                  agg.size = 1e6,
+                                  parallel = n.threads,
+                                  progress = TRUE)
+
+  }
+
+  eval.cf <- rbindlist(eval.cf.l)
+
+  rm(eval.cf.l)
+  gc()
 
   eval.mar.l[[i]] <-
     egp_marginal(factual = eval.fac,
