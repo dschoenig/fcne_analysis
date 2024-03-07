@@ -203,4 +203,7 @@ for(i in seq_along(draw.chunks.load$from)) {
 
 eval.mar <- rbindlist(eval.mar.i)
 
+paste0("Saving marginal as ", file.mar, " …") |>
+message()
+
 saveRDS(eval.mar, file.mar)
