@@ -16,7 +16,7 @@ hurr_type <- tolower(as.character(args[7]))
 
 draws.max <- 1000
 draws.load.chunk <- 100
-draws.eval.chunk <- 25
+draws.eval.chunk <- 10
 
 # n.threads <- 4
 # cf_type <- "geo"
@@ -25,11 +25,12 @@ draws.eval.chunk <- 25
 # area_type <- "pa"
 # ov_type <- "na"
 # hurr_type <- NA
-# n.threads <- 4
-# cf_type <- "ten"
+
+# n.threads <- 1
+# cf_type <- "ten.areas"
 # region <- "amz"
 # for_type <- "pf"
-# area_type <- "it"
+# area_type <- "full"
 # ov_type <- "all"
 # hurr_type <- NA
 # draws.max <- 100
@@ -91,7 +92,11 @@ if(cf_type == "ten.areas") {
 }
 
 draw.chunks.load <- chunk_seq(1, draws.max, draws.load.chunk)
-group.chunks <- chunk_seq(1, nrow(cf$groups), 2500)
+if(cf_type == "geo") {
+  group.chunks <- chunk_seq(1, nrow(cf$groups), 2500)
+} else {
+  group.chunks <- chunk_seq(1, nrow(cf$groups), 250)
+}
 
 
 eval.mar.i <- list()
@@ -113,7 +118,8 @@ for(i in seq_along(draw.chunks.load$from)) {
 
   if(cf_type == "ten.areas") {
     pred.draw <-
-      merge(pred.draw, dict.idx, all.x = TRUE, all.y = FALSE)
+      merge(pred.draw, dict.idx, all.x = TRUE, all.y = FALSE,
+            allow.cartesian = TRUE)
     setkey(pred.draw, uid)
     pred.draw <- pred.draw[uid %in% cf$data$uid]
   } else {
@@ -200,9 +206,15 @@ for(i in seq_along(draw.chunks.load$from)) {
 
   eval.mar.i[[i]] <- rbindlist(eval.mar.j)
 
+  rm(eval.mar.j, pred.draw)
+  gc()
+
 }
 
 eval.mar <- rbindlist(eval.mar.i)
+
+rm(eval.mar.i)
+gc()
 
 paste0("Saving marginal as ", file.mar, " …") |>
 message()
