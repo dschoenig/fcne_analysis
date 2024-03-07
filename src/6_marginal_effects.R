@@ -44,6 +44,7 @@ if(cf_type == "geo") {
 }
 
 setDTthreads(n.threads)
+set_cpu_count(n.threads)
 
 if(is.na(hurr_type)) {
   hurr_type <- "otto"
