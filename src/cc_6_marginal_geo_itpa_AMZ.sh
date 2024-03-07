@@ -11,5 +11,5 @@ module load StdEnv/2023 gcc/12.3 gdal/3.7.2 geos/3.12.0 python/3.11.5 udunits/2.
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-Rscript 6_marginal.R 4 geo amz af itpa NA
-Rscript 6_marginal.R 4 geo amz pf itpa NA
+Rscript 6_marginal_effects.R 4 geo amz af itpa NA
+Rscript 6_marginal_effects.R 4 geo amz pf itpa NA
