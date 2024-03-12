@@ -5,7 +5,7 @@ library(data.table)
 source("utilities.R")
 
 n.threads <- as.integer(args[1])
-region <- tolower(as.character(args[3]))
+region <- tolower(as.character(args[2]))
 
 # n.threads <- 4
 # region <- "amz"
