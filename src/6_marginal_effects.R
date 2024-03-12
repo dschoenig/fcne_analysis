@@ -37,15 +37,15 @@ draws.eval.chunk <- 10
 # draws.load.chunk <- 50
 # draws.eval.chunk <- 25
 
+setDTthreads(n.threads)
+set_cpu_count(n.threads)
+
 
 if(cf_type == "geo") {
   ov_suf <- ""
 } else {
   ov_suf <- paste0(".", ov_type)
 }
-
-setDTthreads(n.threads)
-set_cpu_count(n.threads)
 
 if(is.na(hurr_type)) {
   hurr_type <- "otto"
