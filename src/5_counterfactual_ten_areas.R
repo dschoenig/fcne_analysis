@@ -1,7 +1,6 @@
 args <- commandArgs(trailingOnly = TRUE)
 
 library(data.table)
-library(arrow)
 
 source("utilities.R")
 

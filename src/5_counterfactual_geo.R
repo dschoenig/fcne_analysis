@@ -1,11 +1,8 @@
 args <- commandArgs(trailingOnly = TRUE)
 
 library(data.table)
-library(arrow)
 
 source("utilities.R")
-
-setDTthreads(4)
 
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
@@ -39,7 +36,6 @@ message()
 path.base <- "../"
 path.som <- "../models/som/"
 path.data.proc <- paste0(path.base, "data/processed/")
-# path.pred <- paste0(path.base, "models/gam/pred/")
 path.cf <- paste0(path.base, "models/cf/", region, "/")
 if(!dir.exists(path.cf))
   dir.create(path.cf, recursive = TRUE)
@@ -49,7 +45,6 @@ file.som <- paste0(path.som, region, ".som.1e6.rds")
 file.out <- paste0(path.cf, region, ".geo.",
                    for_type, ".",
                    area_type, hurr_suf, ".rds")
-# path.arrow <- paste0(path.pred, region, "/")
 
 data <- readRDS(file.data)
 som.fit <- readRDS(file.som)
