@@ -18,7 +18,7 @@ hurr_type <- tolower(as.character(args[4]))
 
 draws.max <- 1000
 draws.load.chunk <- 100
-draws.eval.chunk <- 10
+draws.eval.chunk <- 1
 
 setDTthreads(n.threads)
 set_cpu_count(n.threads)
@@ -122,7 +122,7 @@ for(i in seq_along(draw.chunks.load$from)) {
                                     id.var = "id",
                                     agg.name = "forestloss",
                                     group.name = "group.id",
-                                    draw.chunk = 1,
+                                    draw.chunk = draws.eval.chunk,
                                     agg.size = 1e6,
                                     parallel = n.threads,
                                     progress = TRUE)
