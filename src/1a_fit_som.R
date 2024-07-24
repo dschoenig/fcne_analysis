@@ -84,8 +84,7 @@ som.1e5 <-
           x.dim = x.dim,
           y.dim = y.dim,
           epochs = epochs,
-          vars = c("tri", "dist_set", "dist_roads",
-                   "dist_rivers", "dens_pop", "dens_roads"),
+          vars = cov,
           parallel = n.cores)
 
 b <- Sys.time()
@@ -103,8 +102,7 @@ som.1e6 <-
           x.dim = x.dim,
           y.dim = y.dim,
           epochs = epochs,
-          vars = c("tri", "dist_set", "dist_roads",
-                   "dist_rivers", "dens_pop", "dens_roads"),
+          vars = cov,
           parallel = n.cores)
 
 b <- Sys.time()
