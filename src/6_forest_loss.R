@@ -130,12 +130,14 @@ for(i in seq_along(draw.chunks.load$from)) {
   b <- Sys.time()
   print(b-a)
 
+  rm(pred.draw)
+  gc()
+
 }
 
 eval.fl <- rbindlist(eval.fl.l)
 
 fl <- merge(idx.geo[, -"id"], eval.fl)
-
 
 message("Saving output …")
 

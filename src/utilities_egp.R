@@ -643,7 +643,7 @@ egp_define_counterfactual <-
     group.by <- list(group.by)
   }
 
-  vars.sel <- c(id.var, compare.by, group.by.c, som.var, geo.vars)
+  vars.sel <- unique(c(id.var, compare.by, group.by.c, som.var, geo.vars))
 
   data.dt <- data.dt[, ..vars.sel]
 
@@ -849,11 +849,9 @@ egp_define_counterfactual <-
 
   }
 
-
   cf.ids.dt[,
             .n := unlist(lapply(id.col, length)),
             env = list(id.col = id.var)]
-
 
   data.cf <- data.dt[.(cf.ids), on = id.var ]
   data.cf[,

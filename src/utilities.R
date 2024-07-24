@@ -1,5 +1,8 @@
 source("utilities_egp.R")
 
+
+## MAPPING HELPERS ##############################################################
+
 crs.ea <- 
   list(cam = st_crs('PROJCS["Central_America_Albers_Equal_Area_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900002"]]'),
        amz = st_crs('PROJCS["Amazon_Albers_Equal_Area_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",-5.59],PARAMETER["longitude_of_center",-62.05],PARAMETER["standard_parallel_1",3.81],PARAMETER["standard_parallel_2",-15.62],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900004"]]'))
@@ -39,6 +42,33 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, b
     return(bins.l)
   }
 }
+
+
+
+## PLOTTING HELPERS #############################################################
+
+label_arc <- function(x, ndec = 0, psign = TRUE) {
+  per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
+  per[which(x > 0)] <- paste0("+", per[which(x > 0)])
+  if(psign) {
+    per <- paste0(per, "%")
+  }
+  per[is.na(x)] <- NA
+  return(per)
+}
+
+label_per <- function(x, ndec = 0, psign = TRUE) {
+  per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
+  if(psign) {
+    per <- paste0(per, "%")
+  }
+  per[is.na(x)] <- NA
+  return(per)
+}
+
+
+
+
 
 # require(mgcv, quietly = TRUE)
 # require(data.table, quietly = TRUE)
@@ -1571,28 +1601,6 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, b
 #  smooth.lu[, `:=`(para = list(seq(first.para, last.para))), "smooth.id"]
 #  return(smooth.lu)
 #}
-
-## PLOTTING HELPERS #############################################################
-
-#label_arc <- function(x, ndec = 0, psign = TRUE) {
-#  per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
-#  per[which(x > 0)] <- paste0("+", per[which(x > 0)])
-#  if(psign) {
-#    per <- paste0(per, "%")
-#  }
-#  per[is.na(x)] <- NA
-#  return(per)
-#}
-
-#label_per <- function(x, ndec = 0, psign = TRUE) {
-#  per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
-#  if(psign) {
-#    per <- paste0(per, "%")
-#  }
-#  per[is.na(x)] <- NA
-#  return(per)
-#}
-
 
 
 ##diag_residuals <- function(model, 
