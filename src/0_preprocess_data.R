@@ -1,4 +1,5 @@
 library(data.table)
+library(sf)
 
 ## Folders
 path.raw <- "../data/raw/"
@@ -10,9 +11,12 @@ n.fit <- 1e7
 n.val <- 2e6
 
 regions <- c("amz", "cam")
+regions <- c("cam")
 
 
 for(i in 1:length(regions)) {
+  
+  message(paste0("Processing region '", regions[i], "` …")) 
 
   file.data.raw <- paste0(path.raw, regions[i], ".vars.csv")
   file.areas.it <- paste0(path.raw, regions[i], ".indterr.csv")
@@ -45,6 +49,7 @@ for(i in 1:length(regions)) {
             adm0 = factor(adm0)
             )
        ]
+
   vars[is.na(it_type), it_type := "none"]
   vars[is.na(pa_type), pa_type := "none"]
   vars[pa_type != "none" & it_type != "none",
@@ -60,18 +65,23 @@ for(i in 1:length(regions)) {
 
   setcolorder(vars,
               c("id", "adm0",
-                "forestloss", "lossyear",
+                "forestloss", "lossyear", "cover",
                 "primary_forest", "for_type",
                 "it", "it_type", "pa", "pa_type", "overlap",
-                "tri", "dist_set", "dist_roads", "dist_rivers",
+                "elevation", "slope", "tri", "sx",
+                "dist_set", "dist_roads", "dist_rivers",
                 "dens_roads", "dens_pop",
                 "lon", "lat",
                 "ed_east", "ed_north", "ea_east", "ea_north"))
 
 
-  # Remove samples with incomplete covariate information and cut sample to
-  # 12 million
-  data.int <- na.omit(vars)[1:(n.fit + n.val),]
+  # Subsample 12 million observations with complete covariate
+  # information and split into fit and validation sets
+  set.seed(18470611)
+  sam.idx <- sample(na.omit(vars)$id, n.fit+n.val)
+
+  # Remove samples with incomplete covariate information 
+  data.int <- vars[.(sam.idx), on = "id"]
 
   # For Central America only: Flag points close to hurricane Otto (2016)
 
@@ -102,13 +112,13 @@ for(i in 1:length(regions)) {
 
   }
 
-  # Randomly assign samples to fit and validation set
-  set.seed(18470611)
-  sam <- sample(1:nrow(data.int), nrow(data.int), replace = FALSE)
-  data.fit.int <- data.int[sam[1:n.fit],]
-  data.val.int <- data.int[sam[(n.fit+1):(n.fit + n.val)],]
+  # Assign samples to fit and validation set
+  data.fit.int <- data.int[.(sam.idx[1:n.fit]), on = "id"]
+  data.val.int <- data.int[.(sam.idx[(n.fit+1):(n.fit + n.val)]), on = "id"]
 
-  length(which(data.val.int$id %in% data.fit.int$id)) == 0
+  print(nrow(na.omit(data.fit.int)) == n.fit)
+  print(nrow(na.omit(data.val.int)) == n.val)
+  print(length(which(data.val.int$id %in% data.fit.int$id)) == 0)
 
   saveRDS(data.fit.int, file.data.fit.int)
   saveRDS(data.val.int, file.data.val.int)

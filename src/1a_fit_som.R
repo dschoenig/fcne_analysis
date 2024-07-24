@@ -31,11 +31,14 @@ message(paste0("Fitting SOM (", region, ", ", n.cores, " cores) …"))
 file.data.fit.int <- paste0(path.data, region, ".data.fit.int.rds")
 file.prefix.som <- paste0(path.som, region, ".som.")
 
+cov <-
+  c("elevation", "slope", "sx", "cover",
+    "dist_set", "dist_roads", "dist_rivers",
+    "dens_pop", "dens_roads")
+
 data <-
   readRDS(file.data.fit.int) |>
-  _[,
-    .(tri, dist_set, dist_roads,
-      dist_rivers, dens_pop, dens_roads)]
+  _[, ..cov]
 
 
 set.seed(seed)
@@ -63,8 +66,7 @@ som.1e4 <-
           x.dim = x.dim,
           y.dim = y.dim,
           epochs = epochs,
-          vars = c("tri", "dist_set", "dist_roads",
-                   "dist_rivers", "dens_pop", "dens_roads"),
+          vars = cov,
           parallel = n.cores)
 
 b <- Sys.time()
