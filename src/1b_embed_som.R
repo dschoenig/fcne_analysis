@@ -45,13 +45,15 @@ for(i in seq_along(datasets)) {
 
   data.int <- readRDS(file.data.int)
 
+  cov <-
+    c("elevation", "slope", "sx", "cover",
+      "dist_set", "dist_roads", "dist_rivers",
+      "dens_pop", "dens_roads")
+
   embedded <-
-    egp_embed(data.int[,
-                       .(tri, dist_set, dist_roads,
-                         dist_rivers, dens_pop, dens_roads)],
+    egp_embed(data.int[, ..cov],
               som.fit,
-              vars = c("tri", "dist_set", "dist_roads",
-                       "dist_rivers", "dens_pop", "dens_roads"),
+              vars = cov,
               scale = TRUE,
               bmu.name = "som_bmu",
               coord = TRUE,
@@ -156,8 +158,9 @@ for(i in seq_along(datasets)) {
 #                 "forestloss", "lossyear",
 #                 "primary_forest", "for_type",
 #                 "it", "it_type", "pa", "pa_type", "overlap",
-#                 "tri", "dist_set", "dist_roads", "dist_rivers",
-#                 "dens_roads", "dens_pop",
+#                 "elevation", "slope", "sx", "cover",
+#                 "dist_set", "dist_roads", "dist_rivers",
+#                 "dens_pop", "dens_roads",
 #                 "lon", "lat",
 #                 "ed_east", "ed_north", "ea_east", "ea_north"))
 
