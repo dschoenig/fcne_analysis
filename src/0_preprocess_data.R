@@ -19,13 +19,16 @@ for(i in 1:length(regions)) {
   message(paste0("Processing region '", regions[i], "` …")) 
 
   file.data.raw <- paste0(path.raw, regions[i], ".vars.csv")
+  file.stats <- paste0(path.raw, regions[i], ".sumstats.csv")
   file.areas.it <- paste0(path.raw, regions[i], ".indterr.csv")
   file.areas.it_pts <- paste0(path.raw, regions[i], ".indterr_pts.csv")
   file.areas.pa <- paste0(path.raw, regions[i], ".pareas.csv")
   file.areas.pa_pts <- paste0(path.raw, regions[i], ".pareas_pts.csv")
-  file.areas.out <- paste0(path.proc, regions[i], ".areas.it_pa.rds")
+
   file.data.fit.int <- paste0(path.int, regions[i], ".data.fit.int.rds")
   file.data.val.int <- paste0(path.int, regions[i], ".data.val.int.rds")
+  file.areas.out <- paste0(path.proc, regions[i], ".areas.it_pa.rds")
+  file.stats.proc <- paste0(path.raw, regions[i], ".sumstats.proc.csv")
 
   vars <- fread(file.data.raw, 
                 na.strings = "",
@@ -181,5 +184,52 @@ for(i in 1:length(regions)) {
 
   rm(data.int, data.fit.int, data.val.int, vars,
      areas.it, areas.it_pts, areas.pa, areas.pa_pts, areas.it_pa)
+
+
+  stats <- fread(file.stats, 
+                 na.strings = "",
+                 key = "id")
+
+  stats[, 
+        `:=`(primary_forest = ifelse(primary_forest == "t", TRUE, FALSE),
+             for_type = factor(ifelse(primary_forest == "t",
+                                      "primary", "other"),
+                               levels = c("other", "primary"),
+                               ordered = TRUE),
+             it = ifelse(it == "t", TRUE, FALSE),
+             it_type = factor(it_type,
+                              levels = c("none", "recognized", "not_recognized"),
+                              ordered = TRUE),
+             pa = ifelse(pa == "t", TRUE, FALSE),
+             pa_type = factor(pa_type,
+                              levels = c("none", "indirect_use", "direct_use"),
+                              ordered = TRUE),
+             adm0 = factor(adm0)
+             )
+       ]
+
+  stats[is.na(it_type), it_type := "none"]
+  stats[is.na(pa_type), pa_type := "none"]
+  stats[pa_type != "none" & it_type != "none",
+        overlap := paste(it_type, pa_type, sep = ":")]
+  stats[is.na(overlap), overlap := "none"]
+  stats[, overlap := factor(overlap,
+                            levels = c("none",
+                                       "recognized:indirect_use",
+                                       "recognized:direct_use",
+                                       "not_recognized:indirect_use",
+                                       "not_recognized:direct_use"),
+                            ordered = TRUE)]
+
+  setcolorder(stats,
+              c("id", "adm0",
+                "dm", "lossyear", "cover",
+                "primary_forest", "for_type",
+                "it", "it_type", "pa", "pa_type", "overlap",
+                "ea_east", "ea_north"))
+
+  saveRDS(stats, file.stats.proc)
+
+  rm(stats)
 
 }
