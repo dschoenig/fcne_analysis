@@ -62,7 +62,8 @@ for(i in seq_along(files.pred)) {
 
   res.l[[i]] <-
     data.table(id = pred.t$id,
-               res = qres)
+               fitted = pred.t$fitted,
+               residual = qres)
 
   rm(pred, pred.t, pred.fit, data.obs, pred.mat, qres)
 
