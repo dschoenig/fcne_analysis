@@ -2,10 +2,17 @@ library(data.table)
 library(sf)
 
 ## Folders
-path.raw <- "../data/raw/"
-path.aux <- "../data/auxiliary/"
-path.int <- "../data/intermediate/"
-path.proc <- "../data/processed/"
+path.data.raw <- "../data/raw/"
+path.data.aux <- "../data/auxiliary/"
+path.data.int <- "../data/intermediate/"
+path.data.proc <- "../data/processed/"
+
+if(!dir.exists(path.data.int)){
+  dir.create(path.data.int, recursive = TRUE)
+}
+if(!dir.exists(path.data.proc)){
+  dir.create(path.data.proc, recursive = TRUE)
+}
 
 n.fit <- 1e7
 n.val <- 2e6
@@ -18,17 +25,17 @@ for(i in 1:length(regions)) {
   
   message(paste0("Processing region '", regions[i], "` …")) 
 
-  file.data.raw <- paste0(path.raw, regions[i], ".vars.csv")
-  file.stats <- paste0(path.raw, regions[i], ".sumstats.csv")
-  file.areas.it <- paste0(path.raw, regions[i], ".indterr.csv")
-  file.areas.it_pts <- paste0(path.raw, regions[i], ".indterr_pts.csv")
-  file.areas.pa <- paste0(path.raw, regions[i], ".pareas.csv")
-  file.areas.pa_pts <- paste0(path.raw, regions[i], ".pareas_pts.csv")
+  file.data.raw <- paste0(path.data.raw, regions[i], ".vars.csv")
+  file.stats <- paste0(path.data.raw, regions[i], ".sumstats.csv")
+  file.areas.it <- paste0(path.data.raw, regions[i], ".indterr.csv")
+  file.areas.it_pts <- paste0(path.data.raw, regions[i], ".indterr_pts.csv")
+  file.areas.pa <- paste0(path.data.raw, regions[i], ".pareas.csv")
+  file.areas.pa_pts <- paste0(path.data.raw, regions[i], ".pareas_pts.csv")
 
-  file.data.fit.int <- paste0(path.int, regions[i], ".data.fit.int.rds")
-  file.data.val.int <- paste0(path.int, regions[i], ".data.val.int.rds")
-  file.areas.out <- paste0(path.proc, regions[i], ".areas.it_pa.rds")
-  file.stats.proc <- paste0(path.raw, regions[i], ".sumstats.proc.csv")
+  file.data.fit.int <- paste0(path.data.int, regions[i], ".data.fit.int.rds")
+  file.data.val.int <- paste0(path.data.int, regions[i], ".data.val.int.rds")
+  file.areas.out <- paste0(path.data.proc, regions[i], ".areas.it_pa.rds")
+  file.stats.proc <- paste0(path.data.raw, regions[i], ".sumstats.proc.csv")
 
   vars <- fread(file.data.raw, 
                 na.strings = "",
@@ -90,7 +97,7 @@ for(i in 1:length(regions)) {
 
   if(regions[i] == "cam") {
 
-    file.otto <- paste0(path.aux, "al162016_lin.gpkg")
+    file.otto <- paste0(path.data.aux, "al162016_lin.gpkg")
 
     crs.cam.ed <-
       st_crs('PROJCS["Central_America_Equidistant_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Equidistant_Conic"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900001"]]')
