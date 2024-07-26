@@ -1,0 +1,145 @@
+args <- commandArgs(trailingOnly = TRUE)
+
+library(data.table)
+library(arrow)
+library(dplyr)
+
+source("utilities.R")
+
+n.threads <- as.integer(args[1])
+region <- tolower(as.character(args[2]))
+
+
+draws.max <- 1000
+draws.load.chunk <- 100
+draws.eval.chunk <- 10
+
+# n.threads <- 1
+# region <- "cam"
+draws.max <- 8
+draws.load.chunk <- 4
+draws.eval.chunk <- 2
+
+setDTthreads(n.threads)
+set_cpu_count(n.threads)
+
+
+path.base <- "../"
+path.data.proc <- paste0(path.base, "data/processed/")
+path.pred <- paste0(path.base, "models/gam/pred/")
+path.agg <- paste0(path.base, "models/gam/agg/", region, "/")
+if(!dir.exists(path.agg))
+  dir.create(path.agg, recursive = TRUE)
+
+file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
+path.arrow <- paste0(path.pred, region, "/")
+
+file.agg <- paste0(path.agg, region, ".all.rds")
+
+
+id.var <- "id"
+data <- readRDS(file.data)
+merge.cols <- c(id.var, "adm0", "for_type")
+data <- data[, ..merge.cols]
+data[, type := "all"]
+
+group.sel <- c("group.id", "type", "adm0", "for_type")
+group.by <- list("type", "adm0", "for_type", c("adm0", "for_type"))
+
+groups.l <- list()
+for(i in seq_along(group.by)){
+  groups.l[[i]] <-
+    .ids_by_group(data,
+                  id.var = id.var,
+                  group.vars = group.by[[i]],
+                  add.label = FALSE)
+}
+groups <- rbindlist(groups.l, fill = TRUE)
+groups[, group.id := 1:nrow(groups)]
+setorder(groups, group.id)
+setcolorder(groups, c("group.id", unique(unlist(group.by))))
+groups[, type := rep(na.omit(unique(type)), .N)]
+
+
+pred.ds <- open_dataset(path.arrow, format = "arrow")
+
+draw.chunks.load <- chunk_seq(1, draws.max, draws.load.chunk)
+
+
+eval.agg.i <- list()
+
+for(i in seq_along(draw.chunks.load$from)) {
+
+  a <- Sys.time()
+
+  paste0("Loading predictions ", draw.chunks.load$from[i],
+         " to ", draw.chunks.load$to[i],
+         " …") |>
+  message()
+
+  pred.draw <-
+    pred.ds |>
+    filter(.draw >= draw.chunks.load$from[i] & .draw <= draw.chunks.load$to[i]) |>
+    select(.draw, all_of(id.var), forestloss) |>
+    collect() |>
+    merge(data[, ..merge.cols],
+          by = id.var, all.x = FALSE)
+
+  draw.chunks.eval <-
+    chunk_seq(draw.chunks.load$from[i],
+              draw.chunks.load$to[i],
+              draws.eval.chunk)
+
+  eval.agg.j <- list()
+
+  b <- Sys.time()
+  print(b-a)
+
+  for(j in seq_along(draw.chunks.eval$from)) {
+
+    a <- Sys.time()
+
+    paste0("Evaluating draws ", draw.chunks.eval$from[j],
+           " to ", draw.chunks.eval$to[j],
+           " …") |>
+    message()
+
+    pred.draw.j <- pred.draw[.draw %in% draw.chunks.eval$from[j]:draw.chunks.eval$to[j]]
+
+    message("  Aggregating predictions …")
+
+    pred.draw.agg.j <-
+      .aggregate_variables(pred.draw.j,
+                         ids = groups[[id.var]],
+                         id.var = id.var,
+                         pred.var = "forestloss",
+                         agg.name = "forestloss",
+                         agg.size = 1e6,
+                         parallel = n.threads)
+
+    eval.agg.j[[j]] <-
+      merge(pred.draw.agg.j, groups[, ..group.sel],
+            all.x = TRUE, all.y = FALSE, by = "group.id")
+  }
+
+  eval.agg.i[[i]] <- rbindlist(eval.agg.j)
+
+  b <- Sys.time()
+  print(b-a)
+
+  rm(eval.agg.j, pred.draw)
+  gc()
+}
+
+eval.agg <- rbindlist(eval.agg.i)
+setcolorder(eval.agg, group.sel)
+setorder(eval.agg, .draw, group.id)
+# eval.agg.fac[is.na(adm0), adm0 := "AMZ"]
+
+print(eval.agg)
+
+paste0("Saving aggregated predictions as ", file.agg, " …") |>
+message()
+
+saveRDS(eval.agg, file.agg)
+

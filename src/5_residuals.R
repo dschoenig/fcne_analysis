@@ -13,7 +13,7 @@ path.base <- "../"
 path.data.proc <- paste0(path.base, "data/processed/")
 path.mod <- paste0(path.base, "models/gam/")
 path.pred <- paste0(path.mod, "pred/")
-path.arrow <- paste0(path.pred, region, "/")
+path.arrow <- paste0(path.pred, region)
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 files.pred <- list.files(path.arrow, ".arrow", full.names = TRUE)
 
