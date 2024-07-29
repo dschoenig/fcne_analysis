@@ -18,24 +18,24 @@ n.fit <- 1e7
 n.val <- 2e6
 
 regions <- c("amz", "cam")
-regions <- c("cam")
+# regions <- c("cam")
 
 
 for(i in 1:length(regions)) {
   
   message(paste0("Processing region '", regions[i], "` …")) 
 
-  file.data.raw <- paste0(path.data.raw, regions[i], ".vars.csv")
-  file.stats <- paste0(path.data.raw, regions[i], ".sumstats.csv")
+  file.data.raw <- paste0(path.data.raw, regions[i], ".1120.vars.csv")
+  file.stats <- paste0(path.data.raw, regions[i], ".sumstats_2015.csv")
   file.areas.it <- paste0(path.data.raw, regions[i], ".indterr.csv")
-  file.areas.it_pts <- paste0(path.data.raw, regions[i], ".indterr_pts.csv")
+  file.areas.it_pts <- paste0(path.data.raw, regions[i], ".1120.indterr_pts.csv")
   file.areas.pa <- paste0(path.data.raw, regions[i], ".pareas.csv")
-  file.areas.pa_pts <- paste0(path.data.raw, regions[i], ".pareas_pts.csv")
+  file.areas.pa_pts <- paste0(path.data.raw, regions[i], ".1120.pareas_pts.csv")
 
   file.data.fit.int <- paste0(path.data.int, regions[i], ".data.fit.int.rds")
   file.data.val.int <- paste0(path.data.int, regions[i], ".data.val.int.rds")
   file.areas.out <- paste0(path.data.proc, regions[i], ".areas.it_pa.rds")
-  file.stats.proc <- paste0(path.data.raw, regions[i], ".sumstats.proc.csv")
+  file.stats.proc <- paste0(path.data.proc, regions[i], ".sumstats.proc.csv")
 
   vars <- fread(file.data.raw, 
                 na.strings = "",

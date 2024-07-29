@@ -267,7 +267,7 @@ if(!file.exists(file.data.vis)) {
     file.fl.geo.all <- paste0(path.forestloss, region, "/", region, ".geo.af", hurr_suf_mar, ".rds")
     file.mar.geo <- paste0(path.marginal, region, "/", region, ".geo.af.itpa", hurr_suf_mar, ".rds")
     file.limit <- paste0(path.data.raw, region, ".limit.gpkg")
-    file.areas <- paste0(path.data.raw, region, ".areas_union.gpkg")
+    file.areas <- paste0(path.data.raw, region, ".areas_union_2015.gpkg")
 
 
     # Treatment of auxilary geospatial data
