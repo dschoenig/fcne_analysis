@@ -13,7 +13,7 @@ if(!dir.exists(path.som)){
 
 region <- tolower(as.character(args[1]))
 n.cores <- as.integer(args[2])
-# region <- "cam"
+# region <- "amz"
 # n.cores <- 4
 
 # SOM parameters
