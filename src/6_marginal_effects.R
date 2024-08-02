@@ -93,7 +93,7 @@ if(cf_type == "ten.areas") {
 
 draw.chunks.load <- chunk_seq(1, draws.max, draws.load.chunk)
 if(cf_type == "geo") {
-  group.chunks <- chunk_seq(1, nrow(cf$groups), 1000)
+  group.chunks <- chunk_seq(1, nrow(cf$groups), 10000)
 } else {
   group.chunks <- chunk_seq(1, nrow(cf$groups), 100)
 }
