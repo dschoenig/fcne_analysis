@@ -32,9 +32,9 @@ file.data.fit.int <- paste0(path.data, region, ".data.fit.int.rds")
 file.prefix.som <- paste0(path.som, region, ".som.")
 
 cov <-
-  c("elevation", "slope", "sx", "cover",
+  c("elevation", "slope", "sx",
     "dist_set", "dist_roads", "dist_rivers",
-    "dens_pop", "dens_roads")
+    "dens_pop", "dens_roads", "travel_time")
 
 data <-
   readRDS(file.data.fit.int) |>

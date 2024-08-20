@@ -6,11 +6,6 @@ library(kohonen)
 library(mvnfast)
 source("utilities.R")
 
-## Paths
-path.data.proc <- "../data/processed/"
-path.som <- "../models/som/"
-path.gam <- "../models/gam/"
-
 model.reg <- tolower(as.character(args[1]))
 model.id <- as.integer(args[2])
 if(length(args) < 3) {
@@ -22,6 +17,10 @@ if(length(args) < 3) {
 # model.id <- 7
 # n.threads <- c(2,1)
 
+## Paths
+path.data.proc <- "../data/processed/"
+path.som <- "../models/som/"
+path.gam <- "../models/gam/"
 
 if(!dir.exists(path.gam))
   dir.create(path.gam, recursive = TRUE)
