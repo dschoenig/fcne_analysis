@@ -15,10 +15,10 @@ if(length(args) < 4) {
   n.threads <- as.integer(args[4])
 }
 
-# model.reg <- "amz"
-# model.id <- 1
-# model.resp <- "def"
-# n.threads <- c(2,1)
+model.reg <- "amz"
+model.id <- 1
+model.resp <- "def"
+n.threads <- c(2,1)
 
 ## Paths
 path.data.proc <- "../data/processed/"
@@ -78,7 +78,7 @@ var.resp <-
 vars.mod <-
   c(var.resp,
     "it_type", "pa_type", "overlap",
-    "ed_east", "ed_north", "adm0"
+    "ed_east", "ed_north", "adm0",
     "som_x", "som_y",
     "elevation", "slope", "sx",
     "dist_set", "dist_roads", "dist_rivers",
@@ -92,17 +92,16 @@ rm(data.proc)
 k.def <- k.reg[[model.reg]]
 max.knots.def <- max.knots.reg[[model.reg]]
 
-# FOR TESTING ONLY:
-k.def = k.def / 100
-max.knots.def = max.knots.def / 10
-data.mod <- data.mod[1:1e5,]
+# # FOR TESTING ONLY:
+# k.def = k.def / 100
+# max.knots.def = max.knots.def / 10
+# data.mod <- data.mod[1:1e5,]
 
 message(paste0("Fitting model `", model.name, "` …"))
 
 a <- Sys.time()
 
 if(model.id == 1) {
- 
   mod.form <-
     formula( ~
             # Tenure effects, continuous variation over geographic location
@@ -126,9 +125,7 @@ if(model.id == 1) {
             # Covariates
             s(som_x, som_y, bs = 'gp', k = k.def["som"],
               xt = list(max.knots = max.knots.def["som"]))) |>
-update(var.resp)
-
-  # Same as `3`, but vary baseline risk by forest type, doubled k
+    update(as.formula(paste0(var.resp, "~.")))
   model <-
     bam(mod.form,
         family = binomial(link = "cloglog"),
