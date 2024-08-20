@@ -107,7 +107,6 @@ for(i in seq_along(datasets)) {
           .(comp, comp.type,
             id,
             area.id, it.id, pa.id,
-            for_type,
             it_type, pa_type, overlap,
             ed_east, ed_north,
             hurr_otto,
@@ -122,7 +121,6 @@ for(i in seq_along(datasets)) {
           .(comp, comp.type,
             id,
             area.id, it.id, pa.id,
-            for_type,
             it_type, pa_type, overlap,
             ed_east, ed_north,
             som_bmu)]
