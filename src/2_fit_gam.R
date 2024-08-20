@@ -15,10 +15,10 @@ if(length(args) < 4) {
   n.threads <- as.integer(args[4])
 }
 
-model.reg <- "amz"
-model.id <- 1
-model.resp <- "def"
-n.threads <- c(2,1)
+# model.reg <- "amz"
+# model.id <- 1
+# model.resp <- "def"
+# n.threads <- c(2,1)
 
 ## Paths
 path.data.proc <- "../data/processed/"
