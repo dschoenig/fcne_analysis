@@ -6,12 +6,10 @@ source("utilities.R")
 
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
-for_type <- tolower(as.character(args[3]))
-area_type <- tolower(as.character(args[4]))
-hurr_type <- tolower(as.character(args[5]))
+area_type <- tolower(as.character(args[3]))
+hurr_type <- tolower(as.character(args[4]))
 
-# region <- "cam"
-# for_type <- "pf"
+# region <- "amz"
 # area_type <- "it"
 # hurr_type <- NA
 
@@ -30,7 +28,7 @@ map.res <- switch(region,
                   amz = 1e4,
                   cam = 5e3)
 
-paste0("Settings: ", paste(area_type, for_type, map.res, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(area_type, map.res, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
@@ -43,16 +41,12 @@ if(!dir.exists(path.cf))
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
 file.out <- paste0(path.cf, region, ".geo.",
-                   for_type, ".",
                    area_type, hurr_suf, ".rds")
 
 data <- readRDS(file.data)
 som.fit <- readRDS(file.som)
 
 
-if(for_type == "pf") {
-  data <- data[primary_forest == TRUE]
-}
 if(region == "cam" & hurr_type == "no_otto") {
   data <- data[hurr_otto == FALSE]
 }
@@ -70,17 +64,17 @@ data <-
 if(area_type == "it") {
   cf.ids <- data[it_type == "none", id]  
   fac.ids <- data[it_type != "none", id]  
-  comp.by <- c("for_type", "pa_type")
+  comp.by <- c("pa_type")
 }
 if(area_type == "pa") {
   cf.ids <- data[pa_type == "none", id]  
   fac.ids <- data[pa_type != "none", id]  
-  comp.by <- c("for_type", "it_type")
+  comp.by <- c("it_type")
 }
 if(area_type == "itpa") {
   cf.ids <- data[it_type == "none" & pa_type == "none", id]  
   fac.ids <- data[it_type != "none" | pa_type != "none", id]  
-  comp.by <- "for_type"
+  comp.by <- NULL
 }
 
 group.by <- list(c("ea_east.bin", "ea_north.bin"))
@@ -107,7 +101,7 @@ message("Defining counterfactual …")
 
 data.cf <-
   copy(data[, .(id, adm0,
-                it_type, pa_type, for_type,
+                it_type, pa_type,
                 som_bmu, ed_east, ed_north,
                 ea_east.bin, ea_north.bin)])
 rm(data)

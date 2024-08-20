@@ -6,14 +6,12 @@ source("utilities.R")
 
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
-for_type <- tolower(as.character(args[3]))
-comp_sel <- tolower(as.character(args[4]))
-ov_type <- tolower(as.character(args[5]))
-hurr_type <- tolower(as.character(args[6]))
+comp_sel <- tolower(as.character(args[3]))
+ov_type <- tolower(as.character(args[4]))
+hurr_type <- tolower(as.character(args[5]))
 
 # n.threads <- 1
 # region <- "cam"
-# for_type <- "af"
 # comp_sel <- "pa_mar"
 # ov_type <- "ov"
 # hurr_type <- "no_otto"
@@ -30,7 +28,7 @@ if(hurr_type == "no_otto" & region == "cam") {
 }
 
 
-paste0("Settings: ", paste(comp_sel, for_type, ov_type, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(comp_sel, ov_type, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
@@ -44,7 +42,6 @@ file.data <- paste0(path.data.proc, region, ".data.areas.rds")
 file.areas <- paste0(path.data.proc, region, ".areas.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
 file.out <- paste0(path.cf, region, ".ten.areas.",
-                   for_type, ".",
                    comp_sel, ".",
                    ov_type, hurr_suf, ".rds")
 
@@ -54,9 +51,6 @@ som.fit <- readRDS(file.som)
 
 data <- data[comp == comp_sel]
 
-if(for_type == "pf") {
-  data <- data[for_type == "primary"]
-}
 if(region == "cam" & hurr_type == "no_otto") {
   data <- data[hurr_otto == FALSE]
 }
@@ -80,15 +74,15 @@ cf.ids <- data[comp.type == "cf", uid]
 fac.ids <- data[comp.type == "fac", uid]
 
 if(comp_sel == "full") {
-    comp.by <- c("for_type")
+    comp.by <- "NULL"
     group.by <- list("area.id")
 }
 if(comp_sel == "it_mar") {
-    comp.by <- c("for_type", "pa_type")
+    comp.by <- c("pa_type")
     group.by <- list("it.id")
 }
 if(comp_sel == "pa_mar") {
-    comp.by <- c("for_type", "it_type")
+    comp.by <- c("it_type")
     group.by <- list("pa.id")
 }
 

@@ -46,9 +46,9 @@ for(i in seq_along(datasets)) {
   data.int <- readRDS(file.data.int)
 
   cov <-
-    c("elevation", "slope", "sx", "cover",
+    c("elevation", "slope", "sx",
       "dist_set", "dist_roads", "dist_rivers",
-      "dens_pop", "dens_roads")
+      "dens_pop", "dens_roads", "travel_time")
 
   embedded <-
     egp_embed(data.int[, ..cov],

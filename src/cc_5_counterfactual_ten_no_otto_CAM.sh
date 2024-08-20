@@ -11,23 +11,6 @@ module load StdEnv/2023 gcc/12.3 gdal/3.7.2 geos/3.12.0 python/3.11.5 udunits/2.
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-Rscript 5_counterfactual_ten.R 4 cam af it all no_otto
-Rscript 5_counterfactual_ten.R 4 cam af it no_ov no_otto
-Rscript 5_counterfactual_ten.R 4 cam af it ov no_otto
-
-Rscript 5_counterfactual_ten.R 4 cam af pa all no_otto
-Rscript 5_counterfactual_ten.R 4 cam af pa no_ov no_otto
-Rscript 5_counterfactual_ten.R 4 cam af pa ov no_otto
-
-Rscript 5_counterfactual_ten.R 4 cam af itpa all no_otto
-
-
-Rscript 5_counterfactual_ten.R 4 cam pf it all no_otto
-Rscript 5_counterfactual_ten.R 4 cam pf it no_ov no_otto
-Rscript 5_counterfactual_ten.R 4 cam pf it ov no_otto
-
-Rscript 5_counterfactual_ten.R 4 cam pf pa all no_otto
-Rscript 5_counterfactual_ten.R 4 cam pf pa no_ov no_otto
-Rscript 5_counterfactual_ten.R 4 cam pf pa ov no_otto
-
-Rscript 5_counterfactual_ten.R 4 cam pf itpa all no_otto
+Rscript 5_counterfactual_ten.R 4 amz it ov no_otto
+Rscript 5_counterfactual_ten.R 4 amz pa ov no_otto
+Rscript 5_counterfactual_ten.R 4 amz itpa all no_otto

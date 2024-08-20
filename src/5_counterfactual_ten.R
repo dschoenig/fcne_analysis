@@ -6,14 +6,12 @@ source("utilities.R")
 
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
-for_type <- tolower(as.character(args[3]))
 area_type <- tolower(as.character(args[4]))
 ov_type <- tolower(as.character(args[5]))
 hurr_type <- tolower(as.character(args[6]))
 
 # n.threads <- 1
 # region <- "amz"
-# for_type <- "pf"
 # area_type <- "it"
 # ov_type <- "ov"
 # hurr_type <- NA
@@ -30,7 +28,7 @@ if(hurr_type == "no_otto" & region == "cam") {
 }
 
 
-paste0("Settings: ", paste(area_type, for_type, ov_type, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(area_type, ov_type, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
@@ -43,7 +41,6 @@ if(!dir.exists(path.cf))
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
 file.out <- paste0(path.cf, region, ".ten.",
-                   for_type, ".",
                    area_type, ".",
                    ov_type, hurr_suf, ".rds")
 
@@ -51,9 +48,6 @@ data <- readRDS(file.data)
 
 som.fit <- readRDS(file.som)
 
-if(for_type == "pf") {
-  data <- data[primary_forest == TRUE]
-}
 if(region == "cam" & hurr_type == "no_otto") {
   data <- data[hurr_otto == FALSE]
 }
@@ -73,14 +67,14 @@ if(area_type %in% c("it", "pa")) {
   if(area_type == "it") {
     cf.ids <- data[it_type == "none", id]  
     fac.ids <- data[it_type != "none", id]  
-    comp.by <- c("for_type", "pa_type")
+    comp.by <- c("pa_type")
     group.var1 <- "it_type"
     group.var2 <- "pa_type"
   }
   if(area_type == "pa") {
     cf.ids <- data[pa_type == "none", id]  
     fac.ids <- data[pa_type != "none", id]  
-    comp.by <- c("for_type", "it_type")
+    comp.by <- c("it_type")
     group.var1 <- "pa_type"
     group.var2 <- "it_type"
   }
@@ -99,7 +93,7 @@ if(area_type %in% c("it", "pa")) {
 if(area_type == "itpa") {
   cf.ids <- data[it_type == "none" & pa_type == "none", id]  
   fac.ids <- data[it_type != "none" | pa_type != "none", id]  
-  comp.by <- "for_type"
+  comp.by <- NULL
   group.var1 <- "pa_type"
   group.var2 <- "it_type"
   group.by <- list(NULL,
@@ -134,7 +128,7 @@ message("Defining counterfactual …")
 
 data.cf <-
   copy(data[, .(id, adm0,
-                it_type, pa_type, for_type,
+                it_type, pa_type, 
                 som_bmu, ed_east, ed_north)])
 rm(data)
 silence <- gc()

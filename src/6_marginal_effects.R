@@ -9,7 +9,7 @@ source("utilities.R")
 n.threads <- as.integer(args[1])
 cf_type <- tolower(as.character(args[2]))
 region <- tolower(as.character(args[3]))
-for_type <- tolower(as.character(args[4]))
+resp_type <- tolower(as.character(args[4]))
 area_type <- tolower(as.character(args[5]))
 ov_type <- tolower(as.character(args[6]))
 hurr_type <- tolower(as.character(args[7]))
@@ -56,7 +56,7 @@ if(hurr_type == "no_otto" & region == "cam") {
   hurr_suf <- ""
 }
 
-paste0("Settings: ", paste(cf_type, for_type, area_type, ov_type, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(resp_type, cf_type, area_type, ov_type, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
@@ -71,14 +71,13 @@ file.data.areas <- paste0(path.data.proc, region, ".data.areas.rds")
 file.cf <- paste0(path.cf,
                   region, ".",
                   cf_type, ".",
-                  for_type, ".",
                   area_type, ov_suf, hurr_suf, ".rds")
 file.mar <- paste0(path.mar,
                    region, ".",
+                   resp_type, ".",
                    cf_type, ".",
-                   for_type, ".",
                    area_type, ov_suf, hurr_suf, ".rds")
-path.arrow <- paste0(path.pred, region, "/")
+path.arrow <- paste0(path.pred, region, "/", resp_type, "/")
 
 
 cf <- readRDS(file.cf)

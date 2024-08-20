@@ -13,33 +13,49 @@ path.data.proc <- paste0(path.base, "data/processed/")
 path.pred <- paste0(path.base, "models/gam/pred/")
 
 region <- tolower(as.character(args[1]))
-task_id <- as.integer(args[2])
-task_count <- as.integer(args[3])
+model.resp <- tolower(as.character(args[2]))
+task_id <- as.integer(args[3])
+task_count <- as.integer(args[4])
 
 # region <- "amz"
+# model.resp <- "def"
 # task_id <- 1
 # task_count <- 100
 
-file.gam <- paste0(path.gam, region, ".m7.rds")
-file.post <- paste0(path.gam, region,  ".m7.post.rds")
+file.model <- paste0(path.gam, region, ".m1.", model.resp, ".rds")
+file.post <- paste0(path.gam, region, ".m1.", model.resp, ".post.rds")
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 
-path.out <- paste0(path.pred, region, "/")
+path.out <- paste0(path.pred, region, "/", model.resp, "/")
 if(!dir.exists(path.out))
   dir.create(path.out, recursive = TRUE)
 file.out <-
-  paste0(path.out, region, ".", stri_pad_left(task_id, 3, 0) , ".arrow")
+  paste0(path.out, region, ".", model.resp, ".", stri_pad_left(task_id, 3, 0) , ".arrow")
 
 ## EVALUATE LINEAR PREDICTOR BASED ON DRAWS FROM MODEL POSTERIOR ###############
 
 # Load model, posterior draws, and data
-gam <- readRDS(file.gam)
+gam <- readRDS(file.model)
 post <- readRDS(file.post)
 data <- readRDS(file.data)
 
+var.resp <-
+  switch(model.resp,
+         "def" = "deforestation",
+         "deg" = "degradation",
+         "dis" = "disturbance")
+
+vars.pred <-
+  c("id", var.resp,
+    "it_type", "pa_type", "overlap",
+    "ed_east", "ed_north", "adm0"
+    "som_x", "som_y",
+    "elevation", "slope", "sx",
+    "dist_set", "dist_roads", "dist_rivers",
+    "dens_pop", "dens_roads", "travel_time")
+
 # Data for prediction
-data.pred <- data[,.(id, forestloss, for_type, it_type, pa_type, overlap,
-                     som_x, som_y, ed_east, ed_north, adm0)]
+data.pred <- data[, ..vars.pred]
 rm(data)
 
 # Construct chunk overview
@@ -57,7 +73,7 @@ data.pred <- data.pred[row.chunks$from[task_id]:row.chunks$to[task_id],]
 silence <- gc()
 
 
-message(paste0("Generating predictions for model ", region, ".m7, ",
+message(paste0("Generating predictions for model ", region, ".m1, ",
         "using draws from the posterior distribution.\n"))
 message(paste0("Processing rows ", row.chunks$from[task_id],
         " to ", row.chunks$to[task_id],
@@ -74,7 +90,7 @@ pred <-
                         id.var = "id",
                         type = "response",
                         epred = FALSE,
-                        pred.name = "forestloss",
+                        pred.name = var.resp,
                         predict.chunk = 500,
                         post.chunk = 200,
                         progress = TRUE
