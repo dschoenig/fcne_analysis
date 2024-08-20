@@ -21,7 +21,7 @@ draws.eval.chunk <- 10
 # n.threads <- 4
 # cf_type <- "geo"
 # region <- "amz"
-# for_type <- "af"
+# resp_type <- "def"
 # area_type <- "pa"
 # ov_type <- "na"
 # hurr_type <- NA
@@ -29,7 +29,7 @@ draws.eval.chunk <- 10
 # n.threads <- 1
 # cf_type <- "ten.areas"
 # region <- "amz"
-# for_type <- "pf"
+# resp_type <- "deg"
 # area_type <- "full"
 # ov_type <- "all"
 # hurr_type <- NA
@@ -97,6 +97,14 @@ if(cf_type == "geo") {
   group.chunks <- chunk_seq(1, nrow(cf$groups), 100)
 }
 
+resp.var <-
+  switch(resp_type,
+         "def" = "deforestation",
+         "deg" = "degradation",
+         "dis" = "disturbance")
+
+select.var <- c(".draw", "id", resp.var)
+
 
 eval.mar.i <- list()
 
@@ -112,7 +120,7 @@ for(i in seq_along(draw.chunks.load$from)) {
   pred.draw <-
     pred.ds |>
     filter(.draw >= draw.chunks.load$from[i] & .draw <= draw.chunks.load$to[i]) |>
-    select(.draw, id, forestloss) |>
+    select(all_of(select.var)) |>
     collect()
 
   if(cf_type == "ten.areas") {
@@ -153,7 +161,7 @@ for(i in seq_along(draw.chunks.load$from)) {
       egp_evaluate_factual(predictions = pred.draw.j,
                            cf.def = cf,
                            name = "factual",
-                           pred.var = "forestloss",
+                           pred.var = resp.var,
                            draw.chunk = NULL,
                            agg.size = 1e6,
                            parallel = n.threads,
@@ -177,7 +185,7 @@ for(i in seq_along(draw.chunks.load$from)) {
                                     cf.def = cf,
                                     name = "counterfactual",
                                     group.eval = group.chunks$from[k]:group.chunks$to[k],
-                                    pred.var = "forestloss",
+                                    pred.var = resp.var,
                                     draw.chunk = NULL,
                                     agg.size = 1e6,
                                     parallel = n.threads,

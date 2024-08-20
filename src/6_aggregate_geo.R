@@ -8,12 +8,11 @@ source("utilities.R")
 
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
-for_type <- tolower(as.character(args[3]))
+resp_type <- tolower(as.character(args[3]))
 hurr_type <- tolower(as.character(args[4]))
 
 # n.threads <- 4
 # region <- "cam"
-# for_type <- "pf"
 # hurr_type <- NA
 
 draws.max <- 1000
@@ -36,27 +35,24 @@ map.res <- switch(region,
                   amz = 1e4,
                   cam = 5e3)
 
-paste0("Settings: ", paste(for_type, map.res, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(resp_type, map.res, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
 path.data.proc <- paste0(path.base, "data/processed/")
 path.pred <- paste0(path.base, "models/gam/pred/")
 path.arrow <- paste0(path.pred, region, "/")
-path.forestloss <- paste0(path.base, "models/forestloss/", region, "/")
-if(!dir.exists(path.forestloss))
-  dir.create(path.forestloss, recursive = TRUE)
+path.arrow <- paste0(path.pred, region, "/", resp_type, "/")
+if(!dir.exists(path.agg))
+  dir.create(path.agg, recursive = TRUE)
 
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.out <- paste0(path.forestloss, region, ".geo.",
-                   for_type, hurr_suf, ".rds")
+file.agg <- paste0(path.agg, region, ".", resp_type, ".geo", hurr_suf, ".rds")
 
 data <- readRDS(file.data)
 
-if(for_type == "pf") {
-  data <- data[primary_forest == TRUE]
-}
+
 if(region == "cam" & hurr_type == "no_otto") {
   data <- data[hurr_otto == FALSE]
 }
@@ -75,7 +71,7 @@ group.by <- list(c("ea_east.bin", "ea_north.bin"))
 paste0("No. of data: ", nrow(data)) |>
 message()
 
-paste0("Aggregated predictions will be saved as ", file.out) |>
+paste0("Aggregated predictions will be saved as ", file.agg) |>
 message()
 
 message("Aggregating predictions …")
@@ -93,7 +89,15 @@ pred.ds <- open_dataset(path.arrow, format = "arrow")
 
 draw.chunks.load <- chunk_seq(1, draws.max, draws.load.chunk)
 
-eval.fl.l <- list()
+resp.var <-
+  switch(resp_type,
+         "def" = "deforestation",
+         "deg" = "degradation",
+         "dis" = "disturbance")
+
+select.var <- c(".draw", id.var, resp.var)
+
+eval.agg.l <- list()
 
 for(i in seq_along(draw.chunks.load$from)) {
 
@@ -107,20 +111,20 @@ for(i in seq_along(draw.chunks.load$from)) {
   pred.draw <-
     pred.ds |>
     filter(.draw >= draw.chunks.load$from[i] & .draw <= draw.chunks.load$to[i]) |>
-    select(.draw, id, forestloss) |>
+    select(all_of(select.var)) |>
     collect()
 
   b <- Sys.time()
   print(b-a)
 
-  eval.fl.l[[i]] <-
+  eval.agg.l[[i]] <-
     .aggregate_variables.data.table(predictions = pred.draw,
                                     agg.fun = mean,
                                     ids = idx.geo$id,
-                                    pred.var = "forestloss",
+                                    pred.var = resp.var,
                                     draw.var = ".draw",
                                     id.var = "id",
-                                    agg.name = "forestloss",
+                                    agg.name = resp.var,
                                     group.name = "group.id",
                                     draw.chunk = draws.eval.chunk,
                                     agg.size = 1e6,
@@ -135,11 +139,15 @@ for(i in seq_along(draw.chunks.load$from)) {
 
 }
 
-eval.fl <- rbindlist(eval.fl.l)
+eval.agg <- rbindlist(eval.agg.l)
 
-fl <- merge(idx.geo[, -"id"], eval.fl)
+agg <- merge(idx.geo[, -"id"], eval.agg)
+setorder(agg, .draw, group.id)
 
-message("Saving output …")
+print(agg)
 
-saveRDS(fl, file.out)
+paste0("Saving aggregated predictions as ", file.agg, " …") |>
+message()
+
+saveRDS(agg, file.agg)
 gc()

@@ -105,53 +105,32 @@ if(model.id == 1) {
  
   mod.form <-
     formula( ~
-        # Tenure effects, continuous variation over geographic location
-        s(ed_east, ed_north, bs = 'gp',
-          k = k.def["ten_loc.bl"],
-          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = it_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = pa_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = overlap, k = k.def["ten_loc.ov"],
-          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        # Tenure effects, discontinuous variation between countries
-        s(adm0, bs = "re") +
-        s(adm0, it_type, bs = "re") +
-        s(adm0, pa_type, bs = "re") +
-        s(adm0, it_type, pa_type, bs = "re") +
-        # Covariates
-        s(som_x, som_y, bs = 'gp', k = k.def["som"],
-          xt = list(max.knots = max.knots.def["som"]))) |>
-    update(var.resp)
+            # Tenure effects, continuous variation over geographic location
+            s(ed_east, ed_north, bs = 'gp',
+              k = k.def["ten_loc.bl"],
+              xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
+            s(ed_east, ed_north, bs = 'gp',
+              by = it_type, k = k.def["ten_loc.itpa"],
+              xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+            s(ed_east, ed_north, bs = 'gp',
+              by = pa_type, k = k.def["ten_loc.itpa"],
+              xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
+            s(ed_east, ed_north, bs = 'gp',
+              by = overlap, k = k.def["ten_loc.ov"],
+              xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
+            # Tenure effects, discontinuous variation between countries
+            s(adm0, bs = "re") +
+            s(adm0, it_type, bs = "re") +
+            s(adm0, pa_type, bs = "re") +
+            s(adm0, it_type, pa_type, bs = "re") +
+            # Covariates
+            s(som_x, som_y, bs = 'gp', k = k.def["som"],
+              xt = list(max.knots = max.knots.def["som"]))) |>
+update(var.resp)
 
   # Same as `3`, but vary baseline risk by forest type, doubled k
   model <-
-    bam(forestloss ~
-        # Tenure effects, continuous variation over geographic location
-        s(ed_east, ed_north, bs = 'gp',
-          k = k.def["ten_loc.bl"],
-          xt = list(max.knots = max.knots.def["ten_loc.bl"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = it_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = pa_type, k = k.def["ten_loc.itpa"],
-          xt = list(max.knots = max.knots.def["ten_loc.itpa"])) +
-        s(ed_east, ed_north, bs = 'gp',
-          by = overlap, k = k.def["ten_loc.ov"],
-          xt = list(max.knots = max.knots.def["ten_loc.ov"])) +
-        # Tenure effects, discontinuous variation between countries
-        s(adm0, bs = "re") +
-        s(adm0, it_type, bs = "re") +
-        s(adm0, pa_type, bs = "re") +
-        s(adm0, it_type, pa_type, bs = "re") +
-        # Covariates
-        s(som_x, som_y, bs = 'gp', k = k.def["som"],
-          xt = list(max.knots = max.knots.def["som"])),
+    bam(mod.form,
         family = binomial(link = "cloglog"),
         data = data.mod,
         select = TRUE,

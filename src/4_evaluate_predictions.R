@@ -104,9 +104,9 @@ silence <- gc()
 
 # Prepare export
 
-pred[, forestloss := as.logical(forestloss)]
+pred[, resp.col := as.logical(resp.col), env = list(resp.col = var.resp)]
 pred[, .draw.chunk := factor(ceiling(.draw/100), levels = as.character(1:10))]
-setcolorder(pred, c(".draw.chunk", ".draw", "id", "forestloss"))
+setcolorder(pred, c(".draw.chunk", ".draw", "id", var.resp))
 
 setorder(pred, .draw.chunk, .draw, id)
 
