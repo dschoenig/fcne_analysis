@@ -4,7 +4,7 @@ library(data.table)
 library(sf)
 
 region <- tolower(as.character(args[1]))
-# region <- "amz"
+# region <- "cam"
 
 ## Paths
 path.data.raw <- "../data/raw/"
