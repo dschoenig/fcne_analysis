@@ -48,7 +48,7 @@ var.resp <-
 vars.pred <-
   c("id", var.resp,
     "it_type", "pa_type", "overlap",
-    "ed_east", "ed_north", "adm0"
+    "ed_east", "ed_north", "adm0",
     "som_x", "som_y",
     "elevation", "slope", "sx",
     "dist_set", "dist_roads", "dist_rivers",

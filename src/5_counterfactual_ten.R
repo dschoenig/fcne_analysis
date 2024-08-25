@@ -6,9 +6,9 @@ source("utilities.R")
 
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
-area_type <- tolower(as.character(args[4]))
-ov_type <- tolower(as.character(args[5]))
-hurr_type <- tolower(as.character(args[6]))
+area_type <- tolower(as.character(args[3]))
+ov_type <- tolower(as.character(args[4]))
+hurr_type <- tolower(as.character(args[5]))
 
 # n.threads <- 1
 # region <- "amz"

@@ -33,16 +33,16 @@ model.name <- paste0(model.reg, ".m", model.id, ".", model.resp)
 
 k.reg <- list(cam = c(
                       # ten_loc.bl = 5000,
-                      ten_loc.bl = 2500,
-                      ten_loc.itpa = 1000,
+                      ten_loc.bl = 5000,
+                      ten_loc.itpa = 1500,
                       ten_loc.ov = 500,
-                      som = 2500),
+                      som = 5000),
               amz = c(
                       # ten_loc.bl = 5000,
-                      ten_loc.bl = 2500,
-                      ten_loc.itpa = 1000,
+                      ten_loc.bl = 5000,
+                      ten_loc.itpa = 1500,
                       ten_loc.ov = 500,
-                      som = 2500))
+                      som = 5000))
 # Increase number of maximum knots 10-fold (default: 2000)
 max.knots.reg <- list(cam = c(
                               ten_loc.bl = 2e4,
