@@ -13,24 +13,24 @@ path.data.proc <- paste0(path.base, "data/processed/")
 path.pred <- paste0(path.base, "models/gam/pred/")
 
 region <- tolower(as.character(args[1]))
-model.resp <- tolower(as.character(args[2]))
+model_resp <- tolower(as.character(args[2]))
 task_id <- as.integer(args[3])
 task_count <- as.integer(args[4])
 
 # region <- "amz"
-# model.resp <- "def"
+# model_resp <- "def"
 # task_id <- 1
 # task_count <- 100
 
-file.model <- paste0(path.gam, region, ".m1.", model.resp, ".rds")
-file.post <- paste0(path.gam, region, ".m1.", model.resp, ".post.rds")
+file.model <- paste0(path.gam, region, ".m1.", model_resp, ".rds")
+file.post <- paste0(path.gam, region, ".m1.", model_resp, ".post.rds")
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 
-path.out <- paste0(path.pred, region, "/", model.resp, "/")
+path.out <- paste0(path.pred, region, "/", model_resp, "/")
 if(!dir.exists(path.out))
   dir.create(path.out, recursive = TRUE)
 file.out <-
-  paste0(path.out, region, ".", model.resp, ".", stri_pad_left(task_id, 3, 0) , ".arrow")
+  paste0(path.out, region, ".", model_resp, ".", stri_pad_left(task_id, 3, 0) , ".arrow")
 
 ## EVALUATE LINEAR PREDICTOR BASED ON DRAWS FROM MODEL POSTERIOR ###############
 
@@ -40,7 +40,7 @@ post <- readRDS(file.post)
 data <- readRDS(file.data)
 
 var.resp <-
-  switch(model.resp,
+  switch(model_resp,
          "def" = "deforestation",
          "deg" = "degradation",
          "dis" = "disturbance")
