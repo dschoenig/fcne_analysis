@@ -123,6 +123,8 @@ for(i in seq_along(draw.chunks.load$from)) {
     select(all_of(select.var)) |>
     collect()
 
+  pred.draw[, resp.col := as.numeric(resp.col), env = list(resp.col = resp.var)]
+
   if(cf_type == "ten.areas") {
     pred.draw <-
       merge(pred.draw, dict.idx, all.x = TRUE, all.y = FALSE,
@@ -204,7 +206,7 @@ for(i in seq_along(draw.chunks.load$from)) {
                    marginal.name = "marginal")
 
     rm(eval.fac, eval.cf, pred.draw.j)
-    gc()
+    # gc()
 
     b <- Sys.time()
     print(b-a)
