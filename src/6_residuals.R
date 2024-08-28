@@ -21,7 +21,7 @@ files.pred <- list.files(path.arrow, ".arrow", full.names = TRUE)
 file.res <- paste0(path.mod, region, ".m1.", resp_type, ".res.rds")
 
 resp.var <-
-  switch(model.resp,
+  switch(resp_type,
          "def" = "deforestation",
          "deg" = "degradation",
          "dis" = "disturbance")
