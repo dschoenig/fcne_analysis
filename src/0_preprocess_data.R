@@ -99,31 +99,59 @@ sam.idx <- sample(na.omit(vars)$id, n.fit+n.val)
 data.int <- vars[.(sam.idx), on = "id"]
 
 
-# For Central America only: Flag points close to hurricane Otto (2016)
+# For Central America only: Flag points close to hurricanes Otto (2016),
+# Eta (2020), and Iota (2020)
 
 if(region == "cam") {
 
-  file.otto <- paste0(path.data.aux, "al162016_lin.gpkg")
+  files.hurr <- paste0(path.data.aux,
+                       c("al162016_lin.gpkg", "al292020_lin.gpkg", "al312020_lin.gpkg"))
+  file.lim <- paste0(path.data.raw, region, ".limit.gpkg")
+  file.lf <- paste0(path.data.proc, "cam.hurr.landfall.gpkg")
 
   crs.cam.ed <-
     st_crs('PROJCS["Central_America_Equidistant_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Equidistant_Conic"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900001"]]')
 
-  traj.otto <-
-    st_read(file.otto) |>
-    st_transform(crs.cam.ed)
-  traj.otto.buf <-
-    traj.otto[traj.otto$SS > 0,] |>
-    st_union() |>
-    st_as_sf() |>
-    st_buffer(dist = 5e4)
+  lim <- st_read(file.lim)
+  lim.line <- st_cast(st_exterior_ring(lim), "MULTILINESTRING")
+
+  # Determine easternmost landfall for each hurricane
+
+  lf.l <- list()
+
+  for(i in seq_along(files.hurr)) {
+
+    hurr.traj <-
+      st_read(files.hurr[i]) |>
+      st_transform(4326)
+
+    hurr.int <-
+      st_intersection(lim.line[, "geom"], hurr.traj[hurr.traj$SS >=3, "geom"]) |>
+      st_cast("POINT")
+
+    lf.id <- which.max(st_coordinates(hurr.int)[,1])
+
+    lf.l[[i]] <-
+      st_transform(hurr.int[lf.id,], crs.cam.ed) |>
+      st_buffer(dist = 5e4, nQuadSegs = 100)
+
+  }
+
+  lf <- do.call(rbind, lf.l)
+
+  st_transform(lf, 4326) |>
+  st_write(file.lf, append = FALSE)
+
   pts.cri_nic <-
     data.int[adm0 %in% c("CRI", "NIC"), .(id, ed_east, ed_north)] |>
     st_as_sf(coords = c("ed_east", "ed_north")) |>
     st_set_crs(crs.cam.ed)
-  pts.otto <-
-    st_intersection(pts.cri_nic, traj.otto.buf)
-  
-  data.int[id %in% pts.otto$id, hurr_otto := TRUE]
+    
+  pts.lf <-
+    st_intersection(pts.cri_nic, lf)
+  idx.lf <- sort(unique(pts.lf$id))
+
+  data.int[id %in% idx.lf, hurr_otto := TRUE]
   data.int[is.na(hurr_otto), hurr_otto := FALSE]
 
 }
