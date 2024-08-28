@@ -94,6 +94,8 @@ for(i in seq_along(draw.chunks.load$from)) {
     merge(data[, ..merge.cols],
           by = id.var, all.x = FALSE)
 
+  pred.draw[, resp.col := as.numeric(resp.col), env = list(resp.col = resp.var)]
+
   draw.chunks.eval <-
     chunk_seq(draw.chunks.load$from[i],
               draw.chunks.load$to[i],

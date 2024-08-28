@@ -114,6 +114,8 @@ for(i in seq_along(draw.chunks.load$from)) {
     select(all_of(select.var)) |>
     collect()
 
+  pred.draw[, resp.col := as.numeric(resp.col), env = list(resp.col = resp.var)]
+
   b <- Sys.time()
   print(b-a)
 
