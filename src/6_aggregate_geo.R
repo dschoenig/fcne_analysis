@@ -50,6 +50,7 @@ path.arrow <- paste0(path.pred, region, "/", resp_type, "/")
 
 file.agg <- paste0(path.agg, region, ".", resp_type, ".geo", hurr_suf, ".rds")
 
+id.var <- "id"
 data <- readRDS(file.data)
 
 
@@ -80,7 +81,7 @@ message("Aggregating predictions …")
 
 idx.geo <-
   .ids_by_group(data[, .(id, ea_east.bin, ea_north.bin)],
-                id.var = "id",
+                id.var = id.var,
                 group.vars = c("ea_east.bin", "ea_north.bin"),
                 add.label = FALSE)
 idx.geo[, group.id := 1:.N]
@@ -126,7 +127,7 @@ for(i in seq_along(draw.chunks.load$from)) {
                                     ids = idx.geo$id,
                                     pred.var = resp.var,
                                     draw.var = ".draw",
-                                    id.var = "id",
+                                    id.var = id.var,
                                     agg.name = resp.var,
                                     group.name = "group.id",
                                     draw.chunk = draws.eval.chunk,
