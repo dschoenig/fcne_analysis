@@ -41,13 +41,13 @@ message()
 path.base <- "../"
 path.data.proc <- paste0(path.base, "data/processed/")
 path.pred <- paste0(path.base, "models/gam/pred/")
-path.arrow <- paste0(path.pred, region, "/")
-path.arrow <- paste0(path.pred, region, "/", resp_type, "/")
+path.agg <- paste0(path.base, "models/gam/agg/", region, "/")
 if(!dir.exists(path.agg))
   dir.create(path.agg, recursive = TRUE)
 
-
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
+path.arrow <- paste0(path.pred, region, "/", resp_type, "/")
+
 file.agg <- paste0(path.agg, region, ".", resp_type, ".geo", hurr_suf, ".rds")
 
 data <- readRDS(file.data)
@@ -67,6 +67,7 @@ data <-
            bin.min = map.anchor, append = TRUE)
 
 group.by <- list(c("ea_east.bin", "ea_north.bin"))
+
 
 paste0("No. of data: ", nrow(data)) |>
 message()
