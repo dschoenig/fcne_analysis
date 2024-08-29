@@ -35,7 +35,7 @@ file.areas.pa_pts <- paste0(path.data.raw, region, ".1120.pareas_pts.csv")
 file.data.fit.int <- paste0(path.data.int, region, ".data.fit.int.rds")
 file.data.val.int <- paste0(path.data.int, region, ".data.val.int.rds")
 file.areas.out <- paste0(path.data.proc, region, ".areas.it_pa.rds")
-file.stats.proc <- paste0(path.data.proc, region, ".sumstats.proc.csv")
+file.stats.proc <- paste0(path.data.proc, region, ".sumstats.proc.rds€ý,€ý,")
 
 vars <- fread(file.data.raw, 
               na.strings = "",
@@ -59,7 +59,16 @@ vars[,
           pa_type = factor(pa_type,
                            levels = c("none", "indirect_use", "direct_use"),
                            ordered = TRUE),
-          adm0 = factor(adm0)
+          adm0 = factor(adm0),
+          driver = factor(fcase(is.na(driver), "not_identified",
+                                driver == 1, "commodity",
+                                driver == 2, "shifting_cultivation",
+                                driver == 3, "forestry",
+                                driver == 4, "wildfires",
+                                driver == 5, "urbanization"),
+                          levels = c("not_identified",
+                                     "commodity", "shifting_cultivation",
+                                     "forestry", "wildfires", "urbanization"))
           )
      ]
 
@@ -84,6 +93,7 @@ vars.sel <-
     "elevation", "slope", "sx",
     "dist_set", "dist_roads", "dist_rivers",
     "dens_roads", "dens_pop", "travel_time",
+    "driver",
     "lon", "lat",
     "ed_east", "ed_north", "ea_east", "ea_north")
 
@@ -99,8 +109,8 @@ sam.idx <- sample(na.omit(vars)$id, n.fit+n.val)
 data.int <- vars[.(sam.idx), on = "id"]
 
 
-# For Central America only: Flag points close to hurricanes Otto (2016),
-# Eta (2020), and Iota (2020)
+# For Central America only: Flag points close to landfall of hurricanes
+# Otto (2016), Eta (2020), and Iota (2020)
 
 if(region == "cam") {
 

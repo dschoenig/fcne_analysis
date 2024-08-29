@@ -18,24 +18,14 @@ draws.max <- 1000
 draws.load.chunk <- 100
 draws.eval.chunk <- 10
 
-# n.threads <- 4
-# cf_type <- "geo"
+# n.threads <- 1
+# cf_type <- "ten.driv"
 # region <- "amz"
 # resp_type <- "def"
-# area_type <- "pa"
-# ov_type <- "na"
-# hurr_type <- NA
-
-# n.threads <- 1
-# cf_type <- "ten.areas"
-# region <- "amz"
-# resp_type <- "deg"
-# area_type <- "full"
+# area_type <- "itpa"
 # ov_type <- "all"
 # hurr_type <- NA
-# draws.max <- 100
-# draws.load.chunk <- 50
-# draws.eval.chunk <- 25
+
 
 setDTthreads(n.threads)
 set_cpu_count(n.threads)
