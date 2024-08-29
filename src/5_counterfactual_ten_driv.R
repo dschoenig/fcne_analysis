@@ -46,8 +46,8 @@ file.out <- paste0(path.cf, region, ".ten.driv.",
 
 data <- readRDS(file.data)
 
-# Subset to observation for which driver has been identified
-data <- data[driver != "not_identified"]
+# # Subset to observation for which driver has been identified
+# data <- data[driver != "not_identified"]
 
 som.fit <- readRDS(file.som)
 
@@ -70,14 +70,14 @@ if(area_type %in% c("it", "pa")) {
   if(area_type == "it") {
     cf.ids <- data[it_type == "none", id]  
     fac.ids <- data[it_type != "none", id]  
-    comp.by <- c("driver", "pa_type")
+    comp.by <- c("pa_type")
     group.var1 <- "it_type"
     group.var2 <- "pa_type"
   }
   if(area_type == "pa") {
     cf.ids <- data[pa_type == "none", id]  
     fac.ids <- data[pa_type != "none", id]  
-    comp.by <- c("driver", "it_type")
+    comp.by <- c("it_type")
     group.var1 <- "pa_type"
     group.var2 <- "it_type"
   }
@@ -93,7 +93,7 @@ if(area_type %in% c("it", "pa")) {
 if(area_type == "itpa") {
   cf.ids <- data[it_type == "none" & pa_type == "none", id]  
   fac.ids <- data[it_type != "none" | pa_type != "none", id]  
-  comp.by <- "driver"
+  comp.by <- NULL
   group.var1 <- "pa_type"
   group.var2 <- "it_type"
   group.by <- list(c("driver", group.var1),
