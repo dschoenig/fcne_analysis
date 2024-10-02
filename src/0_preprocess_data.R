@@ -4,7 +4,7 @@ library(data.table)
 library(sf)
 
 region <- tolower(as.character(args[1]))
-# region <- "cam"
+# region <- "amz"
 
 ## Paths
 path.data.raw <- "../data/raw/"
@@ -35,7 +35,7 @@ file.areas.pa_pts <- paste0(path.data.raw, region, ".1120.pareas_pts.csv")
 file.data.fit.int <- paste0(path.data.int, region, ".data.fit.int.rds")
 file.data.val.int <- paste0(path.data.int, region, ".data.val.int.rds")
 file.areas.out <- paste0(path.data.proc, region, ".areas.it_pa.rds")
-file.stats.proc <- paste0(path.data.proc, region, ".sumstats.proc.rds€ı,€ı,")
+file.stats.proc <- paste0(path.data.proc, region, ".sumstats.proc.rds")
 
 vars <- fread(file.data.raw, 
               na.strings = "",
@@ -51,6 +51,7 @@ vars[,
           disturbance = fifelse((tmf_def > 2010 & tmf_def <= 2020) |
                                 (tmf_deg > 2010 & tmf_deg <= 2020),
                                 TRUE, FALSE),
+          intensity = tmf_int,
           it = fifelse(it == "t", TRUE, FALSE),
           it_type = factor(it_type,
                            levels = c("none", "recognized", "not_recognized"),
@@ -87,7 +88,7 @@ vars[, overlap := factor(overlap,
 
 vars.sel <-
   c("id", "adm0",
-    "deforestation", "degradation", "disturbance",
+    "deforestation", "degradation", "disturbance", "intensity",
     "tmf_def", "tmf_deg",
     "it", "it_type", "pa", "pa_type", "overlap",
     "elevation", "slope", "sx",
