@@ -59,16 +59,16 @@ if(model.resp %in% c("def", "deg", "dis")) {
 
 if(model.resp %in% c("int")) {
   k.reg <- list(cam = c(
-                        ten_loc.bl = 1000,
+                        ten_loc.bl = 1250,
                         ten_loc.itpa = 250,
-                        ten_loc.ov = 50,
-                        som = 1000)
+                        ten_loc.ov = 25,
+                        som = 1250)
   ,
                 amz = c(
-                        ten_loc.bl = 1000,
+                        ten_loc.bl = 1250,
                         ten_loc.itpa = 250,
-                        ten_loc.ov = 50,
-                        som = 1000)
+                        ten_loc.ov = 25,
+                        som = 1250)
   )
   # Increase number of maximum knots 10-fold (default: 2000)
   max.knots.reg <- list(cam = c(
@@ -168,14 +168,22 @@ if(model.id == 1) {
             s(som_x, som_y, bs = 'gp', k = k.def["som"],
               xt = list(max.knots = max.knots.def["som"]))) |>
     update(as.formula(paste0(var.resp, "~.")))
+  # model <-
+  #   bam(mod.form,
+  #       family = mod.fam,
+  #       data = data.mod,
+  #       select = TRUE,
+  #       discrete = max.discrete.bins,
+  #       nthreads = n.threads,
+  #       control = gam.control(trace = TRUE, epsilon = conv.eps)
+  #       )
   model <-
-    bam(mod.form,
+    gam(mod.form,
         family = mod.fam,
         data = data.mod,
         select = TRUE,
-        discrete = max.discrete.bins,
-        nthreads = n.threads,
-        control = gam.control(trace = TRUE, epsilon = conv.eps)
+        optimizer = "efs",
+        control = gam.control(trace = TRUE, epsilon = conv.eps, nthreads = n.threads)
         )
 }
 
