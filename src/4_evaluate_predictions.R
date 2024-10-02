@@ -40,10 +40,11 @@ post <- readRDS(file.post)
 data <- readRDS(file.data)
 
 var.resp <-
-  switch(model_resp,
+  switch(model.resp,
          "def" = "deforestation",
          "deg" = "degradation",
-         "dis" = "disturbance")
+         "dis" = "disturbance",
+         "int" = "intensity")
 
 vars.pred <-
   c("id", var.resp,
@@ -55,6 +56,9 @@ vars.pred <-
     "dens_pop", "dens_roads", "travel_time")
 
 # Data for prediction
+if(model.resp == "int") {
+  data <- data[degradation == TRUE]
+}
 data.pred <- data[, ..vars.pred]
 rm(data)
 
