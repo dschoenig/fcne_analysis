@@ -59,16 +59,16 @@ if(model.resp %in% c("def", "deg", "dis")) {
 
 if(model.resp %in% c("int")) {
   k.reg <- list(cam = c(
-                        ten_loc.bl = 500,
-                        ten_loc.itpa = 150,
+                        ten_loc.bl = 1000,
+                        ten_loc.itpa = 250,
                         ten_loc.ov = 50,
-                        som = 500)
+                        som = 1000)
   ,
                 amz = c(
-                        ten_loc.bl = 500,
-                        ten_loc.itpa = 150,
+                        ten_loc.bl = 1000,
+                        ten_loc.itpa = 250,
                         ten_loc.ov = 50,
-                        som = 500)
+                        som = 1000)
   )
   # Increase number of maximum knots 10-fold (default: 2000)
   max.knots.reg <- list(cam = c(
