@@ -40,7 +40,7 @@ post <- readRDS(file.post)
 data <- readRDS(file.data)
 
 var.resp <-
-  switch(model.resp,
+  switch(model_resp,
          "def" = "deforestation",
          "deg" = "degradation",
          "dis" = "disturbance",
@@ -56,7 +56,7 @@ vars.pred <-
     "dens_pop", "dens_roads", "travel_time")
 
 # Data for prediction
-if(model.resp == "int") {
+if(model_resp == "int") {
   data <- data[degradation == TRUE]
 }
 data.pred <- data[, ..vars.pred]
@@ -108,11 +108,13 @@ silence <- gc()
 
 # Prepare export
 
-pred[, resp.col := as.logical(resp.col), env = list(resp.col = var.resp)]
-pred[, .draw.chunk := factor(ceiling(.draw/100), levels = as.character(1:10))]
-setcolorder(pred, c(".draw.chunk", ".draw", "id", var.resp))
+if(model_resp != "int") {
+  pred[, resp.col := as.logical(resp.col), env = list(resp.col = var.resp)]
+}
+# pred[, .draw.chunk := factor(ceiling(.draw/100), levels = as.character(1:10))]
+setcolorder(pred, c(".draw", "id", var.resp))
 
-setorder(pred, .draw.chunk, .draw, id)
+setorder(pred, .draw, id)
 
 message(paste0("Writing output to `", file.out, "` …"))
 write_feather(pred, file.out, version = 2, chunk_size = 1e7, compression = "uncompressed")
