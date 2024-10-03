@@ -91,7 +91,8 @@ resp.var <-
   switch(resp_type,
          "def" = "deforestation",
          "deg" = "degradation",
-         "dis" = "disturbance")
+         "dis" = "disturbance",
+         "int" = "intensity")
 
 select.var <- c(".draw", "id", resp.var)
 
