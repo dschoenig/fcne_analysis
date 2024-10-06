@@ -44,8 +44,44 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, b
 }
 
 
+## GENERAL HELPERS ##############################################################
+
+posterior_summary <- function(x,
+                              probs = c(0.05, 0.95),
+                              prefix = NULL,
+                              sep = ".",
+                              point.fun = mean,
+                              point.name = "mean",
+                              ...) {
+  if(is.null(prefix)) {
+    prefix <- as.character(match.call()[2])
+  }
+  if(prefix == "") {
+    sep <- ""
+  }
+  sum.names <-
+    paste0(prefix, sep,
+           c(point.name,
+             paste0("q", probs*100)))
+  y <-
+    c(list(point.fun(x)),
+      as.list(quantile(x, probs = probs, names = FALSE, ...)))
+  names(y) <- sum.names
+  return(y)
+}
 
 ## PLOTTING HELPERS #############################################################
+
+
+label_prop <- function(x, ndec = 0, psign = TRUE) {
+  per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
+  per[which(x > 0)] <- paste0("+", per[which(x > 0)])
+  if(psign) {
+    per <- paste0(per, "%")
+  }
+  per[is.na(x)] <- NA
+  return(per)
+}
 
 label_arc <- function(x, ndec = 0, psign = TRUE) {
   per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)

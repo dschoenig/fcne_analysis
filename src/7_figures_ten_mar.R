@@ -10,6 +10,13 @@ library(stringi)
 source("utilities.R")
 
 hurr_type <- tolower(as.character(args[1]))
+overwrite <- as.logical(as.character(args[2]))
+
+overwrite <- TRUE
+
+if(is.na(overwrite)) {
+  overwrite <- FALSE
+}
 
 path.base <- "../"
 path.data <- paste0(path.base, "data/")
@@ -30,10 +37,10 @@ if(hurr_type == "no_otto") {
   hurr_suf <- ""
 }
 
-file.data.vis <- paste0(path.data.vis, "tenure_adm_mar", hurr_suf, ".rds")
+file.data.vis <- paste0(path.data.vis, "tenure_adm", hurr_suf, ".rds")
 file.fig.ten <- paste0(path.figures, "ten.mar", hurr_suf, ".png")
-file.fig.ten.pf <- paste0(path.figures, "ten.mar.pf", hurr_suf, ".png")
-file.fig.ten.af <- paste0(path.figures, "ten.mar.af", hurr_suf, ".png")
+file.fig.ten.def <- paste0(path.figures, "ten.mar.def", hurr_suf, ".png")
+file.fig.ten.deg <- paste0(path.figures, "ten.mar.deg", hurr_suf, ".png")
 
 regions <- c("amz", "cam")
 
@@ -168,12 +175,13 @@ reg.lab$cam <-
 reg.lab$amz[, reg.label := factor(reg.label, levels = reg.label)]
 reg.lab$cam[, reg.label := factor(reg.label, levels = reg.label)]
 
-for.lab <-
-  data.table(for_type = c("primary", NA),
-             for.label = c("Primary forests", "All forests"))
-for.lab[, for.label := factor(for.label, levels = for.label)]
+dist.lab <-
+  data.table(dist_type = c("def", "deg"),
+             dist.label = c("Long-term disturbance", "Short-term disturbance"))
+dist.lab[, dist.label := factor(dist.label, levels = dist.label)]
 
-mar.title <- "Absolute marginal\ndifference in\nforest loss risk\n(2011 – 2020)"
+# mar.title <- "Absolute marginal\ndifference in\nforest loss risk\n(2011 – 2020)"
+mar.title <- "Avoided disturbances 2011–2020\n(proportion of undisturbed TMF)"
 it.title <- "Additional effect of indigenous tenure\nin mixed tenure regimes\n"
 pa.title <- "Additional effect of areal protection\nin mixed tenure regimes\n"
 it.title <- "Additional effect of\nindigenous tenure\nin mixed tenure regimes\n"
@@ -184,7 +192,7 @@ pa.title <- "Additional effect of\nareal protection\nin mixed tenure regimes\n"
 
 ## EFFECT OF TENURE BY ADMINISTRATIVE AREA, FOREST TYPE ########################
 
-if(!file.exists(file.data.vis)) {
+if(!file.exists(file.data.vis) | overwrite == TRUE) {
 
   ten.sum <- list()
 
@@ -201,14 +209,16 @@ if(!file.exists(file.data.vis)) {
     }
 
     file.mar.sam <- paste0(path.marginal, region, "/", region, ".sam.rds")
-    name.mar.ten.af.it <- paste0(region, ".ten.af.it.ov", hurr_suf_mar, ".rds")
-    file.mar.ten.af.it <- paste0(path.marginal, region, "/", name.mar.ten.af.it)
-    name.mar.ten.pf.it <- paste0(region, ".ten.pf.it.ov", hurr_suf_mar, ".rds")
-    file.mar.ten.pf.it <- paste0(path.marginal, region, "/", name.mar.ten.pf.it)
-    name.mar.ten.af.pa <- paste0(region, ".ten.af.pa.ov", hurr_suf_mar, ".rds")
-    file.mar.ten.af.pa <- paste0(path.marginal, region, "/", name.mar.ten.af.pa)
-    name.mar.ten.pf.pa <- paste0(region, ".ten.pf.pa.ov", hurr_suf_mar, ".rds")
-    file.mar.ten.pf.pa <- paste0(path.marginal, region, "/", name.mar.ten.pf.pa)
+    name.mar.ten.it.sam <- paste0(region, ".ten.it.ov.rds")
+    name.mar.ten.pa.sam <- paste0(region, ".ten.pa.ov.rds")
+    name.mar.ten.def.it <- paste0(region, ".def.ten.it.ov", hurr_suf_mar, ".rds")
+    file.mar.ten.def.it <- paste0(path.marginal, region, "/", name.mar.ten.def.it)
+    name.mar.ten.deg.it <- paste0(region, ".deg.ten.it.ov", hurr_suf_mar, ".rds")
+    file.mar.ten.deg.it <- paste0(path.marginal, region, "/", name.mar.ten.deg.it)
+    name.mar.ten.def.pa <- paste0(region, ".def.ten.pa.ov", hurr_suf_mar, ".rds")
+    file.mar.ten.def.pa <- paste0(path.marginal, region, "/", name.mar.ten.def.pa)
+    name.mar.ten.deg.pa <- paste0(region, ".deg.ten.pa.ov", hurr_suf_mar, ".rds")
+    file.mar.ten.deg.pa <- paste0(path.marginal, region, "/", name.mar.ten.deg.pa)
 
     # Tenure categories by administrative areas
 
@@ -216,48 +226,49 @@ if(!file.exists(file.data.vis)) {
 
     mar.sam <- readRDS(file.mar.sam)
 
-    mar.ten.af.it <-
-      readRDS(file.mar.ten.af.it) |>
-      merge(mar.sam[[name.mar.ten.af.it]])
-    mar.ten.pf.it <-
-      readRDS(file.mar.ten.pf.it) |>
-      merge(mar.sam[[name.mar.ten.pf.it]])
-    mar.ten.af.pa <-
-      readRDS(file.mar.ten.af.pa) |>
-      merge(mar.sam[[name.mar.ten.af.pa]])
-    mar.ten.pf.pa <-
-      readRDS(file.mar.ten.pf.pa) |>
-      merge(mar.sam[[name.mar.ten.pf.pa]])
+    mar.ten.def.it <-
+      readRDS(file.mar.ten.def.it) |>
+      merge(mar.sam[[name.mar.ten.it.sam]])
+    mar.ten.deg.it <-
+      readRDS(file.mar.ten.deg.it) |>
+      merge(mar.sam[[name.mar.ten.it.sam]])
+    mar.ten.def.pa <-
+      readRDS(file.mar.ten.def.pa) |>
+      merge(mar.sam[[name.mar.ten.pa.sam]])
+    mar.ten.deg.pa <-
+      readRDS(file.mar.ten.deg.pa) |>
+      merge(mar.sam[[name.mar.ten.pa.sam]])
 
-    mar.ten.af.it[,
-                  `:=`(for_type = factor(NA, levels = c("primary", "other")),
-                       mar_type = "it")]
-    mar.ten.af.pa[,
-                  `:=`(for_type = factor(NA, levels = c("primary", "other")),
-                       mar_type = "pa")]
-    mar.ten.pf.it[,
-                  `:=`(for_type = factor("primary", levels = c("primary", "other")),
-                       mar_type = "it")]
-    mar.ten.pf.pa[,
-                  `:=`(for_type = factor("primary", levels = c("primary", "other")),
-                       mar_type = "pa")]
+    mar.ten.def.it[,
+                   `:=`(dist_type = factor("def", levels = c("def", "deg")),
+                        mar_type = "it")]
+    mar.ten.def.pa[,
+                   `:=`(dist_type = factor("def", levels = c("def", "deg")),
+                        mar_type = "pa")]
+    mar.ten.deg.it[,
+                   `:=`(dist_type = factor("deg", levels = c("def", "deg")),
+                        mar_type = "it")]
+    mar.ten.deg.pa[,
+                   `:=`(dist_type = factor("deg", levels = c("def", "deg")),
+                        mar_type = "pa")]
 
 
     # Effect summaries. Combinations of tenure category and country with < 1000
     # observations are excluded.
 
     mar.ten <-
-      rbind(mar.ten.pf.it, mar.ten.pf.pa, mar.ten.af.it, mar.ten.af.pa) |>
+      rbind(mar.ten.deg.it, mar.ten.deg.pa, mar.ten.def.it, mar.ten.def.pa) |>
       _[,
-        .(n = unique(n),
-          n.frac = unique(n)/1e7,
+        .(n.fac = unique(n.fac),
+          n.cf = unique(n.cf),
+          n.frac = unique(n.fac)/1e7,
           mar.mean = mean(marginal),
           mar.median = median(marginal),
           mar.sd = sd(marginal),
           mar.q2.5 = quantile(marginal, 0.025),
           mar.q97.5 = quantile(marginal, 0.975),
           mar.p.tost = max(sum(marginal > 0)/.N, sum(marginal < 0)/.N)),
-        by = c("mar_type", "for_type", "it_type", "pa_type", "adm0")]
+        by = c("mar_type", "dist_type", "it_type", "pa_type", "adm0")]
     mar.ten[, mar.lab.mean := label_arc(mar.mean, 1, FALSE)]
     mar.ten[, ci_0 := ifelse(mar.q2.5 < 0 & mar.q97.5 > 0, "yes", "no")]
     mar.ten[ci_0 == "yes", mar.lab.mean := paste0("(", mar.lab.mean, ")")]
@@ -266,12 +277,12 @@ if(!file.exists(file.data.vis)) {
       # expand.grid(cat.label = cat.lab[it_type != "none" & pa_type != "none", cat.label],
       expand.grid(cat.label = cat.lab[,cat.label],
                   reg.label = reg.lab[[region]]$reg.label,
-                  for.label = for.lab$for.label) |>
+                  dist.label = dist.lab$dist.label) |>
       as.data.table() |>
       merge(cat.lab, by = c("cat.label"), all = TRUE) |>
       merge(reg.lab[[region]], by = "reg.label", all = TRUE) |>
-      merge(for.lab, by = "for.label", all = TRUE) |> 
-      merge(mar.ten[n > 1000], by = c("mar_type", "for_type", "it_type", "pa_type", "adm0"),
+      merge(dist.lab, by = "dist.label", all = TRUE) |> 
+      merge(mar.ten[n.fac > 1000], by = c("mar_type", "dist_type", "it_type", "pa_type", "adm0"),
             all.x = TRUE)
 
     # Mark where CI includes 0:
@@ -314,11 +325,10 @@ for(i in seq_along(regions)) {
                       cam = "Central America",
                       amz = "Amazon")
 
-  plots[[region]]$ten.mar$primary <-
-
+  plots[[region]]$ten.mar$def <-
     ten.sum[[region]]$mar[((it_type == "none"  & pa_type != "none") |
                            (it_type != "none"  & pa_type == "none")) &
-                          for_type == "primary"] |>
+                          dist_type == "def"] |>
     ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
                 linewidth = 1, colour = "white") +
@@ -352,10 +362,10 @@ for(i in seq_along(regions)) {
            y = "Non-overlapping areas\n", x = NULL) +
       ten_theme
 
-  plots[[region]]$ten.mar$all <-
+  plots[[region]]$ten.mar$deg <-
     ten.sum[[region]]$mar[((it_type == "none"  & pa_type != "none") |
                            (it_type != "none"  & pa_type == "none")) &
-                          is.na(for_type)] |>
+                          dist_type == "deg"] |>
     ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
                 linewidth = 1, colour = "white") +
@@ -411,8 +421,8 @@ for(i in seq_along(regions)) {
                       cam = "Central America",
                       amz = "Amazon")
 
-  plots.it[[region]]$ten.mar$primary <-
-    ten.sum[[region]]$mar[mar_type == "it" & for_type == "primary"] |>
+  plots.it[[region]]$ten.mar$def <-
+    ten.sum[[region]]$mar[mar_type == "it" & dist_type == "def"] |>
     ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
                 linewidth = 1, colour = "white") +
@@ -446,8 +456,8 @@ for(i in seq_along(regions)) {
            y = it.title, x = NULL) +
       ten_theme 
 
-  plots.it[[region]]$ten.mar$all <-
-    ten.sum[[region]]$mar[mar_type == "it" & is.na(for_type)] |>
+  plots.it[[region]]$ten.mar$deg <-
+    ten.sum[[region]]$mar[mar_type == "it" & dist_type == "deg"] |>
     ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
                 linewidth = 1, colour = "white") +
@@ -481,8 +491,8 @@ for(i in seq_along(regions)) {
            y = it.title, x = NULL) +
       ten_theme 
 
- plots.pa[[region]]$ten.mar$primary <-
-    ten.sum[[region]]$mar[mar_type == "pa" & for_type == "primary"] |>
+ plots.pa[[region]]$ten.mar$def <-
+    ten.sum[[region]]$mar[mar_type == "pa" & dist_type == "def"] |>
     ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
                 linewidth = 1, colour = "white") +
@@ -516,8 +526,8 @@ for(i in seq_along(regions)) {
            y = pa.title, x = NULL) +
       ten_theme 
 
-  plots.pa[[region]]$ten.mar$all <-
-    ten.sum[[region]]$mar[mar_type == "pa" & is.na(for_type)] |>
+  plots.pa[[region]]$ten.mar$deg <-
+    ten.sum[[region]]$mar[mar_type == "pa" & dist_type == "deg"] |>
     ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
                 linewidth = 1, colour = "white") +
@@ -559,7 +569,7 @@ for(i in seq_along(regions)) {
 message("Assembling plots …")
 
 p.pf <-
-  ((plots.it$amz$ten.mar$primary &
+  ((plots.it$amz$ten.mar$def &
     theme(
           plot.title.position = "panel",
           axis.text.y = element_text(hjust = 0),
@@ -567,14 +577,14 @@ p.pf <-
                                       size = rel(0.85)),
          plot.margin = unit(c(5, 5, 5, 0), "pt")
          )) +
-   (plots.it$cam$ten.mar$primary &
+   (plots.it$cam$ten.mar$def &
     theme(axis.text.y = element_blank(),
           axis.title.y = element_blank(),
           plot.title = element_blank(),
           plot.margin = unit(c(5, 5, 5, 5), "pt")
           ))
   ) /
-  ((plots.pa$amz$ten.mar$primary &
+  ((plots.pa$amz$ten.mar$def &
     theme(plot.title = element_blank(),
           plot.subtitle = element_blank(),
           axis.text.y = element_text(hjust = 0,
@@ -586,7 +596,7 @@ p.pf <-
           plot.margin = unit(c(0, 5, 5, 0), "pt"),
           plot.tag = element_blank()
           )) +
-    (plots.pa$cam$ten.mar$primary &
+    (plots.pa$cam$ten.mar$def &
      theme(plot.title = element_blank(),
           plot.subtitle = element_blank(),
           axis.title.y = element_blank(),
@@ -598,7 +608,7 @@ p.pf <-
           ))
   )
  p.af <-
-   ((plots.it$amz$ten.mar$all &
+   ((plots.it$amz$ten.mar$deg &
      theme(
            plot.title.position = "panel",
            axis.text.y = element_text(hjust = 0),
@@ -607,14 +617,14 @@ p.pf <-
                                        size = rel(0.85)),
           plot.margin = unit(c(5, 5, 5, 0), "pt")
           )) +
-    (plots.it$cam$ten.mar$all &
+    (plots.it$cam$ten.mar$deg &
      theme(axis.text.y = element_blank(),
            axis.title.y = element_blank(),
            plot.title = element_blank(),
            plot.margin = unit(c(5, 5, 5, 5), "pt")
            ))
    ) /
-   ((plots.pa$amz$ten.mar$all &
+   ((plots.pa$amz$ten.mar$deg &
      theme(plot.title = element_blank(),
            plot.subtitle = element_blank(),
            axis.text.y = element_text(hjust = 0,
@@ -626,7 +636,7 @@ p.pf <-
            plot.margin = unit(c(0, 5, 5, 0), "pt"),
            plot.tag = element_blank()
            )) +
-     (plots.pa$cam$ten.mar$all &
+     (plots.pa$cam$ten.mar$deg &
       theme(plot.title = element_blank(),
           plot.subtitle = element_blank(),
           axis.title.y = element_blank(),
@@ -647,14 +657,14 @@ png(file.fig.ten, width = 7, height = 6.75, unit = "in", res = 600)
 p.ten
 dev.off()
 
-png(file.fig.ten.pf, width = 7, height = 3.5, unit = "in", res = 600)
+png(file.fig.ten.deg, width = 7, height = 3.5, unit = "in", res = 600)
 p.pf +
 plot_layout(guides = "collect") &
 theme(legend.justification = c(0, 0.9))
 dev.off()
 
 
-png(file.fig.ten.af, width = 7, height = 3.5, unit = "in", res = 600)
+png(file.fig.ten.def, width = 7, height = 3.5, unit = "in", res = 600)
 p.af +
 plot_layout(guides = "collect") &
 theme(legend.justification = c(0, 0.9))

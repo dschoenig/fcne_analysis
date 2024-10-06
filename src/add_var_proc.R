@@ -18,6 +18,8 @@ vars <- fread(file.data.raw,
               na.strings = "",
               key = "id")
 
+vars
+
 vars[, 
      `:=`(
           deforestation = fifelse(tmf_def > 0 & tmf_def <= 2020,
@@ -63,24 +65,42 @@ vars[, overlap := factor(overlap,
                          ordered = TRUE)]
 
 vars.sel <-
-  c("id", "adm0",
-    "deforestation", "degradation", "disturbance",
-    "tmf_def", "tmf_deg",
-    "it", "it_type", "pa", "pa_type", "overlap",
-    "elevation", "slope", "sx",
-    "dist_set", "dist_roads", "dist_rivers",
-    "dens_roads", "dens_pop", "travel_time",
-    "driver",
-    "lon", "lat",
-    "ed_east", "ed_north", "ea_east", "ea_north")
+  switch(region,
+         amz = c("id", "adm0",
+                 "deforestation", "degradation", "disturbance", "sci",
+                 "tmf_def", "tmf_deg",
+                 "it", "it_type", "pa", "pa_type", "overlap",
+                 "elevation", "slope", "sx",
+                 "dist_set", "dist_roads", "dist_rivers",
+                 "dens_roads", "dens_pop", "travel_time",
+                 "cmi_min",
+                 "driver",
+                 "lon", "lat",
+                 "ed_east", "ed_north", "ea_east", "ea_north"),
+         cam = c("id", "adm0",
+                 "deforestation", "degradation", "disturbance", "sci",
+                 "tmf_def", "tmf_deg",
+                 "it", "it_type", "pa", "pa_type", "overlap",
+                 "elevation", "slope", "sx",
+                 "dist_set", "dist_roads", "dist_rivers",
+                 "dens_roads", "dens_pop", "travel_time",
+                 "cmi_min",
+                 "driver",
+                 "lon", "lat",
+                 "ed_east", "ed_north", "ea_east", "ea_north",
+                 "hurr_otto"))
 
 vars <- vars[, ..vars.sel]
-
 
 
 # Add variable to existing data set
 
 datasets <- c("fit", "val")
+vars.add <- c("cmi_min", "sci")
+vars.join <- c("id", vars.add)
+vars.old.int <- vars.sel[!vars.sel %in% vars.add]
+vars.old.proc <- c(vars.old.int, "som_bmu", "som_x", "som_y")
+
 
 for(i in seq_along(datasets)) {
 
@@ -89,38 +109,40 @@ for(i in seq_along(datasets)) {
   file.data.int <- paste0(path.data.int, region, ".data.", datasets[i], ".int.rds")
   file.data.proc <- paste0(path.data.proc, region, ".data.", datasets[i], ".proc.rds")
   
-  data.int <- readRDS(file.data.int)
-  data.proc <- readRDS(file.data.proc)
+  data.int <- readRDS(file.data.int)[, ..vars.old.int]
+  data.proc <- readRDS(file.data.proc)[, ..vars.old.proc]
 
   int.merged <-
-    merge(data.int, vars[, .(id, driver)],
+    merge(data.int, vars[, ..vars.join],
           by = "id", all.x = TRUE, all.y = FALSE, sort = FALSE)
 
   proc.merged <-
-    merge(data.proc, vars[, .(id, driver)],
+    merge(data.proc, vars[, ..vars.join],
           by = "id", all.x = TRUE, all.y = FALSE, sort = FALSE)
 
   if(region == "cam") {
     vars.sel.int <-
       c("id", "adm0",
-        "deforestation", "degradation", "disturbance",
+        "deforestation", "degradation", "disturbance", "sci",
         "tmf_def", "tmf_deg",
         "it", "it_type", "pa", "pa_type", "overlap",
         "elevation", "slope", "sx",
         "dist_set", "dist_roads", "dist_rivers",
         "dens_roads", "dens_pop", "travel_time",
+        "cmi_min",
         "driver",
         "lon", "lat",
         "ed_east", "ed_north", "ea_east", "ea_north",
         "hurr_otto")
     vars.sel.proc <-
       c("id", "adm0",
-        "deforestation", "degradation", "disturbance",
+        "deforestation", "degradation", "disturbance", "sci",
         "tmf_def", "tmf_deg",
         "it", "it_type", "pa", "pa_type", "overlap",
         "elevation", "slope", "sx",
         "dist_set", "dist_roads", "dist_rivers",
         "dens_roads", "dens_pop", "travel_time",
+        "cmi_min",
         "driver",
         "lon", "lat",
         "ed_east", "ed_north", "ea_east", "ea_north",
@@ -129,30 +151,35 @@ for(i in seq_along(datasets)) {
   } else {
     vars.sel.int <-
       c("id", "adm0",
-        "deforestation", "degradation", "disturbance",
+        "deforestation", "degradation", "disturbance", "sci",
         "tmf_def", "tmf_deg",
         "it", "it_type", "pa", "pa_type", "overlap",
         "elevation", "slope", "sx",
         "dist_set", "dist_roads", "dist_rivers",
         "dens_roads", "dens_pop", "travel_time",
+        "cmi_min",
         "driver",
         "lon", "lat",
         "ed_east", "ed_north", "ea_east", "ea_north")
     vars.sel.proc <-
       c("id", "adm0",
-        "deforestation", "degradation", "disturbance",
+        "deforestation", "degradation", "disturbance", "sci",
         "tmf_def", "tmf_deg",
         "it", "it_type", "pa", "pa_type", "overlap",
         "elevation", "slope", "sx",
         "dist_set", "dist_roads", "dist_rivers",
         "dens_roads", "dens_pop", "travel_time",
+        "cmi_min",
         "driver",
         "lon", "lat",
         "ed_east", "ed_north", "ea_east", "ea_north",
         "som_bmu", "som_x", "som_y")
   }
 
-  # print(int.merged)
+  print(data.int)
+  print(int.merged)
+  print(data.proc)
+  print(proc.merged)
 
   message("Saving new data files …")
 

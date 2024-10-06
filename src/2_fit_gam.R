@@ -17,7 +17,7 @@ if(length(args) < 4) {
 
 # model.reg <- "amz"
 # model.id <- 1
-# model.resp <- "int"
+# model.resp <- "deg"
 # n.threads <- c(2,1)
 
 ## Paths
@@ -31,59 +31,29 @@ if(!dir.exists(path.gam))
 file.data.proc <- paste0(path.data.proc, model.reg, ".data.fit.proc.rds")
 model.name <- paste0(model.reg, ".m", model.id, ".", model.resp)
 
-if(model.resp %in% c("def", "deg", "dis")) {
-  k.reg <- list(cam = c(
-                        ten_loc.bl = 5000,
-                        ten_loc.itpa = 1500,
-                        ten_loc.ov = 500,
-                        som = 5000),
-                amz = c(
-                        ten_loc.bl = 5000,
-                        ten_loc.itpa = 1500,
-                        ten_loc.ov = 500,
-                        som = 5000))
-  # Increase number of maximum knots 10-fold (default: 2000)
-  max.knots.reg <- list(cam = c(
-                                ten_loc.bl = 2e4,
-                                ten_loc.itpa = 2e4,
-                                ten_loc.ov = 2e4,
-                                som = 2e4),
-                        amz = c(
-                                ten_loc.bl = 2e4,
-                                ten_loc.itpa = 2e4,
-                                ten_loc.ov = 2e4,
-                                som = 2e4))
-  # max.knots.reg <- list(cam = c(k.reg$cam[1:3] * 10, som = 10000),
-  #                       amz = c(k.reg$amz[1:3] * 10, som = 10000))
-}
-
-if(model.resp %in% c("int")) {
-  k.reg <- list(cam = c(
-                        ten_loc.bl = 1250,
-                        ten_loc.itpa = 250,
-                        ten_loc.ov = 25,
-                        som = 1250)
-  ,
-                amz = c(
-                        ten_loc.bl = 1250,
-                        ten_loc.itpa = 250,
-                        ten_loc.ov = 25,
-                        som = 1250)
-  )
-  # Increase number of maximum knots 10-fold (default: 2000)
-  max.knots.reg <- list(cam = c(
-                                ten_loc.bl = 2e4,
-                                ten_loc.itpa = 2e4,
-                                ten_loc.ov = 2e4,
-                                som = 2e4),
-                        amz = c(
-                                ten_loc.bl = 2e4,
-                                ten_loc.itpa = 2e4,
-                                ten_loc.ov = 2e4,
-                                som = 2e4))
-  # max.knots.reg <- list(cam = c(k.reg$cam[1:3] * 10, som = 10000),
-  #                       amz = c(k.reg$amz[1:3] * 10, som = 10000))
-}
+k.reg <- list(cam = c(
+                      ten_loc.bl = 5000,
+                      ten_loc.itpa = 1500,
+                      ten_loc.ov = 500,
+                      som = 5000),
+              amz = c(
+                      ten_loc.bl = 5000,
+                      ten_loc.itpa = 1500,
+                      ten_loc.ov = 500,
+                      som = 5000))
+# Increase number of maximum knots 10-fold (default: 2000)
+max.knots.reg <- list(cam = c(
+                              ten_loc.bl = 2e4,
+                              ten_loc.itpa = 2e4,
+                              ten_loc.ov = 2e4,
+                              som = 2e4),
+                      amz = c(
+                              ten_loc.bl = 2e4,
+                              ten_loc.itpa = 2e4,
+                              ten_loc.ov = 2e4,
+                              som = 2e4))
+# max.knots.reg <- list(cam = c(k.reg$cam[1:3] * 10, som = 10000),
+#                       amz = c(k.reg$amz[1:3] * 10, som = 10000))
 
 # Fitting parameters
 conv.eps <- 1e-7 # Default is 1e-7
@@ -96,20 +66,17 @@ form.resp <-
   switch(model.resp,
          "def" = deforestation ~ .,
          "deg" = degradation ~ .,
-         "dis" = disturbance ~ .,
-         "int" = intensity ~ .)
+         "dis" = disturbance ~ .)
 var.resp <-
   switch(model.resp,
          "def" = "deforestation",
          "deg" = "degradation",
-         "dis" = "disturbance",
-         "int" = "intensity")
+         "dis" = "disturbance")
 mod.fam <-
   switch(model.resp,
          "def" = binomial(link = "cloglog"),
          "deg" = binomial(link = "cloglog"),
-         "dis" = binomial(link = "cloglog"),
-         "int" = tw(link = "log"))
+         "dis" = binomial(link = "cloglog"))
 
 
 vars.mod <-
@@ -117,15 +84,11 @@ vars.mod <-
     "it_type", "pa_type", "overlap",
     "ed_east", "ed_north", "adm0",
     "som_x", "som_y",
-    "elevation", "slope", "sx",
+    "elevation", "slope", "sx", "cmi_min",
     "dist_set", "dist_roads", "dist_rivers",
     "dens_pop", "dens_roads", "travel_time")
 
 data.proc <- readRDS(file.data.proc)
-
-if(model.resp == "int") {
-  data.proc <- data.proc[degradation == TRUE]
-}
 
 data.mod <- data.proc[, ..vars.mod]
 setDT(data.mod)

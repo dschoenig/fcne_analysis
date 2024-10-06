@@ -43,8 +43,7 @@ var.resp <-
   switch(model_resp,
          "def" = "deforestation",
          "deg" = "degradation",
-         "dis" = "disturbance",
-         "int" = "intensity")
+         "dis" = "disturbance")
 
 vars.pred <-
   c("id", var.resp,
@@ -56,9 +55,6 @@ vars.pred <-
     "dens_pop", "dens_roads", "travel_time")
 
 # Data for prediction
-if(model_resp == "int") {
-  data <- data[degradation == TRUE]
-}
 data.pred <- data[, ..vars.pred]
 rm(data)
 
@@ -108,9 +104,7 @@ silence <- gc()
 
 # Prepare export
 
-if(model_resp != "int") {
-  pred[, resp.col := as.logical(resp.col), env = list(resp.col = var.resp)]
-}
+pred[, resp.col := as.logical(resp.col), env = list(resp.col = var.resp)]
 # pred[, .draw.chunk := factor(ceiling(.draw/100), levels = as.character(1:10))]
 setcolorder(pred, c(".draw", "id", var.resp))
 

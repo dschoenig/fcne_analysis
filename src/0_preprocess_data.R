@@ -51,7 +51,6 @@ vars[,
           disturbance = fifelse((tmf_def > 2010 & tmf_def <= 2020) |
                                 (tmf_deg > 2010 & tmf_deg <= 2020),
                                 TRUE, FALSE),
-          intensity = tmf_int,
           it = fifelse(it == "t", TRUE, FALSE),
           it_type = factor(it_type,
                            levels = c("none", "recognized", "not_recognized"),
@@ -88,12 +87,13 @@ vars[, overlap := factor(overlap,
 
 vars.sel <-
   c("id", "adm0",
-    "deforestation", "degradation", "disturbance", "intensity",
+    "deforestation", "degradation", "disturbance",
     "tmf_def", "tmf_deg",
     "it", "it_type", "pa", "pa_type", "overlap",
     "elevation", "slope", "sx",
     "dist_set", "dist_roads", "dist_rivers",
     "dens_roads", "dens_pop", "travel_time",
+    "bio9", "bio17",
     "driver",
     "lon", "lat",
     "ed_east", "ed_north", "ea_east", "ea_north")

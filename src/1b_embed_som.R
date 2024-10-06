@@ -46,7 +46,7 @@ for(i in seq_along(datasets)) {
   data.int <- readRDS(file.data.int)
 
   cov <-
-    c("elevation", "slope", "sx",
+    c("elevation", "slope", "sx", "cmi_min",
       "dist_set", "dist_roads", "dist_rivers",
       "dens_pop", "dens_roads", "travel_time")
 
