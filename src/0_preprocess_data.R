@@ -90,10 +90,9 @@ vars.sel <-
     "deforestation", "degradation", "disturbance",
     "tmf_def", "tmf_deg",
     "it", "it_type", "pa", "pa_type", "overlap",
-    "elevation", "slope", "sx",
+    "elevation", "slope", "sx", "cmi_min",
     "dist_set", "dist_roads", "dist_rivers",
     "dens_roads", "dens_pop", "travel_time",
-    "bio9", "bio17",
     "driver",
     "lon", "lat",
     "ed_east", "ed_north", "ea_east", "ea_north")
@@ -144,7 +143,7 @@ if(region == "cam") {
 
     lf.l[[i]] <-
       st_transform(hurr.int[lf.id,], crs.cam.ed) |>
-      st_buffer(dist = 5e4, nQuadSegs = 100)
+      st_buffer(dist = 3e4, nQuadSegs = 100)
 
   }
 
@@ -162,8 +161,8 @@ if(region == "cam") {
     st_intersection(pts.cri_nic, lf)
   idx.lf <- sort(unique(pts.lf$id))
 
-  data.int[id %in% idx.lf, hurr_otto := TRUE]
-  data.int[is.na(hurr_otto), hurr_otto := FALSE]
+  data.int[id %in% idx.lf, hurr_lf := TRUE]
+  data.int[is.na(hurr_lf), hurr_lf := FALSE]
 
 }
 

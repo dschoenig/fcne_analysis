@@ -25,8 +25,8 @@ set_cpu_count(n.threads)
 if(is.na(hurr_type)) {
   hurr_type <- "otto"
 }
-if(hurr_type == "no_otto" & region == "cam") {
-  hurr_suf <- ".no_otto"
+if(hurr_type == "no_hurr" & region == "cam") {
+  hurr_suf <- ".no_hurr"
 } else {
   hurr_suf <- ""
 }
@@ -54,8 +54,8 @@ id.var <- "id"
 data <- readRDS(file.data)
 
 
-if(region == "cam" & hurr_type == "no_otto") {
-  data <- data[hurr_otto == FALSE]
+if(region == "cam" & hurr_type == "no_hurr") {
+  data <- data[hurr_lf == FALSE]
 }
 
 

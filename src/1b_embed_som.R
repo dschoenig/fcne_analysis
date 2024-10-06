@@ -109,7 +109,7 @@ for(i in seq_along(datasets)) {
             area.id, it.id, pa.id,
             it_type, pa_type, overlap,
             ed_east, ed_north,
-            hurr_otto,
+            hurr_lf,
             som_bmu)]
     } else {
       data.comp <-

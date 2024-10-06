@@ -88,7 +88,7 @@ vars.sel <-
                  "driver",
                  "lon", "lat",
                  "ed_east", "ed_north", "ea_east", "ea_north",
-                 "hurr_otto"))
+                 "hurr_lf"))
 
 vars <- vars[, ..vars.sel]
 
@@ -133,7 +133,7 @@ for(i in seq_along(datasets)) {
         "driver",
         "lon", "lat",
         "ed_east", "ed_north", "ea_east", "ea_north",
-        "hurr_otto")
+        "hurr_lf")
     vars.sel.proc <-
       c("id", "adm0",
         "deforestation", "degradation", "disturbance", "sci",
@@ -146,7 +146,7 @@ for(i in seq_along(datasets)) {
         "driver",
         "lon", "lat",
         "ed_east", "ed_north", "ea_east", "ea_north",
-        "hurr_otto",
+        "hurr_lf",
         "som_bmu", "som_x", "som_y")
   } else {
     vars.sel.int <-

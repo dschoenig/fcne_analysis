@@ -31,8 +31,8 @@ if(!dir.exists(path.tables)) dir.create(path.tables, recursive = TRUE)
 if(is.na(hurr_type)) {
   hurr_type <- "otto"
 }
-if(hurr_type == "no_otto") {
-  hurr_suf <- ".no_otto"
+if(hurr_type == "no_hurr") {
+  hurr_suf <- ".no_hurr"
 } else {
   hurr_suf <- ""
 }

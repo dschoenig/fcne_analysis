@@ -19,7 +19,7 @@ if(is.na(overwrite)) {
   overwrite <- FALSE
 }
 
-# hurr_type <- "no_otto"
+# hurr_type <- "no_hurr"
 # overwrite <- TRUE
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
@@ -39,8 +39,8 @@ if(!dir.exists(path.geo)) dir.create(path.geo, recursive = TRUE)
 if(is.na(hurr_type)) {
   hurr_type <- "otto"
 }
-if(hurr_type == "no_otto") {
-  hurr_suf <- ".no_otto"
+if(hurr_type == "no_hurr") {
+  hurr_suf <- ".no_hurr"
 } else {
   hurr_suf <- ""
 }

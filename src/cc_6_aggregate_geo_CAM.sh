@@ -11,5 +11,5 @@ module load StdEnv/2023 gcc/12.3 gdal/3.7.2 geos/3.12.0 python/3.11.5 udunits/2.
 
 Rscript 6_aggregate_geo.R 4 cam def 
 Rscript 6_aggregate_geo.R 4 cam deg
-Rscript 6_aggregate_geo.R 4 cam def no_otto
-Rscript 6_aggregate_geo.R 4 cam deg no_otto
+Rscript 6_aggregate_geo.R 4 cam def no_hurr
+Rscript 6_aggregate_geo.R 4 cam deg no_hurr

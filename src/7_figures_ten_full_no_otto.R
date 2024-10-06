@@ -17,9 +17,9 @@ if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
 path.tables <- paste0(path.base, "results/tables/")
 if(!dir.exists(path.tables)) dir.create(path.tables, recursive = TRUE)
 
-file.data.vis <- paste0(path.data.vis, "tenure_adm_no_otto.rds")
-file.fig.af <- paste0(path.figures, "ten.af.full.no_otto.png")
-file.fig.pf <- paste0(path.figures, "ten.pf.full.no_otto.png")
+file.data.vis <- paste0(path.data.vis, "tenure_adm_no_hurr.rds")
+file.fig.af <- paste0(path.figures, "ten.af.full.no_hurr.png")
+file.fig.pf <- paste0(path.figures, "ten.pf.full.no_hurr.png")
 
 regions <- c("amz", "cam")
 
@@ -129,9 +129,9 @@ if(!file.exists(file.data.vis)) {
    
     if(
     file.mar.sam <- paste0(path.marginal, region, "/", region, ".sam.rds")
-    name.mar.ten.af <- paste0(region, ".ten.af.itpa.all.no_otto.rds")
+    name.mar.ten.af <- paste0(region, ".ten.af.itpa.all.no_hurr.rds")
     file.mar.ten.af <- paste0(path.marginal, region, "/", name.mar.ten.af)
-    name.mar.ten.pf <- paste0(region, ".ten.pf.itpa.all.no_otto.rds")
+    name.mar.ten.pf <- paste0(region, ".ten.pf.itpa.all.no_hurr.rds")
     file.mar.ten.pf <- paste0(path.marginal, region, "/", name.mar.ten.pf)
 
     # Tenure categories by administrative areas
