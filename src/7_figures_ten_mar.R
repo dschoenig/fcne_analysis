@@ -29,7 +29,7 @@ path.tables <- paste0(path.base, "results/tables/")
 if(!dir.exists(path.tables)) dir.create(path.tables, recursive = TRUE)
 
 if(is.na(hurr_type)) {
-  hurr_type <- "otto"
+  hurr_type <- "hurr"
 }
 if(hurr_type == "no_hurr") {
   hurr_suf <- ".no_hurr"

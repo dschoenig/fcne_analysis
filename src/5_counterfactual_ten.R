@@ -19,7 +19,7 @@ hurr_type <- tolower(as.character(args[5]))
 setDTthreads(n.threads)
 
 if(is.na(hurr_type)) {
-  hurr_type <- "otto"
+  hurr_type <- "hurr"
 }
 if(hurr_type == "no_hurr" & region == "cam") {
   hurr_suf <- ".no_hurr"

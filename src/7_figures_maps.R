@@ -37,7 +37,7 @@ path.geo <- paste0(path.base, "results/geo/")
 if(!dir.exists(path.geo)) dir.create(path.geo, recursive = TRUE)
 
 if(is.na(hurr_type)) {
-  hurr_type <- "otto"
+  hurr_type <- "hurr"
 }
 if(hurr_type == "no_hurr") {
   hurr_suf <- ".no_hurr"
