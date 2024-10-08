@@ -44,7 +44,7 @@ merge.cols <- c(id.var, "adm0")
 data <- data[it_type == "none" & pa_type == "none", ..merge.cols]
 data[, type := "noitpa"]
 
-group.sel <- c("group.id", "type", "adm0",)
+group.sel <- c("group.id", "type", "adm0")
 group.by <- list("type", "adm0")
 
 groups.l <- list()
