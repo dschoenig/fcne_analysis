@@ -40,7 +40,7 @@ file.agg <- paste0(path.agg, region, ".", resp_type, ".noitpa.rds")
 
 id.var <- "id"
 data <- readRDS(file.data)
-merge.cols <- c(id.var, "adm0",)
+merge.cols <- c(id.var, "adm0")
 data <- data[it_type == "none" & pa_type == "none", ..merge.cols]
 data[, type := "noitpa"]
 
