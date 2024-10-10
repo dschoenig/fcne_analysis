@@ -1,0 +1,69 @@
+# Done
+
+sbatch cc_1a_fit_som_AMZ.sh
+sbatch cc_1a_fit_som_CAM.sh
+sbatch cc_1b_embed_som_CAM.sh
+sbatch cc_1b_embed_som_AMZ.sh
+sbatch cc_2_fit_gam_CAM_1_def.sh
+sbatch cc_2_fit_gam_CAM_1_deg.sh
+sbatch cc_2_fit_gam_AMZ_1_def.sh
+sbatch cc_2_fit_gam_AMZ_1_deg.sh
+sbatch cc_3_posterior_simulation.sh
+
+sbatch cc_4_evaluate_predictions_CAM_def.sh
+sbatch cc_4_evaluate_predictions_CAM_deg.sh
+sbatch cc_4_evaluate_predictions_AMZ_def.sh
+sbatch cc_4_evaluate_predictions_AMZ_deg.sh
+
+sbatch cc_5_counterfactual_geo_AMZ.sh
+sbatch cc_5_counterfactual_ten_AMZ.sh
+sbatch cc_5_counterfactual_geo_CAM.sh
+sbatch cc_5_counterfactual_geo_no_hurr.CAM.sh
+sbatch cc_5_counterfactual_ten_CAM.sh
+sbatch cc_5_counterfactual_ten_no_hurr_CAM.sh
+
+sbatch cc_6_marginal_ten_it_ov_AMZ.sh
+sbatch cc_6_marginal_ten_pa_ov_AMZ.sh
+sbatch cc_6_marginal_geo_it_def_AMZ.sh
+sbatch cc_6_marginal_geo_it_deg_AMZ.sh
+sbatch cc_6_marginal_ten_it_ov_CAM.sh
+sbatch cc_6_marginal_ten_it_ov_no_hurr_CAM.sh
+sbatch cc_6_marginal_ten_pa_ov_CAM.sh
+sbatch cc_6_marginal_ten_pa_ov_no_hurr_CAM.sh
+sbatch cc_6_marginal_ten_itpa_CAM.sh
+sbatch cc_6_marginal_ten_itpa_no_hurr_CAM.sh
+sbatch cc_6_marginal_geo_it_CAM.sh
+sbatch cc_6_marginal_geo_it_no_hurr_CAM.sh
+sbatch cc_6_marginal_geo_pa_CAM.sh
+sbatch cc_6_marginal_geo_pa_no_hurr_CAM.sh
+sbatch cc_6_marginal_geo_itpa_no_hurr_CAM.sh
+
+sbatch cc_6_aggregate_all_AMZ.sh
+sbatch cc_6_aggregate_noitpa_AMZ.sh
+sbatch cc_6_aggregate_som_AMZ.sh
+sbatch cc_6_aggregate_all_CAM.sh
+sbatch cc_6_aggregate_noitpa_CAM.sh
+sbatch cc_6_aggregate_geo_CAM.sh
+sbatch cc_6_aggregate_som_CAM.sh
+
+sbatch cc_6_residuals_CAM.sh
+sbatch cc_6_residuals_AMZ.sh
+
+sbatch cc_6_sample_sizes.sh
+
+
+# Running
+
+sbatch cc_6_aggregate_geo_AMZ.sh
+
+sbatch cc_6_marginal_geo_itpa_CAM.sh
+sbatch cc_6_marginal_ten_itpa_AMZ.sh
+
+sbatch cc_6_marginal_geo_itpa_def_AMZ.sh
+sbatch cc_6_marginal_geo_itpa_deg_AMZ.sh
+sbatch cc_6_marginal_geo_pa_def_AMZ.sh
+sbatch cc_6_marginal_geo_pa_deg_AMZ.sh
+
+# To run
+
+

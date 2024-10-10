@@ -45,8 +45,17 @@ file.out <- paste0(path.cf, region, ".ten.",
                    ov_type, hurr_suf, ".rds")
 
 data <- readRDS(file.data)
-
 som.fit <- readRDS(file.som)
+
+# Establish geographic range for comparisons (using entire study region)
+pts.bb <-
+  st_multipoint(x = as.matrix(data[, .(ed_east, ed_north)]), dim = "XY") |>
+  st_minimum_bounding_circle() |>
+  st_bbox()
+geo.range <- pts.bb[["xmax"]] - pts.bb[["xmin"]]
+rm(pts.bb)
+silence <- gc()
+
 
 if(region == "cam" & hurr_type == "no_hurr") {
   data <- data[hurr_lf == FALSE]
@@ -144,7 +153,7 @@ cf.def <-
                             som.var = "som_bmu",
                             geo.vars = c("ed_east", "ed_north"),
                             geo.kernel = "matern32",
-                            geo.range = NULL,
+                            geo.range = geo.range,
                             id.var = "id",
                             group.name = "group.id",
                             unit.name = "cf.unit",

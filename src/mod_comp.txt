@@ -1,0 +1,22 @@
+
+AIC
+
+Old models:
+CAM def 3506142
+CAM deg 6379199
+
+New models:
+CAM def 3498420
+CAM deg 6371106
+
+
+DEV EXPLAINED
+
+CAM def 0.329773
+CAM deg 0.2215301
+
+New models:
+CAM def 0.332
+CAM deg 22.2
+
+

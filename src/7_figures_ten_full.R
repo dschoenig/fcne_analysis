@@ -12,8 +12,8 @@ source("utilities.R")
 hurr_type <- tolower(as.character(args[1]))
 overwrite <- as.logical(as.character(args[2]))
 
-hurr_type <- "no_hurr"
-overwrite <- TRUE
+# hurr_type <- "no_hurr"
+# overwrite <- TRUE
 
 
 if(is.na(overwrite)) {
@@ -24,6 +24,7 @@ path.base <- "../"
 path.data <- paste0(path.base, "data/")
 path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
+if(!dir.exists(path.data.vis)) dir.create(path.data.vis, recursive = TRUE)
 path.marginal <- paste0(path.base, "models/marginal/")
 path.figures <- paste0(path.base, "results/figures/")
 if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
@@ -155,11 +156,13 @@ reg.lab$cam[, reg.label := factor(reg.label, levels = reg.label)]
 
 dist.lab <-
   data.table(dist_type = c("def", "deg"),
-             dist.label = c("Long-term disturbance", "Short-term disturbance"))
+             dist.label = c("Long-term disturbance (deforestation)",
+                            "Short-term disturbance (not followed by deforestation)"))
 dist.lab[, dist.label := factor(dist.label, levels = dist.label)]
 
+
 # mar.title <- "Absolute marginal\ndifference in\nforest loss risk\n(2011 – 2020)"
-mar.title <- "Avoided disturbances 2011–2020\n(proportion of undisturbed TMF)"
+mar.title <- "Absolute avoided\ndisturbances 2011–2020\n(proportion of previously\nundisturbed TMF)"
 
 ## EFFECT OF TENURE BY ADMINISTRATIVE AREA, FOREST TYPE ########################
 
@@ -292,7 +295,6 @@ for(i in seq_along(regions)) {
                       amz = "Amazon")
 
   plots[[region]]$ten.mar$def <-
-
     ten.sum[[region]]$mar[((it_type == "none"  & pa_type != "none") |
                            (it_type != "none"  & pa_type == "none")) &
                           dist_type == "def"] |>
@@ -323,7 +325,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "Long-term disturbance",
+      labs(title = dist.lab[dist_type == "def", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = "Non-overlapping regimes\n", x = NULL) +
@@ -360,7 +362,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "Short-term disturbance",
+      labs(title = dist.lab[dist_type == "deg", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = "Non-overlapping regimes\n", x = NULL) +
@@ -369,145 +371,144 @@ for(i in seq_along(regions)) {
 
 
 
-## TENURE EFFECTS BY COUNTRY (FULL POSTERIOR DISTRIBUTIONS) ####################
+# ## TENURE EFFECTS BY COUNTRY (FULL POSTERIOR DISTRIBUTIONS) ####################
 
 
-plots <- list()
+# plots <- list()
 
-for(i in seq_along(regions)) {
+# for(i in seq_along(regions)) {
 
-  region <- regions[i]
+#   region <- regions[i]
 
-  message(paste0("Preparing plots for region `", region, "` …"))
+#   message(paste0("Preparing plots for region `", region, "` …"))
 
-  message("Tenure category by country …")
+#   message("Tenure category by country …")
 
-  sep.x <- nrow(reg.lab[[region]]) - 0.5
+#   sep.x <- nrow(reg.lab[[region]]) - 0.5
 
-  reg.title <- switch(region,
-                      cam = "Central America",
-                      amz = "Amazon")
+#   reg.title <- switch(region,
+#                       cam = "Central America",
+#                       amz = "Amazon")
 
-  plots[[region]]$ten.mar$def <-
-
-    ten.sum[[region]]$post[dist_type == "def" & !is.na(marginal)] |>
-    melt(measure.vars = c("factual", "counterfactual"),
-         variable.name = "condition",
-         value.name = "outcome") |>
-    ggplot() +
-      stat_slabinterval(aes(y = outcome, x = condition), fill = 2) +
-      facet_grid(rows = vars(cat.label), cols = vars(reg.label)) +
-      theme_ggdist()
-
-
-    ten.sum[[region]]$post[dist_type == "def" & !is.na(marginal)] |>
-    ggplot() +
-      stat_slabinterval(aes(x = cat.label, y = marginal), fill = 2) +
-      facet_grid(rows = vars(rev(reg.label)), scales = "free_y") +
-      theme_ggdist()
-
-ten.sum[[region]]$post[dist_type == "def" & !is.na(marginal) & adm0 == "NIC", unique(group.id)]
+#   plots[[region]]$ten.mar$def <-
+#     ten.sum[[region]]$post[dist_type == "def" & !is.na(marginal)] |>
+#     melt(measure.vars = c("factual", "counterfactual"),
+#          variable.name = "condition",
+#          value.name = "outcome") |>
+#     ggplot() +
+#       stat_slabinterval(aes(y = outcome, x = condition), fill = 2) +
+#       facet_grid(rows = vars(cat.label), cols = vars(reg.label)) +
+#       theme_ggdist()
 
 
-    ten.sum[[region]]$post[!(it_type == "none" & pa_type == "none") & dist_type == "def"] |>
-    ggplot() +
-      stat_halfeye(aes(x = cat.label, y = marginal), fill = 2, normalize = "xy", width = 0.5) +
-      geom_hline(yintercept = 0, linetype = "dashed") +
-      facet_grid(rows = vars(rev(reg.label)), scales = "free_y") +
-      # scale_x_discrete(drop = FALSE) +
-      # facet_wrap(vars(reg.label), scales = "free_y", ncol = 1) +
-      facet_grid(rows = vars(reg.label), cols = vars(dist.label), scales = "free_y") +
-      theme_ggdist()
+#     ten.sum[[region]]$post[dist_type == "def" & !is.na(marginal)] |>
+#     ggplot() +
+#       stat_slabinterval(aes(x = cat.label, y = marginal), fill = 2) +
+#       facet_grid(rows = vars(rev(reg.label)), scales = "free_y") +
+#       theme_ggdist()
 
-    ten.sum[[region]]$post[!(it_type == "none" & pa_type == "none") &
-                           dist_type == "def" & !is.na(marginal)] |>
-    melt(measure.vars = c("factual", "counterfactual"),
-         variable.name = "condition",
-         value.name = "outcome") |>
-    ggplot() +
-      stat_halfeye(aes(x = cat.label, y = outcome, colour = condition), normalize = "xy", width = 0.5,
-                   position = "dodge") +
-      geom_hline(yintercept = 0, linetype = "dashed") +
-      facet_grid(rows = vars(rev(reg.label)), scales = "free_y") +
-      # scale_x_discrete(drop = FALSE) +
-      # facet_wrap(vars(reg.label), scales = "free_y", ncol = 1) +
-      facet_grid(rows = vars(reg.label), cols = vars(dist.label), scales = "free_y") +
-      theme_ggdist()
+# ten.sum[[region]]$post[dist_type == "def" & !is.na(marginal) & adm0 == "NIC", unique(group.id)]
 
 
-ten.sum[[region]]$post[group.id == 101]
+#     ten.sum[[region]]$post[!(it_type == "none" & pa_type == "none") & dist_type == "def"] |>
+#     ggplot() +
+#       stat_halfeye(aes(x = cat.label, y = marginal), fill = 2, normalize = "xy", width = 0.5) +
+#       geom_hline(yintercept = 0, linetype = "dashed") +
+#       facet_grid(rows = vars(rev(reg.label)), scales = "free_y") +
+#       # scale_x_discrete(drop = FALSE) +
+#       # facet_wrap(vars(reg.label), scales = "free_y", ncol = 1) +
+#       facet_grid(rows = vars(reg.label), cols = vars(dist.label), scales = "free_y") +
+#       theme_ggdist()
 
-  |>
-    ggplot() +
-      geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
-                linewidth = 1, colour = "white") +
-      geom_text(aes(x = reg.label, y = cat.label,
-                    label = mar.lab.mean,
-                    fontface = ci_0,
-                    colour = mar.lab.shade),
-                size = 1.65) +
-      geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
-                   linewidth = 0.3, colour = "grey5") +
-      scale_fill_continuous_divergingx(
-                                       palette = "Roma"
-                                       ,rev = TRUE,
-                                       ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-                                       ,labels = label_arc
-                                       ,limits = c(-0.15, 0.15)
-                                       ,oob = scales::squish
-                                       ,na.value = "grey95"
-                                       ) +
-      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
-                            guide = "none") +
-      scale_colour_manual(values = c(dark = "grey15", light = "grey85"),
-                          guide = "none") +
-      scale_x_discrete(position = "top") +
-      scale_y_discrete(limits = rev) +
-      coord_fixed() +
-      ten_guide_fill +
-      labs(title = "Long-term disturbance",
-           subtitle = reg.title,
-           fill = mar.title,
-           y = "Non-overlapping regimes\n", x = NULL) +
-      ten_theme
+#     ten.sum[[region]]$post[!(it_type == "none" & pa_type == "none") &
+#                            dist_type == "def" & !is.na(marginal)] |>
+#     melt(measure.vars = c("factual", "counterfactual"),
+#          variable.name = "condition",
+#          value.name = "outcome") |>
+#     ggplot() +
+#       stat_halfeye(aes(x = cat.label, y = outcome, colour = condition), normalize = "xy", width = 0.5,
+#                    position = "dodge") +
+#       geom_hline(yintercept = 0, linetype = "dashed") +
+#       facet_grid(rows = vars(rev(reg.label)), scales = "free_y") +
+#       # scale_x_discrete(drop = FALSE) +
+#       # facet_wrap(vars(reg.label), scales = "free_y", ncol = 1) +
+#       facet_grid(rows = vars(reg.label), cols = vars(dist.label), scales = "free_y") +
+#       theme_ggdist()
 
-  plots[[region]]$ten.mar$deg <-
-    ten.sum[[region]]$mar[((it_type == "none"  & pa_type != "none") |
-                           (it_type != "none"  & pa_type == "none")) &
-                          dist_type == "deg"] |>
-    ggplot() +
-      geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
-                linewidth = 1, colour = "white") +
-      geom_text(aes(x = reg.label, y = cat.label,
-                    label = mar.lab.mean,
-                    fontface = ci_0,
-                    colour = mar.lab.shade),
-                size = 1.65) +
-      geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
-                   linewidth = 0.3, colour = "grey5") +
-      scale_fill_continuous_divergingx(
-                                       palette = "Roma"
-                                       ,rev = TRUE,
-                                       ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-                                       ,labels = label_arc
-                                       ,limits = c(-0.15, 0.15)
-                                       ,oob = scales::squish
-                                       ,na.value = "grey95"
-                                       ) +
-      scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
-                            guide = "none") +
-      scale_colour_manual(values = c(dark = "grey15", light = "grey85"),
-                          guide = "none") +
-      scale_x_discrete(position = "top") +
-      scale_y_discrete(limits = rev) +
-      coord_fixed() +
-      ten_guide_fill +
-      labs(title = "Short-term disturbance",
-           subtitle = reg.title,
-           fill = mar.title,
-           y = "Non-overlapping regimes\n", x = NULL) +
-      ten_theme
-}
+
+# ten.sum[[region]]$post[group.id == 101]
+
+#   |>
+#     ggplot() +
+#       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
+#                 linewidth = 1, colour = "white") +
+#       geom_text(aes(x = reg.label, y = cat.label,
+#                     label = mar.lab.mean,
+#                     fontface = ci_0,
+#                     colour = mar.lab.shade),
+#                 size = 1.65) +
+#       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
+#                    linewidth = 0.3, colour = "grey5") +
+#       scale_fill_continuous_divergingx(
+#                                        palette = "Roma"
+#                                        ,rev = TRUE,
+#                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
+#                                        ,labels = label_arc
+#                                        ,limits = c(-0.15, 0.15)
+#                                        ,oob = scales::squish
+#                                        ,na.value = "grey95"
+#                                        ) +
+#       scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
+#                             guide = "none") +
+#       scale_colour_manual(values = c(dark = "grey15", light = "grey85"),
+#                           guide = "none") +
+#       scale_x_discrete(position = "top") +
+#       scale_y_discrete(limits = rev) +
+#       coord_fixed() +
+#       ten_guide_fill +
+      # labs(title = dist.lab[dist_type == "def", dist.label],
+#            subtitle = reg.title,
+#            fill = mar.title,
+#            y = "Non-overlapping regimes\n", x = NULL) +
+#       ten_theme
+
+#   plots[[region]]$ten.mar$deg <-
+#     ten.sum[[region]]$mar[((it_type == "none"  & pa_type != "none") |
+#                            (it_type != "none"  & pa_type == "none")) &
+#                           dist_type == "deg"] |>
+#     ggplot() +
+#       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.mean),
+#                 linewidth = 1, colour = "white") +
+#       geom_text(aes(x = reg.label, y = cat.label,
+#                     label = mar.lab.mean,
+#                     fontface = ci_0,
+#                     colour = mar.lab.shade),
+#                 size = 1.65) +
+#       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
+#                    linewidth = 0.3, colour = "grey5") +
+#       scale_fill_continuous_divergingx(
+#                                        palette = "Roma"
+#                                        ,rev = TRUE,
+#                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
+#                                        ,labels = label_arc
+#                                        ,limits = c(-0.15, 0.15)
+#                                        ,oob = scales::squish
+#                                        ,na.value = "grey95"
+#                                        ) +
+#       scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
+#                             guide = "none") +
+#       scale_colour_manual(values = c(dark = "grey15", light = "grey85"),
+#                           guide = "none") +
+#       scale_x_discrete(position = "top") +
+#       scale_y_discrete(limits = rev) +
+#       coord_fixed() +
+#       ten_guide_fill +
+#       labs(title = dist.lab[dist_type == "def", dist.label],
+#            subtitle = reg.title,
+#            fill = mar.title,
+#            y = "Non-overlapping regimes\n", x = NULL) +
+#       ten_theme
+# }
 
 
 
