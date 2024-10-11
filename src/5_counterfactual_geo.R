@@ -72,17 +72,17 @@ data <-
 if(area_type == "it") {
   cf.ids <- data[it_type == "none", id]  
   fac.ids <- data[it_type != "none" & pa_type != "none", id]  
-  comp.by <- c("pa_type")
+  comp.by <- c("pa_type", "adm0")
 }
 if(area_type == "pa") {
   cf.ids <- data[pa_type == "none", id]  
   fac.ids <- data[it_type != "none" & pa_type != "none", id]  
-  comp.by <- c("it_type")
+  comp.by <- c("it_type", "adm0")
 }
 if(area_type == "itpa") {
   cf.ids <- data[it_type == "none" & pa_type == "none", id]  
   fac.ids <- data[it_type != "none" | pa_type != "none", id]  
-  comp.by <- NULL
+  comp.by <- c("adm0")
 }
 
 group.by <- list(c("ea_east.bin", "ea_north.bin"))

@@ -11,7 +11,7 @@ hurr_type <- tolower(as.character(args[4]))
 
 # n.threads <- 1
 # region <- "amz"
-# ov_type <- "ov"
+# area_type <- "rec"
 # hurr_type <- NA
 
 setDTthreads(n.threads)
@@ -43,6 +43,8 @@ file.out <- paste0(path.cf, region, ".ten_comp.", area_type, ".all", hurr_suf, "
 data <- readRDS(file.data)
 som.fit <- readRDS(file.som)
 
+data <- data[sample(1:.N, 1e4)]
+
 # Establish geographic range for comparisons (using entire study region)
 pts.bb <-
   st_multipoint(x = as.matrix(data[, .(ed_east, ed_north)]), dim = "XY") |>
@@ -69,11 +71,17 @@ if(area_type %in% c("rec", "nrec")) {
   comp.by <- c("pa_type", "adm0")
   if(area_type == "rec") {
   cf.ids <- data.cf[it_type == "not_recognized", id]  
-  fac.ids <- data.cf[it_type == "recognized", id]  
+  fac.ids <-
+    data.cf[unique(data.cf[it_type == "not_recognized", .(pa_type, adm0)]),
+            on = c("pa_type", "adm0")
+            ][it_type == "recognized", id]
   }
   if(area_type == "nrec") {
   cf.ids <- data.cf[it_type == "recognized", id]  
-  fac.ids <- data.cf[it_type == "not_recognized", id]  
+  fac.ids <-
+    data.cf[unique(data.cf[it_type == "recognized", .(pa_type, adm0)]),
+            on = c("pa_type", "adm0")
+            ][it_type == "not_recognized", id]
   }
 }
 
@@ -88,11 +96,17 @@ if(area_type %in% c("ind", "dir")) {
   comp.by <- c("it_type", "adm0")
   if(area_type == "ind") {
   cf.ids <- data.cf[pa_type == "direct_use", id]  
-  fac.ids <- data.cf[pa_type == "indirect_use", id]  
+  fac.ids <-
+    data.cf[unique(data.cf[pa_type == "direct_use", .(it_type, adm0)]),
+            on = c("it_type", "adm0")
+            ][pa_type == "indirect_use", id]
   }
   if(area_type == "dir") {
   cf.ids <- data.cf[pa_type == "indirect_use", id]  
-  fac.ids <- data.cf[pa_type == "direct_use", id]  
+  fac.ids <-
+    data.cf[unique(data.cf[pa_type == "indirect_use", .(it_type, adm0)]),
+            on = c("it_type", "adm0")
+            ][pa_type == "direct_use", id]
   }
 }
 
@@ -122,6 +136,8 @@ message()
 message("Defining counterfactual …")
 
 
+
+source("utilities.R")
 a <- Sys.time()
 cf.def <-
   egp_define_counterfactual(data = data.cf,

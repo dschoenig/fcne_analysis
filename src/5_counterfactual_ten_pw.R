@@ -117,7 +117,7 @@ for(i in 1:nrow(combs)) {
                               som = som.fit,
                               cf.ids = cf.idx,
                               fac.ids = fac.idx,
-                              compare.by = NULL,
+                              compare.by = c("adm0"),
                               group.by = group.by,
                               som.var = "som_bmu",
                               geo.vars = c("ed_east", "ed_north"),
