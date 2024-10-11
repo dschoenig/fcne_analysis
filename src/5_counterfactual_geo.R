@@ -71,12 +71,18 @@ data <-
 
 if(area_type == "it") {
   cf.ids <- data[it_type == "none", id]  
-  fac.ids <- data[it_type != "none" & pa_type != "none", id]  
+  fac.ids <-
+    data[unique(data[it_type == "none", .(pa_type, adm0)]),
+         on = c("pa_type", "adm0")
+         ][it_type != "none", id]
   comp.by <- c("pa_type", "adm0")
 }
 if(area_type == "pa") {
   cf.ids <- data[pa_type == "none", id]  
-  fac.ids <- data[it_type != "none" & pa_type != "none", id]  
+  fac.ids <-
+    data[unique(data[pa_type == "none", .(it_type, adm0)]),
+         on = c("it_type", "adm0")
+         ][pa_type != "none", id]
   comp.by <- c("it_type", "adm0")
 }
 if(area_type == "itpa") {
