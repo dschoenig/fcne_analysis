@@ -43,8 +43,6 @@ file.out <- paste0(path.cf, region, ".ten_comp.", area_type, ".all", hurr_suf, "
 data <- readRDS(file.data)
 som.fit <- readRDS(file.som)
 
-data <- data[sample(1:.N, 1e4)]
-
 # Establish geographic range for comparisons (using entire study region)
 pts.bb <-
   st_multipoint(x = as.matrix(data[, .(ed_east, ed_north)]), dim = "XY") |>
