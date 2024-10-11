@@ -177,11 +177,11 @@ reg.lab$cam[, reg.label := factor(reg.label, levels = reg.label)]
 
 dist.lab <-
   data.table(dist_type = c("def", "deg"),
-             dist.label = c("Long-term disturbance", "Short-term disturbance"))
+             dist.label = c("Long-term disturbance (deforestation)",
+                            "Short-term disturbance (not followed by deforestation)"))
 dist.lab[, dist.label := factor(dist.label, levels = dist.label)]
 
-# mar.title <- "Absolute marginal\ndifference in\nforest loss risk\n(2011 – 2020)"
-mar.title <- "Avoided disturbances 2011–2020\n(proportion of undisturbed TMF)"
+mar.title <- "Absolute avoided\ndisturbances 2011–2020\n(proportion of previously\nundisturbed TMF)"
 it.title <- "Additional effect of indigenous tenure\nin mixed tenure regimes\n"
 pa.title <- "Additional effect of areal protection\nin mixed tenure regimes\n"
 it.title <- "Additional effect of\nindigenous tenure\nin mixed tenure regimes\n"
@@ -356,7 +356,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "Primary forests",
+      labs(title = dist.lab[dist_type == "def", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = "Non-overlapping areas\n", x = NULL) +
@@ -393,7 +393,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "All forests",
+      labs(title = dist.lab[dist_type == "deg", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = "Non-overlapping areas\n", x = NULL) +
@@ -450,7 +450,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "Primary forests",
+      labs(title = dist.lab[dist_type == "def", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = it.title, x = NULL) +
@@ -485,7 +485,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "All forests",
+      labs(title = dist.lab[dist_type == "deg", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = it.title, x = NULL) +
@@ -520,7 +520,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "Primary forests",
+      labs(title = dist.lab[dist_type == "def", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = pa.title, x = NULL) +
@@ -555,7 +555,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "All forests",
+      labs(title = dist.lab[dist_type == "deg", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = pa.title, x = NULL) +

@@ -160,9 +160,8 @@ dist.lab <-
                             "Short-term disturbance (not followed by deforestation)"))
 dist.lab[, dist.label := factor(dist.label, levels = dist.label)]
 
-
-# mar.title <- "Absolute marginal\ndifference in\nforest loss risk\n(2011 – 2020)"
-mar.title <- "Absolute avoided\ndisturbances 2011–2020\n(proportion of previously\nundisturbed TMF)"
+mar.title <- "Absolute avoided\ndisturbances 2011–2020\n(proportion of previously\nundisturbed TMF,\npercentage points)"
+size.mar.lab <- 1.5
 
 ## EFFECT OF TENURE BY ADMINISTRATIVE AREA, FOREST TYPE ########################
 
@@ -226,7 +225,9 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
                  mar.q97.5 = quantile(marginal, 0.975),
                  mar.p.tost = max(sum(marginal > 0)/.N, sum(marginal < 0)/.N)),
                by = c("dist_type", "it_type", "pa_type", "adm0")]
-    mar.ten[, mar.lab.mean := label_arc(mar.mean, 1, FALSE)]
+    # mar.ten[, mar.lab.mean := label_arc(mar.mean, 1, FALSE)]
+    mar.ten[, mar.lab.mean := label_pp(mar.mean, 1, FALSE)]
+
     # mar.ten[, ci_0 := ifelse(mar.q2.5 < 0 & mar.q97.5 > 0, "yes", "no")]
     mar.ten[, ci_0 := ifelse(mar.q5 < 0 & mar.q95 > 0, "yes", "no")]
     mar.ten[ci_0 == "yes", mar.lab.mean := paste0("(", mar.lab.mean, ")")]
@@ -305,14 +306,14 @@ for(i in seq_along(regions)) {
                     label = mar.lab.mean,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = 1.65) +
+                size = size.mar.lab) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
                                        palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-                                       ,labels = label_arc
+                                       ,labels = label_pp
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
@@ -342,14 +343,14 @@ for(i in seq_along(regions)) {
                     label = mar.lab.mean,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = 1.65) +
+                size = size.mar.lab) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
                                        palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-                                       ,labels = label_arc
+                                       ,labels = label_pp
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
@@ -446,14 +447,14 @@ for(i in seq_along(regions)) {
 #                     label = mar.lab.mean,
 #                     fontface = ci_0,
 #                     colour = mar.lab.shade),
-#                 size = 1.65) +
+#                 size = size.mar.lab) +
 #       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
 #                    linewidth = 0.3, colour = "grey5") +
 #       scale_fill_continuous_divergingx(
 #                                        palette = "Roma"
 #                                        ,rev = TRUE,
 #                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-#                                        ,labels = label_arc
+#                                        ,labels = label_pp
 #                                        ,limits = c(-0.15, 0.15)
 #                                        ,oob = scales::squish
 #                                        ,na.value = "grey95"
@@ -483,14 +484,14 @@ for(i in seq_along(regions)) {
 #                     label = mar.lab.mean,
 #                     fontface = ci_0,
 #                     colour = mar.lab.shade),
-#                 size = 1.65) +
+#                 size = size.mar.lab) +
 #       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
 #                    linewidth = 0.3, colour = "grey5") +
 #       scale_fill_continuous_divergingx(
 #                                        palette = "Roma"
 #                                        ,rev = TRUE,
 #                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-#                                        ,labels = label_arc
+#                                        ,labels = label_pp
 #                                        ,limits = c(-0.15, 0.15)
 #                                        ,oob = scales::squish
 #                                        ,na.value = "grey95"
@@ -543,14 +544,14 @@ for(i in seq_along(regions)) {
                     label = mar.lab.mean,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = 1.65) +
+                size = size.mar.lab) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
                                        palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-                                       ,labels = label_arc
+                                       ,labels = label_pp
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
@@ -563,7 +564,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "Primary forests",
+      labs(title = dist.lab[dist_type == "def", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = "Overlapping regimes\n", x = NULL) +
@@ -579,14 +580,14 @@ for(i in seq_along(regions)) {
                     label = mar.lab.mean,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = 1.65) +
+                size = size.mar.lab) +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
                                        palette = "Roma"
                                        ,rev = TRUE,
                                        ,breaks = round(seq(-0.15, 0.15, 0.05),2)
-                                       ,labels = label_arc
+                                       ,labels = label_pp
                                        ,limits = c(-0.15, 0.15)
                                        ,oob = scales::squish
                                        ,na.value = "grey95"
@@ -599,7 +600,7 @@ for(i in seq_along(regions)) {
       scale_y_discrete(limits = rev) +
       coord_fixed() +
       ten_guide_fill +
-      labs(title = "All forests",
+      labs(title = dist.lab[dist_type == "deg", dist.label],
            subtitle = reg.title,
            fill = mar.title,
            y = "Overlapping regimes\n", x = NULL) +

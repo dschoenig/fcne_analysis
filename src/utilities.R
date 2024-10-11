@@ -73,15 +73,23 @@ posterior_summary <- function(x,
 ## PLOTTING HELPERS #############################################################
 
 
-label_prop <- function(x, ndec = 0, psign = TRUE) {
+label_prop <- function(x, ndec = 2) {
+  prop <- format(round(x, ndec), nsmall = ndec, trim = TRUE)
+  prop[which(x > 0)] <- paste0("+", prop[which(x > 0)])
+  prop[is.na(x)] <- NA
+  return(prop)
+}
+
+label_pp <- function(x, ndec = 0, psign = TRUE) {
   per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
   per[which(x > 0)] <- paste0("+", per[which(x > 0)])
   if(psign) {
-    per <- paste0(per, "%")
+    per <- paste0(per, " pp.")
   }
   per[is.na(x)] <- NA
   return(per)
 }
+
 
 label_arc <- function(x, ndec = 0, psign = TRUE) {
   per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)

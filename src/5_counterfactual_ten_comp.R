@@ -6,7 +6,8 @@ source("utilities.R")
 
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
-hurr_type <- tolower(as.character(args[3]))
+area_type <- tolower(as.character(args[3]))
+hurr_type <- tolower(as.character(args[4]))
 
 # n.threads <- 1
 # region <- "amz"
@@ -25,7 +26,7 @@ if(hurr_type == "no_hurr" & region == "cam") {
 }
 
 
-paste0("Settings: ", paste(area_type, ov_type, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(area_type, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
@@ -37,7 +38,7 @@ if(!dir.exists(path.cf))
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
-file.out <- paste0(path.cf, region, ".ten_rec.itpa.all", hurr_suf, ".rds")
+file.out <- paste0(path.cf, region, ".ten_comp.", area_type, ".all", hurr_suf, ".rds")
 
 data <- readRDS(file.data)
 som.fit <- readRDS(file.som)
@@ -57,24 +58,50 @@ if(region == "cam" & hurr_type == "no_hurr") {
 }
 
 
-data.cf <-
-  copy(data[it_type != "none",
-            .(id, adm0,
-              it_type, pa_type, 
-              som_bmu, ed_east, ed_north)])
-rm(data)
-silence <- gc()
+if(area_type %in% c("rec", "nrec")) {
+  data.cf <-
+    copy(data[it_type != "none",
+              .(id, adm0,
+                it_type, pa_type, 
+                som_bmu, ed_east, ed_north)])
+  rm(data)
+  silence <- gc()
+  comp.by <- "pa_type"
+  if(area_type == "rec") {
+  cf.ids <- data.cf[it_type == "not_recognized", id]  
+  fac.ids <- data.cf[it_type == "recognized", id]  
+  }
+  if(area_type == "nrec") {
+  cf.ids <- data.cf[it_type == "recognized", id]  
+  fac.ids <- data.cf[it_type == "not_recognized", id]  
+  }
+}
 
-cf.ids <- data[it_type == "not_recognized", id]  
-fac.ids <- data[it_type == "recognized", id]  
+if(area_type %in% c("ind", "dir")) {
+  data.cf <-
+    copy(data[pa_type != "none",
+              .(id, adm0,
+                it_type, pa_type, 
+                som_bmu, ed_east, ed_north)])
+  rm(data)
+  silence <- gc()
+  comp.by <- "it_type"
+  if(area_type == "ind") {
+  cf.ids <- data.cf[pa_type == "direct_use", id]  
+  fac.ids <- data.cf[pa_type == "indirect_use", id]  
+  }
+  if(area_type == "dir") {
+  cf.ids <- data.cf[pa_type == "indirect_use", id]  
+  fac.ids <- data.cf[pa_type == "direct_use", id]  
+  }
+}
 
-comp.by <- "pa_type"
 group.var1 <- "pa_type"
 group.var2 <- "it_type"
 group.by <- list(c(group.var1, group.var2),
                  c("adm0", group.var1, group.var2))
 
-paste0("No. of data: ", nrow(data)) |>
+paste0("No. of data: ", nrow(data.cf)) |>
 message()
 
 paste0("No. of factual observations: ", length(fac.ids)) |>
