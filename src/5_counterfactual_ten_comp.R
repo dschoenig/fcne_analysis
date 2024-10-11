@@ -66,7 +66,7 @@ if(area_type %in% c("rec", "nrec")) {
                 som_bmu, ed_east, ed_north)])
   rm(data)
   silence <- gc()
-  comp.by <- "pa_type"
+  comp.by <- c("pa_type", "adm0")
   if(area_type == "rec") {
   cf.ids <- data.cf[it_type == "not_recognized", id]  
   fac.ids <- data.cf[it_type == "recognized", id]  
@@ -85,7 +85,7 @@ if(area_type %in% c("ind", "dir")) {
                 som_bmu, ed_east, ed_north)])
   rm(data)
   silence <- gc()
-  comp.by <- "it_type"
+  comp.by <- c("it_type", "adm0")
   if(area_type == "ind") {
   cf.ids <- data.cf[pa_type == "direct_use", id]  
   fac.ids <- data.cf[pa_type == "indirect_use", id]  
