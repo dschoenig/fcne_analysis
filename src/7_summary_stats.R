@@ -13,6 +13,9 @@ file.stats.cam <- paste0(path.data.proc, "cam.sumstats.proc.rds")
 file.lim.amz <- paste0(path.data.raw, "amz.limit.gpkg")
 file.lim.cam <- paste0(path.data.raw, "cam.limit.gpkg")
 
+file.area.amz <- paste0(path.data.proc, "amz.sumstats.area.rds")
+file.area.cam <- paste0(path.data.proc, "cam.sumstats.area.rds")
+
 stats.amz <- readRDS(file.stats.amz)
 stats.cam <- readRDS(file.stats.cam)
 lim.amz <- st_read(file.lim.amz)
@@ -57,8 +60,48 @@ stats.cam[,
                                       (tmf_deg > 2010 & tmf_deg <= 2020)),
                                      TRUE, FALSE))]
 
+
+# Sanity checks
 sum(stats.amz$deforestation) + sum(stats.amz$degradation) == sum(stats.amz$disturbance)
 sum(stats.cam$deforestation) + sum(stats.cam$degradation) == sum(stats.cam$disturbance)
+
+
+areas.undist.amz <-
+  list(stats.amz[tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz)],
+       stats.amz[tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(it_type, pa_type)],
+       stats.amz[tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(it_type, pa_type, adm0)]) |>
+  rbindlist(fill = TRUE)
+setorder(areas.undist.amz, adm0, it_type, pa_type)
+
+areas.undist.cam <-
+  list(stats.cam[tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam)],
+       stats.cam[tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
+                 by = .(it_type, pa_type)],
+       stats.cam[tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
+                 by = .(it_type, pa_type, adm0)]) |>
+  rbindlist(fill = TRUE)
+setorder(areas.undist.cam, adm0, it_type, pa_type)
+
+areas.amz <- list(undist = areas.undist.amz)
+areas.cam <- list(undist = areas.undist.cam)
+
+saveRDS(areas.amz, file.area.amz)
+saveRDS(areas.cam, file.area.cam)
+
 
 stats.amz[,
           .(area = .N*p.amz,

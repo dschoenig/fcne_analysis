@@ -91,7 +91,7 @@ label_pp <- function(x, ndec = 0, psign = TRUE) {
 }
 
 
-label_arc <- function(x, ndec = 0, psign = TRUE) {
+label_perc <- function(x, ndec = 0, psign = TRUE) {
   per <- format(round(100 * x, ndec), nsmall = ndec, trim = TRUE)
   per[which(x > 0)] <- paste0("+", per[which(x > 0)])
   if(psign) {
