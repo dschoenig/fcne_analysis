@@ -75,14 +75,20 @@ if(ov_type == "ov") {
 if(area_type %in% c("it", "pa")) {
   if(area_type == "it") {
     cf.ids <- data[it_type == "none", id]  
-    fac.ids <- data[it_type != "none", id]  
+    fac.ids <-
+      data[unique(data.cf[it_type == "none", .(pa_type, adm0)]),
+           on = c("pa_type", "adm0")
+           ][it_type != "none", id]
     comp.by <- c("pa_type", "adm0")
     group.var1 <- "it_type"
     group.var2 <- "pa_type"
   }
   if(area_type == "pa") {
     cf.ids <- data[pa_type == "none", id]  
-    fac.ids <- data[pa_type != "none", id]  
+    fac.ids <-
+      data[unique(data.cf[pa_type == "none", .(it_type, adm0)]),
+           on = c("it_type", "adm0")
+           ][pa_type != "none", id]
     comp.by <- c("it_type", "adm0")
     group.var1 <- "pa_type"
     group.var2 <- "it_type"
