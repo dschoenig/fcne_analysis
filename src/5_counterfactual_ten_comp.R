@@ -110,7 +110,9 @@ if(area_type %in% c("ind", "dir")) {
 
 group.var1 <- "pa_type"
 group.var2 <- "it_type"
-group.by <- list(c(group.var1, group.var2),
+group.by <- list(NULL,
+                 "adm0",
+                 c(group.var1, group.var2),
                  c("adm0", group.var1, group.var2))
 
 paste0("No. of data: ", nrow(data.cf)) |>
