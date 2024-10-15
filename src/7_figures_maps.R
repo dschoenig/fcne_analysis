@@ -9,6 +9,7 @@ library(ggspatial)
 library(ggpattern)
 library(patchwork)
 library(colorspace)
+library(stringi)
 
 source("utilities.R")
 
@@ -19,8 +20,8 @@ if(is.na(overwrite)) {
   overwrite <- FALSE
 }
 
-# hurr_type <- "no_hurr"
-# overwrite <- TRUE
+# hurr_type <- "hurr"
+# overwrite <- FALSE
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -49,12 +50,11 @@ file.bg.adm0 <- paste0(path.data, "auxiliary/gadm41_levels_neotropics.gpkg")
 file.bg.coasts <- paste0(path.data, "auxiliary/bg_coasts.gpkg")
 file.data.vis <- paste0(path.data.vis, "maps", hurr_suf, ".rds")
 file.fig.maps <- paste0(path.figures, "maps", hurr_suf, ".png")
-# file.fig.fl.ci <- paste0(path.figures, "si.maps.fl.ci.png")
-file.fig.mar.ci <- paste0(path.figures, "si.maps.mar.ci.png")
-# file.fig.mar.uc <- paste0(path.figures, "si.maps.mar.uc.png")
-# file.fig.n <- paste0(path.figures, "si.maps.n.png")
-# inf.fig.cov <- "si.maps.cov."
-# suf.geo.fl <- ".fl.tif"
+file.fig.areas <- paste0(path.figures, "areas", hurr_suf, ".png")
+file.fig.dist.amz <- paste0(path.figures, "maps.dist.amz", hurr_suf, ".png")
+file.fig.area.amz <- paste0(path.figures, "maps.area.amz", hurr_suf, ".png")
+file.fig.dist.cam <- paste0(path.figures, "maps.dist.cam", hurr_suf, ".png")
+file.fig.area.cam <- paste0(path.figures, "maps.area.cam", hurr_suf, ".png")
 suf.geo.mar <- ".mar.tif"
 
 
@@ -66,6 +66,7 @@ regions <- c("amz", "cam")
 ## Colours for tenure categories
 col.div <- diverging_hcl(20, palette = "Purple-Green")
 c.map <- col.div[c(3,6,17)]
+# c.map <- c("#CC79A7", "#E0AFCA", "#009E73")
 
 
 ## MAP SETUP
@@ -86,18 +87,30 @@ map_ylim <- list(cam = c(-90e4,  80e4), amz = c(-200e4, 185e4))
 
 map_theme <-  
   theme_minimal(base_family = "IBMPlexSans", base_size = 7) +
-  theme(panel.background = element_rect(fill = "grey95", colour = NA),
+  theme(panel.background = element_rect(fill = "grey99", colour = NA),
         panel.grid = element_line(colour = "grey75"),
         legend.position = "right",
-        legend.justification = c(0,1),
+        legend.justification = "center",
         legend.title = element_text(size = rel(0.75), hjust = 0,
                                     margin = margin(t = 3, b = 7),
                                     lineheight = rel(1)),
         legend.text = element_text(size = rel(0.65)),
         legend.spacing.y = unit(2, "pt"),
         legend.key.size = unit(10, "pt"),
-        strip.text = element_text(size = rel(1), hjust = 0,
-                                  margin = margin(b = 3, t = 6)),
+        strip.text = element_text(size = rel(1),
+                                  lineheight = rel(1.15),
+                                  hjust = 0.5,
+                                  vjust = 0.5,
+                                  color = "black",
+                                  margin = margin(
+                                                  5,
+                                                  5,
+                                                  5,
+                                                  5)),
+        strip.background = element_rect(fill = "gray93", colour = NA),
+        plot.title = element_text(size = rel(1)),
+        plot.subtitle = element_text(size = rel(0.85),
+                                     margin = margin(t = 6, b = 3)),
         plot.tag = element_text(margin = margin(t = 0, r = 6, b = 6, l = 0),
                                 size = rel(1.5)),
         plot.tag.location = "margin"
@@ -133,28 +146,50 @@ cat.lab <-
                            NA, NA))
 cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
 
-title.wrap <- scales::label_wrap(20)
-mar.wrap <- scales::label_wrap(25)
+dist.lab <-
+  data.table(dist_type = c("def", "deg"),
+             dist.label = c("Long-term disturbance (deforestation)",
+                            "Short-term disturbance (not followed by deforestation)"),
+             dist.label2 = c("Long-term disturbance\n(deforestation)",
+                             "Short-term disturbance\n(not followed by deforestation)"))
+dist.lab[, dist.label := factor(dist.label, levels = dist.label)]
+dist.lab[, dist.label2 := factor(dist.label2, levels = dist.label2)]
 
-# dis.title <- "Forest loss risk\n(2011 – 2020)"
-# fl.sd.title <- "Standard deviation of the\nabsolute marginal difference\nin forest loss risk\n(2011 – 2020)"
-# fl.iqr.title <- "Interquartile range of the\nabsolute marginal difference\nin forest loss risk\n(2011 – 2020)"
-# fl.cv.title <- "Coefficient of variation\nfor forest loss risk\n(2011 – 2020)"
-mar.def.title <- "Absolute difference in proportion affected by long-term disturbance (2011 – 2020)"
-mar.deg.title <- "Absolute difference in proportion affected by short-term disturbance (2011 – 2020)"
-# mar.mean.title <- "Mean of the\nabsolute marginal difference\nin forest loss risk\n(2011 – 2020)"
-# mar.med.title <- "Median of the\nabsolute marginal difference\nin forest loss risk\n(2011 – 2020)"
-# mar.sd.title <- "Standard deviation of the\nabsolute marginal difference\nin forest loss risk\n(2011 – 2020)"
-# mar.iqr.title <- "Interquartile range of the\nabsolute marginal difference\nin forest loss risk\n(2011 – 2020)"
-# mar.cv.title <- "Coefficient of variation for\nthe absolute marginal difference\nin forest loss risk\n(2011 – 2020)"
-q5.title <- "5% posterior quantile"
-q25.title <- "25% posterior quantile"
-q75.title <- "75% posterior quantile"
-q95.title <- "95% posterior quantile"
-mean.title <- "Posterior mean"
-# med.title <- "Posterior median"
-# sd.title <- "Posterior standard deviation"
-# iqr.title <- "Posterior interquartile range"
+
+fac.est.lab <-
+  data.table(est_type = paste0("fac.", c("q5", "q25", "median", "q75", "q95")),
+             est.label = c("5% quantile", "25% quantile", "Median", "75% quantile", "95% quantile"))
+fac.est.lab[, est.label := factor(est.label, levels = est.label)]
+
+area.est.lab <-
+  data.table(est_type = paste0("area.mar.", c("q5", "q25", "median", "q75", "q95")),
+             est.label = c("5% quantile", "25% quantile", "Median", "75% quantile", "95% quantile"))
+area.est.lab[, est.label := factor(est.label, levels = est.label)]
+
+
+wrap_title <- function(x, width = 25, ...) {
+  paste(stri_wrap(x,
+                  width = width,
+                  whitespace_only = TRUE),
+        collapse = "\n")
+}
+
+
+dist.title <- "Disturbance risk"
+mar.title.av.l <- "Absolute marginal difference in area affected by disturbances (km² per pixel)"
+mar.title.av.2l <- "Absolute marginal difference in\narea affected by disturbances (km² per pixel)"
+mar.title.av <- wrap_title(mar.title.av.l)
+
+area.lim <- list(amz = c(-13.75, 13.75),
+                 cam = c(-6.875, 6.875))
+area.breaks <- list(amz = c(-13.75, seq(-10, 10, 2.5), 13.75),
+                    cam = c(-6.875, seq(-5, 5, 1.25), 6.875))
+area.labels <- list(
+                    amz = c("< –10", "–10", "", "–5", "", "0",
+                            "", "+5", "", "+10", "> +10"),
+                    cam = c("< –5", "–5", "", "–2.5", "", "0",
+                            "", "+2.5", "", "+5", "> +5"))
+
 
 
 ## EFFECTS IN GEOGRAPHICAL SPACE ###############################################
@@ -205,6 +240,7 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     }
 
     file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
+    file.area <- paste0(path.data.proc, region, ".sumstats.area.rds")
     file.mar.sam <- paste0(path.marginal, region, "/", region, ".sam.rds")
     # file.fl.geo.all <- paste0(path.forestloss, region, "/", region, ".geo.af", hurr_suf_mar, ".rds")
     name.sam <- paste0(region, ".geo.itpa", hurr_suf_mar, ".rds")
@@ -234,64 +270,91 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     poly[[region]]$bg_coasts <- st_transform(bg_coasts, crs.ea[[region]])
     poly[[region]]$bg_is_limit <- st_intersection(poly[[region]]$bg, poly[[region]]$limit)
 
-     
-    # # Forest loss risk
-
-    # message("Forest loss risk …")
-
-    # fl.geo <- readRDS(file.fl.geo.all)
-
-    # geo.sum[[region]]$fl <-
-    #   fl.geo[,
-    #          .(
-    #            forestloss.mean = mean(forestloss),
-    #            forestloss.median = median(forestloss),
-    #            forestloss.sd = sd(forestloss),
-    #            forestloss.q2.5 = quantile(forestloss, 0.025),
-    #            forestloss.q5 = quantile(forestloss, 0.05),
-    #            forestloss.q25 = quantile(forestloss, 0.25),
-    #            forestloss.q75 = quantile(forestloss, 0.75),
-    #            forestloss.q95 = quantile(forestloss, 0.95),
-    #            forestloss.q97.5 = quantile(forestloss, 0.975)),
-    #          by = .(group.id, ea_east.bin, ea_north.bin)]
-    # geo.sum[[region]]$fl[,
-    #                      `:=`(forestloss.iqr = forestloss.q75 - forestloss.q25,
-    #                           forestloss.cv = forestloss.sd / forestloss.mean)]
-
-    # rm(fl.geo)
-
-
     # Absolute change in disturbance (compared to baseline)
 
     message("Absolute change in disturbance …")
 
     mar.sam <- readRDS(file.mar.sam)
-    mar.def.geo <- readRDS(file.mar.def.geo)
-    mar.deg.geo <- readRDS(file.mar.deg.geo)
+    area.undist <- readRDS(file.area)$undist.px
+    mar.def.geo <-
+      readRDS(file.mar.def.geo) |>
+      merge(mar.sam[[name.sam]])
+    mar.deg.geo <-
+      readRDS(file.mar.deg.geo) |>
+      merge(mar.sam[[name.sam]])
 
-    mar.def.geo[, resp_type := factor("def", levels = c("def", "deg"))]
-    mar.deg.geo[, resp_type := factor("deg", levels = c("def", "deg"))]
+    mar.def.geo[, dist_type := factor("def", levels = c("def", "deg"))]
+    mar.deg.geo[, dist_type := factor("deg", levels = c("def", "deg"))]
 
-    mar.geo <- rbind(mar.def.geo, mar.deg.geo)
+    mar.post <-
+      rbind(mar.def.geo, mar.deg.geo) |>
+      merge(area.undist)
     rm(mar.def.geo, mar.deg.geo)
+    gc()
+    mar.post[, `:=`(area.prop.mar = marginal * area)]
+    # mar.post[, `:=`(area.prop.mar = marginal * area,
+    #                 area.prop.fac = factual * area,
+    #                 area.prop.cf = counterfactual * area)]
 
-    geo.sum[[region]]$mar <-
-      mar.geo[,
-             .(mar.mean = mean(marginal),
-               mar.median = median(marginal),
-               mar.sd = sd(marginal),
-               mar.q2.5 = quantile(marginal, 0.025),
-               mar.q5 = quantile(marginal, 0.05),
-               mar.q25 = quantile(marginal, 0.25),
-               mar.q75 = quantile(marginal, 0.75),
-               mar.q95 = quantile(marginal, 0.95),
-               mar.q97.5 = quantile(marginal, 0.975)),
-             by = .(resp_type, group.id, ea_east.bin, ea_north.bin)] |>
-      merge(mar.sam[[name.sam]], by = "group.id")
 
-    geo.sum[[region]]$mar[,
-                          `:=`(mar.iqr = mar.q75 - mar.q25,
-                               mar.cv = mar.sd / mar.mean)]
+    mar.geo <-
+      mar.post[,
+               .(n.fac = unique(n.fac),
+                 n.cf = unique(n.cf),
+                 n.frac = unique(n.fac)/1e7,
+                 mar.mean = mean(marginal),
+                 mar.median = median(marginal),
+                 mar.sd = sd(marginal),
+                 mar.mad = mad(marginal),
+                 mar.q5 = quantile(marginal, 0.05),
+                 mar.q25 = quantile(marginal, 0.25),
+                 mar.q75 = quantile(marginal, 0.75),
+                 mar.q95 = quantile(marginal, 0.95),
+                 fac.mean = mean(factual),
+                 fac.median = median(factual),
+                 fac.sd = sd(factual),
+                 fac.mad = mad(factual),
+                 fac.q5 = quantile(factual, 0.025),
+                 fac.q25 = quantile(factual, 0.25),
+                 fac.q75 = quantile(factual, 0.75),
+                 fac.q95 = quantile(factual, 0.975),
+                 # cf.mean = mean(counterfactual),
+                 # cf.median = median(counterfactual),
+                 # cf.sd = sd(counterfactual),
+                 # cf.mad = mad(counterfactual),
+                 # cf.q5 = quantile(counterfactual, 0.025),
+                 # cf.q25 = quantile(counterfactual, 0.25),
+                 # cf.q75 = quantile(counterfactual, 0.75),
+                 # cf.q95 = quantile(counterfactual, 0.975),
+                 area.mar.mean = mean(area.prop.mar),
+                 area.mar.median = median(area.prop.mar),
+                 area.mar.sd = sd(area.prop.mar),
+                 area.mar.mad = mad(area.prop.mar),
+                 area.mar.q5 = quantile(area.prop.mar, 0.05),
+                 area.mar.q25 = quantile(area.prop.mar, 0.25),
+                 area.mar.q75 = quantile(area.prop.mar, 0.75),
+                 area.mar.q95 = quantile(area.prop.mar, 0.95),
+                 # area.fac.mean = mean(area.prop.fac),
+                 # area.fac.median = median(area.prop.fac),
+                 # area.fac.sd = sd(area.prop.fac),
+                 # area.fac.mad = mad(area.prop.fac),
+                 # area.fac.q5 = quantile(area.prop.fac, 0.05),
+                 # area.fac.q25 = quantile(area.prop.fac, 0.25),
+                 # area.fac.q75 = quantile(area.prop.fac, 0.75),
+                 # area.fac.q95 = quantile(area.prop.fac, 0.95),
+                 # area.cf.mean = mean(area.prop.cf),
+                 # area.cf.median = median(area.prop.cf),
+                 # area.cf.sd = sd(area.prop.cf),
+                 # area.cf.mad = mad(area.prop.cf),
+                 # area.cf.q5 = quantile(area.prop.cf, 0.05),
+                 # area.cf.q25 = quantile(area.prop.cf, 0.25),
+                 # area.cf.q75 = quantile(area.prop.cf, 0.75),
+                 # area.cf.q95 = quantile(area.prop.cf, 0.95),
+                 mar.prob.pos = sum(marginal > 0)/.N,
+                 mar.prob.neg = sum(marginal < 0)/.N),
+               by = c("dist_type", "group.id", "ea_east.bin", "ea_north.bin")]
+
+    geo.sum[[region]]$mar <- merge(mar.geo, dist.lab)
 
     rm(mar.geo)
     gc()
@@ -317,7 +380,11 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
 
 ## MAPS (POSTERIOR MEANS) ######################################################
 
+
+
 maps <- list()
+geo.sum.fac.l <- list()
+geo.sum.area.l <- list()
 
 for(i in seq_along(regions)) {
     
@@ -342,7 +409,7 @@ for(i in seq_along(regions)) {
     scale_fill_manual(values = c.map[1:2],
                       breaks = c("recognized", "not_recognized"),
                       labels = c("Recognized", "Not recognized"),
-                      name = "Indigenous territories",
+                      name = "Indigenous lands",
                       guide = guide_legend(byrow = TRUE,
                                            order = 1)) +
     scale_pattern_manual(values = c("indirect_use" = "stripe", "direct_use" = "none"),
@@ -364,94 +431,104 @@ for(i in seq_along(regions)) {
     labs(x = NULL, y = NULL) +
     map_theme
 
-  # # Forest loss risk
+  # Disturbance loss risk (posterior)
 
-  # maps[[region]]$fl <- 
-  #   ggplot(geo.sum[[region]]$fl) +
-  #   geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = NA) +
-  #   geom_raster(mapping = aes(
-  #                             fill = forestloss.mean,
-  #                             x = ea_east.bin, y = ea_north.bin),
-  #               interpolate = FALSE) +
-  #   geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.3) +
-  #   geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.3) +
-  #   scale_fill_continuous_sequential(palette = "Viridis",
-  #                                     rev = FALSE,
-  #                                     limits = c(0,1),
-  #                                     labels = scales::label_percent()) +
-  #   coord_sf(crs = crs.ea[[region]], expand = FALSE, 
-  #            xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
-  #   scale_x_continuous(breaks = seq(-170, 0, 10)) +
-  #   scale_y_continuous(breaks = seq(-80, 30, 10)) +
-  #   annotation_scale(width_hint = 0.125, height = unit(2, "mm"),
-  #                    style = "ticks", text_cex = 0.5,
-  #                    line_width = 0.5, text_family = "IBMPlexSans") +
-  #   map_guide_fill +
-  #   labs(fill = fl.title, x = NULL, y = NULL) +
-  #   map_theme
+  geo.sum.fac.l[[region]] <-
+    geo.sum[[region]]$mar[n.fac >= 10] |>
+           melt(measure.vars = c("fac.q5", "fac.q25", "fac.median", "fac.q75", "fac.q95"),
+                variable.name = "est_type", value.name = "estimate") |>
+    merge(fac.est.lab)
 
-
-  # Absolute change in long-term disturbance
-  maps[[region]]$mar.def <- 
-    geo.sum[[region]]$mar[resp_type == "def" & n >= 10] |>
+  maps[[region]]$fac.post <- 
+    geo.sum.fac.l[[region]][n.fac >= 10] |>
     ggplot() +
     geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.3) +
-    geom_raster(mapping = aes(
-                              fill = mar.mean,
+    geom_sf(data = poly[[region]]$areas, fill = "grey65", colour = NA) +
+    geom_raster(mapping = aes(fill = as.numeric(estimate),
                               x = ea_east.bin, y = ea_north.bin),
                 interpolate = FALSE) +
-    geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
-    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.3) +
-    scale_fill_continuous_divergingx(palette = "Roma",
-                                     ,mid = 0
-                                     ,rev = TRUE,
-                                     ,breaks = seq(-0.15, 0.15, 0.05),
-                                     ,labels = c("≤ -15%", "-10%", "-5%", "0%",
-                                                 "+5%", "+10%", "≥ +15%"),
-                                     ,limits = c(-0.15, 0.15)
-                                     # ,breaks = seq(-0.2, 0.2, 0.05),
-                                     # ,labels = c("≤ -20%", "", "-10%", "", 0,
-                                     #             "", "+10%", "", "≥ +20%"),
-                                     # ,limits = c(-0.20, 0.20)
-                                     ,oob = scales::squish
-                                     ) +
+    # geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.15) +
+    scale_fill_continuous_sequential(palette = "Viridis",
+                                 rev = FALSE,
+                                 limits = c(0, 1),
+                                 labels = scales::label_percent()
+                                 ) +
     coord_sf(crs = crs.ea[[region]], expand = FALSE, 
-             xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+             xlim = map_xlim[[region]], ylim = map_ylim[[region]],
+             label_axes = "-NE-") +
     scale_x_continuous(breaks = seq(-170, 0, 10)) +
     scale_y_continuous(breaks = seq(-80, 30, 10)) +
+    facet_grid(rows = vars(est.label), cols = vars(dist.label2), switch = "y") +
     annotation_scale(width_hint = 0.125, height = unit(2, "mm"),
                      style = "ticks", text_cex = 0.5,
                      line_width = 0.5, text_family = "IBMPlexSans") +
     map_guide_fill +
-    labs(fill = mar.wrap(mar.def.title), x = NULL, y = NULL) +
+    labs(fill = dist.title, x = NULL, y = NULL) +
     map_theme
 
 
-  # Absolute change in short-term disturbance
-  maps[[region]]$mar.deg <- 
+  # Areas (posterior)
 
-    geo.sum[[region]]$mar[resp_type == "deg" & n >= 10] |>
+  geo.sum.area.l[[region]] <-
+    geo.sum[[region]]$mar[n.fac >= 10] |>
+           melt(measure.vars = c("area.mar.q5", "area.mar.q25", "area.mar.median", "area.mar.q75", "area.mar.q95"),
+                variable.name = "est_type", value.name = "estimate") |>
+    merge(area.est.lab)
+
+  maps[[region]]$area.post <- 
+    geo.sum.area.l[[region]][n.fac >= 10] |>
     ggplot() +
     geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.3) +
-    geom_raster(mapping = aes(
-                              fill = mar.mean,
+    geom_sf(data = poly[[region]]$areas, fill = "grey65", colour = NA) +
+    geom_raster(mapping = aes(fill = as.numeric(estimate),
                               x = ea_east.bin, y = ea_north.bin),
                 interpolate = FALSE) +
-    geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
-    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.3) +
-    scale_fill_continuous_divergingx(palette = "Roma",
-                                     ,mid = 0
-                                     ,rev = TRUE,
-                                     ,breaks = seq(-0.15, 0.15, 0.05),
-                                     ,labels = c("≤ -15%", "-10%", "-5%", "0%",
-                                                 "+5%", "+10%", "≥ +15%"),
-                                     ,limits = c(-0.15, 0.15)
-                                     # ,breaks = seq(-0.2, 0.2, 0.05),
-                                     # ,labels = c("≤ -20%", "", "-10%", "", 0,
-                                     #             "", "+10%", "", "≥ +20%"),
-                                     # ,limits = c(-0.20, 0.20)
-                                     ,oob = scales::squish
-                                     ) +
+    # geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.15) +
+    scale_fill_binned_divergingx(palette = "Roma",
+                                 mid = 0,
+                                 rev = TRUE,
+                                 limits = area.lim[[region]],
+                                 breaks = area.breaks[[region]],
+                                 labels = area.labels[[region]],
+                                 oob = scales::squish
+                                 ) +
+    coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+             xlim = map_xlim[[region]], ylim = map_ylim[[region]],
+             label_axes = "-NE-") +
+    scale_x_continuous(breaks = seq(-170, 0, 10)) +
+    scale_y_continuous(breaks = seq(-80, 30, 10)) +
+    facet_grid(rows = vars(est.label), cols = vars(dist.label2), switch = "y") +
+    annotation_scale(width_hint = 0.125, height = unit(2, "mm"),
+                     style = "ticks", text_cex = 0.5,
+                     line_width = 0.5, text_family = "IBMPlexSans") +
+    map_guide_fill +
+    labs(fill = dist.title, x = NULL, y = NULL) +
+    map_theme
+
+
+
+  # Absolute change in long-term disturbance (median)
+
+  maps[[region]]$mar.def <- 
+    geo.sum[[region]]$mar[dist_type == "def" & n.fac >= 10] |>
+    ggplot() +
+    geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.3) +
+    geom_sf(data = poly[[region]]$areas, fill = "grey65", colour = NA) +
+    geom_raster(mapping = aes(fill = as.numeric(area.mar.median),
+                              x = ea_east.bin, y = ea_north.bin),
+                interpolate = FALSE) +
+    # geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.15) +
+    scale_fill_binned_divergingx(palette = "Roma",
+                                 mid = 0,
+                                 rev = TRUE,
+                                 limits = area.lim[[region]],
+                                 breaks = area.breaks[[region]],
+                                 labels = area.labels[[region]],
+                                 oob = scales::squish
+                                 ) +
     coord_sf(crs = crs.ea[[region]], expand = FALSE, 
              xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
     scale_x_continuous(breaks = seq(-170, 0, 10)) +
@@ -460,7 +537,42 @@ for(i in seq_along(regions)) {
                      style = "ticks", text_cex = 0.5,
                      line_width = 0.5, text_family = "IBMPlexSans") +
     map_guide_fill +
-    labs(fill = mar.wrap(mar.deg.title), x = NULL, y = NULL) +
+    labs(
+         subtitle = "Long-term disturbance (deforestation)",
+         fill = mar.title.av, x = NULL, y = NULL) +
+    map_theme
+
+
+  # Absolute change in short-term disturbance (median)
+
+  maps[[region]]$mar.deg <- 
+    geo.sum[[region]]$mar[dist_type == "deg" & n.fac >= 10] |>
+    ggplot() +
+    geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.3) +
+    geom_sf(data = poly[[region]]$areas, fill = "grey65", colour = NA) +
+    geom_raster(mapping = aes(fill = as.numeric(area.mar.median),
+                              x = ea_east.bin, y = ea_north.bin),
+                interpolate = FALSE) +
+    # geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
+    geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.15) +
+    scale_fill_binned_divergingx(palette = "Roma",
+                                 mid = 0,
+                                 rev = TRUE,
+                                 limits = area.lim[[region]],
+                                 breaks = area.breaks[[region]],
+                                 labels = area.labels[[region]],
+                                 oob = scales::squish
+                                 ) +
+    coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+             xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+    scale_x_continuous(breaks = seq(-170, 0, 10)) +
+    scale_y_continuous(breaks = seq(-80, 30, 10)) +
+    annotation_scale(width_hint = 0.125, height = unit(2, "mm"),
+                     style = "ticks", text_cex = 0.5,
+                     line_width = 0.5, text_family = "IBMPlexSans") +
+    map_guide_fill +
+    labs(subtitle = "Short-term disturbance (not followed by deforestation)",
+         fill = mar.title.av, x = NULL, y = NULL) +
     map_theme
 
 }
@@ -471,18 +583,59 @@ for(i in seq_along(regions)) {
 
 message("Exporting figures …")
 
-maps.combined <-
+
+maps.dist.c <-
   with(maps,
-       (amz$areas + cam$areas + plot_layout(guides = "collect")) / 
-       (amz$mar.def + cam$mar.def + plot_layout(guides = "collect")) / 
-       (amz$mar.deg + cam$mar.deg + plot_layout(guides = "collect")) +
-       plot_annotation(tag_levels = list(c("A", "", "B", "", "C", ""))) &
-       map_theme
+       ((amz$mar.def + labs(title = "Amazon") +
+         theme(plot.margin = margin(b = 20, r = 10))) +
+        (amz$mar.deg +
+         theme(plot.margin = margin(b = 20, l = 10))) +
+        plot_layout(guides = "collect")) /
+       ((cam$mar.def + labs(title = "Central America") +
+         theme(plot.margin = margin(b = 20, r = 10))) +
+        (cam$mar.deg +
+         theme(plot.margin = margin(b = 20, l = 10))) +
+        plot_layout(guides = "collect")) /
+       plot_layout(guides = "keep") 
        )
 
-png(file.fig.maps, width = 7, height = 7.8, unit = "in", res = 600)
-maps.combined
+png(file.fig.maps, width = 7, height = 5.25, unit = "in", res = 600)
+maps.dist.c
 dev.off()
+
+if(hurr_type == "hurr") {
+
+  maps.areas <-
+    with(maps,
+         ((amz$areas) +
+           theme(plot.margin = margin(b = 20, r = 10))) +
+          (cam$areas +
+           theme(plot.margin = margin(b = 20, l = 10))) +
+          plot_layout(guides = "collect"))
+
+  png(file.fig.areas, width = 7, height = 2.5, unit = "in", res = 600)
+  print(maps.areas)
+  dev.off()
+
+  png(file.fig.dist.amz, width = 7, height = 9.5, unit = "in", res = 600)
+  print(maps$amz$fac.post)
+  dev.off()
+
+  png(file.fig.area.amz, width = 7, height = 9.5, unit = "in", res = 600)
+  print(maps$amz$area.post)
+  dev.off()
+
+}
+
+png(file.fig.dist.cam, width = 7, height = 9.5, unit = "in", res = 600)
+maps$cam$fac.post
+dev.off()
+
+png(file.fig.area.cam, width = 7, height = 9.5, unit = "in", res = 600)
+maps$cam$area.post
+dev.off()
+
+
 
 
 ## EXPORT (GEODATA) ############################################################
@@ -496,28 +649,29 @@ for(i in seq_along(regions)){
 
   region <- regions[i]
 
-  mar.reg <- geo.sum[[region]]$mar
+  mar.reg <- geo.sum[[region]]$mar[, -c("dist.label", "dist.label2")]
   mar.grid <-
     CJ(ea_east.bin = seq(min(mar.reg$ea_east.bin),
                          max(mar.reg$ea_east.bin),
                          map.res[[region]]),
-     ea_north.bin = seq(min(mar.reg$ea_north.bin),
-                        max(mar.reg$ea_north.bin),
-                        map.res[[region]]))
+       ea_north.bin = seq(min(mar.reg$ea_north.bin),
+                          max(mar.reg$ea_north.bin),
+                          map.res[[region]]))
 
-  resp.types <- c("def", "deg")
+  dist.types <- c("def", "deg")
 
-  for(i in seq_along(resp.types)) {
+  for(i in seq_along(dist.types)) {
     rast.mar <-
-      mar.reg[resp_type == resp.types[i]
+      mar.reg[dist_type == dist.types[i]
               ][mar.grid, on = c("ea_east.bin", "ea_north.bin")
                 ][, .(ea_east.bin, ea_north.bin,
-                      mar.mean, mar.q5, mar.q95)] |>
+                      area.mar.median, area.mar.q5, area.mar.q95,
+                      mar.median, mar.q5, mar.q95)] |>
       st_as_stars(dims = c("ea_east.bin", "ea_north.bin")) |>
       st_set_crs(crs.ea[[region]]) |>
       merge(name = "band") |>
       setNames("marginal")
-  write_stars(rast.mar, paste0(path.geo, region, ".", resp.types[i], hurr_suf, suf.geo.mar))
+  write_stars(rast.mar, paste0(path.geo, region, ".", dist.types[i], hurr_suf, suf.geo.mar))
   }
 
 }

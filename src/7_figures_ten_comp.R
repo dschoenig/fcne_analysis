@@ -52,8 +52,13 @@ regions <- c("amz", "cam")
 ## COLOURS AND LABELS
 
 ## Colours for tenure categories
+# col.cat <- c("#CC79A7", "#009E73")
+# col.cat <- c("#984ea3", "#4daf4a")
 col.div <- diverging_hcl(20, palette = "Purple-Green")
-c.plot <- col.div[c(3,17)]
+col.cat <- col.div[c(3, 17)]
+names(col.cat) <- c("IT, recognized \n—against IT, not recognized",
+                    "PA, category I-IV\n—against PA, category V-VI")
+
 
 base.size <- 7 
 post_theme <-
@@ -322,26 +327,26 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
                  mar.median = median(marginal),
                  mar.sd = sd(marginal),
                  mar.mad = mad(marginal),
-                 mar.q5 = quantile(marginal, 0.025),
+                 mar.q5 = quantile(marginal, 0.05),
                  mar.q25 = quantile(marginal, 0.25),
                  mar.q75 = quantile(marginal, 0.75),
-                 mar.q95 = quantile(marginal, 0.975),
+                 mar.q95 = quantile(marginal, 0.95),
                  fac.mean = mean(factual),
                  fac.median = median(factual),
                  fac.sd = sd(factual),
                  fac.mad = mad(factual),
-                 fac.q5 = quantile(factual, 0.025),
+                 fac.q5 = quantile(factual, 0.05),
                  fac.q25 = quantile(factual, 0.25),
                  fac.q75 = quantile(factual, 0.75),
-                 fac.q95 = quantile(factual, 0.975),
+                 fac.q95 = quantile(factual, 0.95),
                  cf.mean = mean(counterfactual),
                  cf.median = median(counterfactual),
                  cf.sd = sd(counterfactual),
                  cf.mad = mad(counterfactual),
-                 cf.q5 = quantile(counterfactual, 0.025),
+                 cf.q5 = quantile(counterfactual, 0.05),
                  cf.q25 = quantile(counterfactual, 0.25),
                  cf.q75 = quantile(counterfactual, 0.75),
-                 cf.q95 = quantile(counterfactual, 0.975),
+                 cf.q95 = quantile(counterfactual, 0.95),
                  area.mar.mean = mean(area.prop.mar),
                  area.mar.median = median(area.prop.mar),
                  area.mar.sd = sd(area.prop.mar),
@@ -429,10 +434,6 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
 
 
 
-
-col.cat <- c("#CC79A7", "#009E73")
-names(col.cat) <- c("IT, recognized \n—against IT, not recognized",
-                    "PA, category I-IV\n—against PA, category V-VI")
 
 plots.area.av <- list()
 

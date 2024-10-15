@@ -68,10 +68,9 @@ regions <- c("amz", "cam")
 ## COLOURS AND LABELS
 
 ## Colours for tenure categories
-# col.div <- diverging_hcl(20, palette = "Purple-Green")
-# c.plot <- col.div[c(3,17)]
-col.est <- c("#D55E00", "#0072B2", "#CC79A7")
+# col.est <- c("#D55E00", "#0072B2", "#CC79A7")
 # col.est <- c("#D55E00", "#0072B2", "#E69F00")
+col.est <- c("#e41a1c", "#377eb8", "#984ea3")
 names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(reference)", "Marginal\ndifference")
 
 # Angle for tenure categories in posterior summaries
@@ -340,26 +339,26 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
                  mar.median = median(marginal),
                  mar.sd = sd(marginal),
                  mar.mad = mad(marginal),
-                 mar.q5 = quantile(marginal, 0.025),
+                 mar.q5 = quantile(marginal, 0.05),
                  mar.q25 = quantile(marginal, 0.25),
                  mar.q75 = quantile(marginal, 0.75),
-                 mar.q95 = quantile(marginal, 0.975),
+                 mar.q95 = quantile(marginal, 0.95),
                  fac.mean = mean(factual),
                  fac.median = median(factual),
                  fac.sd = sd(factual),
                  fac.mad = mad(factual),
-                 fac.q5 = quantile(factual, 0.025),
+                 fac.q5 = quantile(factual, 0.05),
                  fac.q25 = quantile(factual, 0.25),
                  fac.q75 = quantile(factual, 0.75),
-                 fac.q95 = quantile(factual, 0.975),
+                 fac.q95 = quantile(factual, 0.95),
                  cf.mean = mean(counterfactual),
                  cf.median = median(counterfactual),
                  cf.sd = sd(counterfactual),
                  cf.mad = mad(counterfactual),
-                 cf.q5 = quantile(counterfactual, 0.025),
+                 cf.q5 = quantile(counterfactual, 0.05),
                  cf.q25 = quantile(counterfactual, 0.25),
                  cf.q75 = quantile(counterfactual, 0.75),
-                 cf.q95 = quantile(counterfactual, 0.975),
+                 cf.q95 = quantile(counterfactual, 0.95),
                  area.mar.mean = mean(area.prop.mar),
                  area.mar.median = median(area.prop.mar),
                  area.mar.sd = sd(area.prop.mar),
@@ -483,6 +482,7 @@ for(i in seq_along(regions)) {
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_binned_sequential(
                                    palette = "YlGn",
+                                   # palette = "Greens",
                                    rev = TRUE,
                                    lim = c(1, 1e7),
                                    breaks = breaks.area,
@@ -1173,7 +1173,6 @@ for(i in seq_along(regions)) {
   names(size.est.pt) <- names(col.est)
              
   plots.post[[region]]$def.comp <-
-
     ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") &
                         dist_type == "def" & est_type %in% c("1", "2")
                       ][order(-est.label)] |>
@@ -1185,7 +1184,8 @@ for(i in seq_along(regions)) {
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
-      scale_y_continuous(label = scales::label_number(accuracy = 0.01),
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "none", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
       facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +
@@ -1193,6 +1193,7 @@ for(i in seq_along(regions)) {
            title = "") +
       post_theme +
       theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
 
   plots.post[[region]]$def.mar <-
     ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") &
@@ -1207,7 +1208,9 @@ for(i in seq_along(regions)) {
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
-      scale_y_continuous(label = scales::label_number(accuracy = 0.01),
+      # scale_y_continuous(label = scales::label_number(accuracy = 0.01),
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "plus", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
       facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +
@@ -1228,7 +1231,8 @@ for(i in seq_along(regions)) {
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
-      scale_y_continuous(label = scales::label_number(accuracy = 0.01),
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "none", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
       facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +
@@ -1250,7 +1254,8 @@ for(i in seq_along(regions)) {
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
-      scale_y_continuous(label = scales::label_number(accuracy = 0.01),
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "plus", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
       facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +

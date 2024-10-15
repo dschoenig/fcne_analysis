@@ -1,4 +1,4 @@
-slource("utilities.R")
+source("utilities.R")
 
 library(data.table)
 library(sf)
@@ -8,6 +8,8 @@ path.base <- "../"
 path.data <- paste0(path.base, "data/")
 path.data.raw <- paste0(path.data, "raw/")
 path.data.proc <- paste0(path.data, "processed/")
+file.data.amz <- paste0(path.data.proc, "amz.data.fit.proc.rds")
+file.data.cam <- paste0(path.data.proc, "cam.data.fit.proc.rds")
 file.stats.amz <- paste0(path.data.proc, "amz.sumstats.proc.rds")
 file.stats.cam <- paste0(path.data.proc, "cam.sumstats.proc.rds")
 file.lim.amz <- paste0(path.data.raw, "amz.limit.gpkg")
@@ -66,6 +68,48 @@ sum(stats.amz$deforestation) + sum(stats.amz$degradation) == sum(stats.amz$distu
 sum(stats.cam$deforestation) + sum(stats.cam$degradation) == sum(stats.cam$disturbance)
 
 
+# Determine aggregation for maps (same as for counterfactuals)
+data.amz <- readRDS(file.data.amz)
+data.cam <- readRDS(file.data.cam)
+map.res <- list(amz = 1e4, cam = 5e3)
+map.anchor <-
+  list(
+       amz = c(ea_east = floor(min(data.amz$ea_east / map.res$amz)) * map.res$amz,
+               ea_north = floor(min(data.amz$ea_north / map.res$amz)) * map.res$amz),
+       cam = c(ea_east = floor(min(data.cam$ea_east / map.res$cam)) * map.res$cam,
+               ea_north = floor(min(data.cam$ea_north / map.res$cam)) * map.res$cam))
+rm(data.amz, data.cam)
+gc()
+
+
+stats.amz <-
+  bin_cols(stats.amz,
+           columns = c("ea_east", "ea_north"),
+           bin.res = rep(map.res$amz, 2),
+           bin.min = map.anchor$amz,
+           append = TRUE)
+stats.cam <-
+  bin_cols(stats.cam,
+           columns = c("ea_east", "ea_north"),
+           bin.res = rep(map.res$cam, 2),
+           bin.min = map.anchor$cam,
+           append = TRUE)
+
+
+areas.undist.px.amz <-
+  stats.amz[,
+            .(area = (map.res$amz/1e3)^2 * sum(tmf_annual_2010 == 1)/.N),
+            by = .(ea_east.bin, ea_north.bin)]
+areas.undist.px.amz[, area := set_units(area, "km^2")]
+
+
+areas.undist.px.cam <-
+  stats.cam[,
+            .(area = (map.res$cam/1e3)^2 * sum(tmf_annual_2010 == 1)/.N),
+            by = .(ea_east.bin, ea_north.bin)]
+areas.undist.px.cam[, area := set_units(area, "km^2")]
+
+
 areas.undist.amz <-
   list(stats.amz[tmf_annual_2010 == 1,
                  .(area = .N*p.amz,
@@ -96,12 +140,19 @@ areas.undist.cam <-
   rbindlist(fill = TRUE)
 setorder(areas.undist.cam, adm0, it_type, pa_type)
 
-areas.amz <- list(undist = areas.undist.amz)
-areas.cam <- list(undist = areas.undist.cam)
+areas.amz <-
+  list(undist = areas.undist.amz,
+       undist.px = areas.undist.px.amz)
+areas.cam <-
+  list(undist = areas.undist.cam,
+       undist.px = areas.undist.px.cam)
 
 saveRDS(areas.amz, file.area.amz)
 saveRDS(areas.cam, file.area.cam)
 
+
+
+# Individual estimates
 
 stats.amz[,
           .(area = .N*p.amz,
