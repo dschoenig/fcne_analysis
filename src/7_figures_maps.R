@@ -20,8 +20,8 @@ if(is.na(overwrite)) {
   overwrite <- FALSE
 }
 
-# hurr_type <- "hurr"
-# overwrite <- FALSE
+hurr_type <- "no_hurr"
+overwrite <- FALSE
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -48,6 +48,8 @@ if(hurr_type == "no_hurr") {
 
 file.bg.adm0 <- paste0(path.data, "auxiliary/gadm41_levels_neotropics.gpkg")
 file.bg.coasts <- paste0(path.data, "auxiliary/bg_coasts.gpkg")
+file.hurr.lf <- paste0(path.data.proc, "cam.hurr.landfall.gpkg")
+
 file.data.vis <- paste0(path.data.vis, "maps", hurr_suf, ".rds")
 file.fig.maps <- paste0(path.figures, "maps", hurr_suf, ".png")
 file.fig.areas <- paste0(path.figures, "areas", hurr_suf, ".png")
@@ -55,6 +57,7 @@ file.fig.dist.amz <- paste0(path.figures, "maps.dist.amz", hurr_suf, ".png")
 file.fig.area.amz <- paste0(path.figures, "maps.area.amz", hurr_suf, ".png")
 file.fig.dist.cam <- paste0(path.figures, "maps.dist.cam", hurr_suf, ".png")
 file.fig.area.cam <- paste0(path.figures, "maps.area.cam", hurr_suf, ".png")
+file.fig.hurr <- paste0(path.figures, "hurr.landfall.png")
 suf.geo.mar <- ".mar.tif"
 
 
@@ -270,6 +273,20 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     poly[[region]]$bg_coasts <- st_transform(bg_coasts, crs.ea[[region]])
     poly[[region]]$bg_is_limit <- st_intersection(poly[[region]]$bg, poly[[region]]$limit)
 
+
+    if(region == "cam" & hurr_type == "hurr") {
+
+      hurr.lf <-
+        st_read(file.hurr.lf) |>
+        st_transform(crs.ea[[region]])
+
+      poly[[region]]$hurr_lf <-
+        st_intersection(poly[[region]]$bg, hurr.lf) |>
+        st_union() |>
+        st_as_sf()
+
+    }
+
     # Absolute change in disturbance (compared to baseline)
 
     message("Absolute change in disturbance …")
@@ -430,6 +447,40 @@ for(i in seq_along(regions)) {
                      line_width = 0.5, text_family = "IBMPlexSans") +
     labs(x = NULL, y = NULL) +
     map_theme
+
+  if(hurr_type == "no_hurr") {
+    maps[[region]]$hurr.lf <-
+      ggplot() +
+      geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", linewidth = 0.3) +
+      geom_sf(data = poly[[region]]$limit, fill = "grey95", colour = NA) +
+      geom_sf(data = poly[[region]]$hurr_lf, fill = "#377eb8", colour = NA) +
+      geom_sf(data = poly[[region]]$bg_is_limit, fill = NA, colour = "grey30", size = 0.3) +
+      geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.3) +
+      scale_fill_manual(values = c.map[1:2],
+                        breaks = c("recognized", "not_recognized"),
+                        labels = c("Recognized", "Not recognized"),
+                        name = "Indigenous lands",
+                        guide = guide_legend(byrow = TRUE,
+                                             order = 1)) +
+      scale_pattern_manual(values = c("indirect_use" = "stripe", "direct_use" = "none"),
+                                 breaks = c("indirect_use", "direct_use"),
+                                 labels = c("IUCN category I-IV", "IUCN category V-VI"),
+                                 name = "Protected areas",
+                                 guide = guide_legend(override.aes = list(pattern_spacing = 0.01,
+                                                                          linewidth = 1),
+                                                      theme = theme(legend.key.spacing.y = unit(2, "pt")),
+                                                      byrow = TRUE,
+                                                      order = 2)) +
+      coord_sf(crs = crs.ea[[region]], expand = FALSE, 
+               xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
+      scale_x_continuous(breaks = seq(-170, 0, 10)) +
+      scale_y_continuous(breaks = seq(-80, 30, 10)) +
+      annotation_scale(width_hint = 0.125, height = unit(2, "mm"),
+                       style = "ticks", text_cex = 0.5,
+                       line_width = 0.5, text_family = "IBMPlexSans") +
+      labs(x = NULL, y = NULL) +
+      map_theme 
+  }
 
   # Disturbance loss risk (posterior)
 
@@ -635,7 +686,11 @@ png(file.fig.area.cam, width = 7, height = 9.5, unit = "in", res = 600)
 maps$cam$area.post
 dev.off()
 
-
+if(hurr_type == "no_hurr") {
+  png(file.fig.hurr, width = 3.5, height = 3.5, unit = "in", res = 600)
+  print(maps[[region]]$hurr.lf)
+  dev.off()
+}
 
 
 ## EXPORT (GEODATA) ############################################################
