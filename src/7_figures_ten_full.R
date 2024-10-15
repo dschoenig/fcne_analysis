@@ -16,7 +16,7 @@ overwrite <- as.logical(as.character(args[2]))
 # hurr_type <- "hurr"
 # hurr_type <- "no_hurr"
 # overwrite <- TRUE
-# overwrite <- TRUE
+# overwrite <- FALSE
 
 
 if(is.na(overwrite)) {
@@ -74,6 +74,9 @@ col.est <- c("#D55E00", "#0072B2", "#CC79A7")
 # col.est <- c("#D55E00", "#0072B2", "#E69F00")
 names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(reference)", "Marginal\ndifference")
 
+# Angle for tenure categories in posterior summaries
+ten.cat.angle <- 45
+
 ten_theme <- 
   theme_minimal(base_family = "IBMPlexSans", base_size = 7) +
   theme(
@@ -127,105 +130,61 @@ ten_guide_fill <-
 
 base.size <- 7 
 post_theme <-
-  theme_light(base_family = "IBMPlexSansCondensed",
+  theme_light(base_family = "IBMPlexSans",
               base_size = base.size) +
   theme(
-        plot.title = element_text(hjust = 0,
-                                  # face = "bold",
-                                  face = "plain",
-                                  size = rel(1.5),
-                                  margin = margin(l = 0, b = base.size*2, t = base.size/3)),
-        plot.title.position = "plot",
-        plot.tag = element_text(face = "bold"),
         axis.line.x = element_line(color = "black",
                                    linewidth = rel(0.5)),
         axis.line.y = element_line(color = "black",
                                    linewidth = rel(0.5)),
-        axis.title.x = element_text(margin = margin(t = base.size/2)),
-        axis.title.y = element_text(size = rel(1.2), margin = margin(r = base.size/2)),
-        axis.text.y = element_text(color = "black",
-                                   size = rel(1.2)),
+        axis.title.x = element_text(size = rel(1),
+                                    lineheight = rel(1.15),
+                                    margin = margin(t = base.size/2)),
+        axis.title.y = element_text(size = rel(1),
+                                    margin = margin(r = 0.75*base.size),
+                                    lineheight = rel(1.15)),
+        axis.text = element_text(family = "IBMPlexSansCondensed"),
         axis.text.x = element_text(color = "black",
-                                   size = rel(1.2),
+                                   size = rel(1.1),
                                    margin = margin(t = base.size/2)),
+        axis.text.y = element_text(color = "black",
+                                   size = rel(1),
+                                   lineheight = rel(1.15),
+                                   margin = margin(r = base.size/2)),
         axis.ticks = element_line(colour = "grey30"),
-        # axis.ticks.x = element_blank(),
-        legend.title = element_text(margin = margin(b = base.size/3)),
+        legend.title = element_text(size = rel(1),
+                                    margin = margin(b = base.size/3)),
         legend.position = "right",
         legend.justification = "center",
-        # legend.key.size = unit(base.size*2.5, "pt"),
-        legend.text = element_text(size = rel(1), margin = margin(t = base.size/2,
-                                                                    b = base.size/2)),
+        # legend.key.size = unit(base.size*1.5, "pt"),
+        legend.text = element_text(size = rel(1), margin = margin(l = base.size/3,
+                                                                  t = base.size/2,
+                                                                  b = base.size/2)),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.border = element_blank(),
         # panel.spacing.x = unit(base.size*2, "pt"),
         panel.spacing.y = unit(base.size, "pt"),
         plot.margin = margin(3, 3, 3, 3),
+        plot.title.position = "plot",
+        plot.title = element_text(hjust = 0,
+                                  # face = "bold",
+                                  face = "plain",
+                                  size = rel(1.5),
+                                  margin = margin(l = 0, b = base.size*2, t = base.size/3)),
+        plot.subtitle = element_text(size = rel(1.35),
+                                     margin = margin(b = 14)),
+        plot.tag = element_text(face = "bold"),
         strip.text = element_text(size = rel(1),
-                                  # face = "bold",
+                                  lineheight = rel(1.15),
                                   hjust = 0.5,
                                   vjust = 0.5,
                                   color = "black",
                                   margin = margin(
-                                                  base.size/2,
-                                                  base.size/2,
-                                                  base.size/2,
-                                                  base.size/2)
-                                  ),
-        strip.background = element_rect(fill = "gray93", colour = NA)
-        # strip.background = element_rect(fill = NA, colour = NA)
-  )
-
-
-base.size <- 7 
-post_sum <-
-  theme_light(base_family = "IBMPlexSansCondensed",
-              base_size = base.size) +
-  theme(
-        plot.title = element_text(hjust = 0,
-                                  # face = "bold",
-                                  face = "plain",
-                                  size = rel(1.5),
-                                  margin = margin(l = 0, b = base.size*2, t = base.size/3)),
-        plot.title.position = "plot",
-        plot.tag = element_text(face = "bold"),
-        axis.line.x = element_line(color = "black",
-                                   linewidth = rel(0.5)),
-        axis.line.y = element_line(color = "black",
-                                   linewidth = rel(0.5)),
-        axis.title.x = element_text(margin = margin(t = base.size/2)),
-        axis.title.y = element_text(size = rel(1.2), margin = margin(r = base.size/2)),
-        axis.text.y = element_text(color = "black",
-                                   size = rel(1.2)),
-        axis.text.x = element_text(color = "black",
-                                   size = rel(1.2),
-                                   margin = margin(t = base.size/2)),
-        axis.ticks = element_line(colour = "grey30"),
-        # axis.ticks.x = element_blank(),
-        legend.title = element_text(margin = margin(b = base.size/3)),
-        legend.position = "right",
-        legend.justification = "center",
-        # legend.key.size = unit(base.size*2.5, "pt"),
-        legend.text = element_text(size = rel(1), margin = margin(t = base.size/2,
-                                                                    b = base.size/2)),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.border = element_blank(),
-        # panel.spacing.x = unit(base.size*2, "pt"),
-        panel.spacing.y = unit(base.size, "pt"),
-        plot.margin = margin(3, 3, 3, 3),
-        strip.text = element_text(size = rel(0.85),
-                                  # face = "bold",
-                                  hjust = 0.5,
-                                  vjust = 0.5,
-                                  color = "black",
-                                  margin = margin(
-                                                  base.size,
-                                                  base.size/2,
-                                                  base.size/2,
-                                                  base.size/2)
-                                  ),
+                                                  0.75*base.size,
+                                                  0.75*base.size,
+                                                  0.75*base.size,
+                                                  0.75*base.size)),
         strip.background = element_rect(fill = "gray93", colour = NA)
         # strip.background = element_rect(fill = NA, colour = NA)
   )
@@ -302,9 +261,11 @@ mar.title.def.l <- "Absolute marginal difference in proportion of area affected"
 mar.title.def <- wrap_title(mar.title.def.l)
 mar.title.deg.l <- "Absolute marginal difference in proportion of area affected"
 mar.title.deg <- wrap_title(mar.title.deg.l)
-mar.title.def.av.l <- "Absolute marginal difference in area affected (km²)"
+mar.title.def.av.l <- "Absolute marginal difference in area affected by disturbances (km²)"
+mar.title.def.av.2l <- "Absolute marginal difference in\narea affected by disturbances (km²)"
 mar.title.def.av <- wrap_title(mar.title.def.av.l)
-mar.title.deg.av.l <- "Absolute marginal difference in area affected (km²)"
+mar.title.deg.av.l <- "Absolute marginal difference in area affected by disturbances (km²)"
+mar.title.deg.av.2l <- "Absolute marginal difference in\narea affected by disturbances (km²)"
 mar.title.deg.av <- wrap_title(mar.title.deg.av.l)
 abs.title.def <- "Proportion of area affected"
 abs.title.deg <- "Proportion of area affected"
@@ -961,7 +922,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = abs.area.title.def, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1),
             axis.title.y = element_text(margin = margin(l = 0, r = 10)))
 
   plots.av.post[[region]]$def.mar <-
@@ -985,8 +946,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = mar.title.def.av.l, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 25, r = 10)))
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.av.post[[region]]$deg.comp <-
     ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") &
@@ -1007,8 +967,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = abs.area.title.deg, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 0, r = 10)))
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.av.post[[region]]$deg.mar <-
     ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") &
@@ -1031,8 +990,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = mar.title.deg.av.l, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 25, r = 10)))
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
 
   plots.av.post[[region]]$reg.def.comp <-
@@ -1054,9 +1012,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = abs.area.title.def, x = "",
            subtitle = reg.title) +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 0, r = 5)),
-            plot.title.position = "panel")
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.av.post[[region]]$reg.def.mar <-
     ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
@@ -1074,12 +1030,10 @@ for(i in seq_along(regions)) {
       scale_y_continuous(label = scales::label_number(accuracy = 1),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
-      labs(colour = "", fill = "", y = mar.title.def.av.l, x = "",
+      labs(colour = "", fill = "", y = mar.title.def.av.2l, x = "",
            subtitle = reg.title) +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 0, r = 5)),
-            plot.title.position = "panel")
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.av.post[[region]]$reg.deg.comp <-
     ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
@@ -1099,9 +1053,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = abs.area.title.deg, x = "",
            subtitle = reg.title) +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 0, r = 5)),
-            plot.title.position = "panel")
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.av.post[[region]]$reg.deg.mar <-
     ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
@@ -1119,12 +1071,10 @@ for(i in seq_along(regions)) {
       scale_y_continuous(label = scales::label_number(accuracy = 1),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
-      labs(colour = "", fill = "", y = mar.title.deg.av.l, x = "",
+      labs(colour = "", fill = "", y = mar.title.deg.av.2l, x = "",
            subtitle = reg.title) +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 0, r = 5)),
-            plot.title.position = "panel")
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
 
   #   ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
@@ -1145,7 +1095,7 @@ for(i in seq_along(regions)) {
   #     labs(colour = "", fill = "", y = abs.area.title.def, x = "",
   #          title = "") +
   #     post_theme +
-  #     theme(axis.text.x = element_text(angle = 45, hjust = 1),
+  #     theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1),
   #           axis.title.y = element_text(margin = margin(l = 0, r = 10)))
 
   # plots.av.post[[region]]$def.mar <-
@@ -1167,7 +1117,7 @@ for(i in seq_along(regions)) {
       # labs(colour = "", fill = "", y = mar.title.def.av.l, x = "",
       #      title = "") +
       # post_theme +
-      # theme(axis.text.x = element_text(angle = 45, hjust = 1),
+      # theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1),
       #       axis.title.y = element_text(margin = margin(l = 25, r = 10)))
 
 
@@ -1242,8 +1192,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = abs.title.def, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 0, r = 10)))
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.post[[region]]$def.mar <-
     ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") &
@@ -1265,8 +1214,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = mar.title.def.l, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 25, r = 10)))
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.post[[region]]$deg.comp <-
     ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") &
@@ -1287,8 +1235,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = abs.title.def, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 0, r = 10)))
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
   plots.post[[region]]$deg.mar <-
     ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") &
@@ -1310,8 +1257,7 @@ for(i in seq_along(regions)) {
       labs(colour = "", fill = "", y = mar.title.deg.l, x = "",
            title = "") +
       post_theme +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            axis.title.y = element_text(margin = margin(l = 25, r = 10)))
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
 }
 
@@ -1526,8 +1472,8 @@ p.ten <-
              # A = (p.area + plot_layout(guides = "collect", axes = "collect")),
              A = (p.def + plot_layout(guides = "collect", axes = "collect")),
              B = (p.deg + plot_layout(guides = "collect", axes = "collect")),
-             nrow = 2) +
-  plot_annotation(tag_levels = list(c("A", "", "", "", "B", "", "", ""))) &
+             nrow = 2) &
+  # plot_annotation(tag_levels = list(c("A", "", "", "", "B", "", "", ""))) &
   theme(legend.justification = c(0, 0.9),
         plot.tag = element_text(family = "IBMPlexSans", size = rel(1.2)))
 # png(file.fig.ten, width = 7, height = 10.125, unit = "in", res = 600)
@@ -1538,8 +1484,8 @@ dev.off()
 p.ten.av <-
   wrap_plots(A = (p.def.av + plot_layout(guides = "collect", axes = "collect")),
              B = (p.deg.av + plot_layout(guides = "collect", axes = "collect")),
-             nrow = 2) +
-  plot_annotation(tag_levels = list(c("A", "", "", "", "B", "", "", ""))) &
+             nrow = 2) &
+  # plot_annotation(tag_levels = list(c("A", "", "", "", "B", "", "", ""))) &
   theme(legend.justification = c(0, 0.9),
         plot.tag = element_text(family = "IBMPlexSans"))
 png(file.fig.ten.av, width = 7, height = 6.75, unit = "in", res = 600)
@@ -1579,7 +1525,8 @@ dev.off()
 
 
 png(file.fig.ten.post.def.amz, width = 7, height = 9, unit = "in", res = 600)
-  plots.post$amz$def.comp + plots.post$amz$def.mar +
+  plots.post$amz$def.comp +
+  (plots.post$amz$def.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
             legend.title = element_blank(),
@@ -1587,7 +1534,8 @@ png(file.fig.ten.post.def.amz, width = 7, height = 9, unit = "in", res = 600)
 dev.off()
 
 png(file.fig.ten.post.deg.amz, width = 7, height = 9, unit = "in", res = 600)
-  plots.post$amz$deg.comp + plots.post$amz$deg.mar +
+  plots.post$amz$deg.comp +
+  (plots.post$amz$deg.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
             legend.title = element_blank(),
@@ -1595,7 +1543,8 @@ png(file.fig.ten.post.deg.amz, width = 7, height = 9, unit = "in", res = 600)
 dev.off()
 
 png(file.fig.ten.post.def.cam, width = 7, height = 9, unit = "in", res = 600)
-  plots.post$cam$def.comp + plots.post$cam$def.mar +
+  plots.post$cam$def.comp +
+  (plots.post$cam$def.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
             legend.title = element_blank(),
@@ -1603,7 +1552,8 @@ png(file.fig.ten.post.def.cam, width = 7, height = 9, unit = "in", res = 600)
 dev.off()
 
 png(file.fig.ten.post.deg.cam, width = 7, height = 9, unit = "in", res = 600)
-  plots.post$cam$deg.comp + plots.post$cam$deg.mar +
+  plots.post$cam$deg.comp +
+  (plots.post$cam$deg.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
             legend.title = element_blank(),
@@ -1612,7 +1562,8 @@ dev.off()
 
 
 png(file.fig.ten.av.post.def.amz, width = 7, height = 9, unit = "in", res = 600)
-  plots.av.post$amz$def.comp + plots.av.post$amz$def.mar +
+  plots.av.post$amz$def.comp +
+  (plots.av.post$amz$def.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
             legend.title = element_blank(),
@@ -1620,7 +1571,8 @@ png(file.fig.ten.av.post.def.amz, width = 7, height = 9, unit = "in", res = 600)
 dev.off()
 
 png(file.fig.ten.av.post.deg.amz, width = 7, height = 9, unit = "in", res = 600)
-  plots.av.post$amz$deg.comp + plots.av.post$amz$deg.mar +
+  plots.av.post$amz$deg.comp +
+  (plots.av.post$amz$deg.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
             legend.title = element_blank(),
@@ -1628,15 +1580,17 @@ png(file.fig.ten.av.post.deg.amz, width = 7, height = 9, unit = "in", res = 600)
 dev.off()
 
 png(file.fig.ten.av.post.def.cam, width = 7, height = 9, unit = "in", res = 600)
-  plots.av.post$cam$def.comp + plots.av.post$cam$def.mar +
+  plots.av.post$cam$def.comp +
+  (plots.av.post$cam$def.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
             legend.title = element_blank(),
             legend.margin = margin(0, 0, 0, 0))
 dev.off()
 
-png(file.fig.ten.av.post.deg.cam, width = 7, height = 9, unit = "in", res = 600)
-  plots.av.post$cam$deg.comp + plots.av.post$cam$deg.mar +
+png(file.fig.ten.av.post.deg.cam, width = 7, height = 9.25, unit = "in", res = 600)
+  plots.av.post$cam$deg.comp +
+  (plots.av.post$cam$deg.mar + theme(plot.margin = margin(l = 20))) +
   plot_layout(guides = "collect") &
   theme(legend.spacing.y = unit(0, "pt"),
         legend.title = element_blank(),
@@ -1647,8 +1601,8 @@ dev.off()
 p.reg.def <-
 (plots.av.post$amz$reg.def.comp + labs(title = "Long-term disturbance (deforestation)") &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(5, 5, 0, 0), "pt"),
         plot.title.position = "plot",
         plot.title = element_text(size = rel(1.35)),
@@ -1656,23 +1610,23 @@ p.reg.def <-
                                      margin = margin(b = 14)))) +
 (plots.av.post$amz$reg.def.mar &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(5, 5, 0, 10), "pt"),
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
 (plots.av.post$cam$reg.def.comp &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(5, 5, 0, 25), "pt"),
         plot.title.position = "plot",
         plot.subtitle = element_text(size = rel(1.2),
                                      margin = margin(b = 14)))) +
 (plots.av.post$cam$reg.def.mar &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(5, 5, 0, 10), "pt"),
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
@@ -1682,12 +1636,11 @@ plot_layout(nrow = 1, guides = "collect") &
         legend.margin = margin(0, 0, 0, 0),
         # legend.key.size = unit(10, "pt"),
         legend.text = element_text(size = rel(0.8)))
-
 p.reg.deg <-
 (plots.av.post$amz$reg.deg.comp + labs(title = "Short-term disturbance (not followed by deforestation)") &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(15, 5, 0, 0), "pt"),
         plot.title.position = "plot",
         plot.title = element_text(size = rel(1.35)),
@@ -1695,23 +1648,23 @@ p.reg.deg <-
                                      margin = margin(b = 14)))) +
 (plots.av.post$amz$reg.deg.mar &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(15, 5, 0, 10), "pt"),
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
 (plots.av.post$cam$reg.deg.comp &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(15, 5, 0, 25), "pt"),
         plot.title.position = "plot",
         plot.subtitle = element_text(size = rel(1.2),
                                      margin = margin(b = 14)))) +
 (plots.av.post$cam$reg.deg.mar &
   theme(
-        axis.title.y = element_text(size = rel(0.9)),
-        axis.text = element_text(size = rel(0.6)),
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
         plot.margin = unit(c(15, 5, 0, 10), "pt"),
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
@@ -1726,6 +1679,8 @@ plot_layout(nrow = 1, guides = "collect") &
 png(file.fig.ten.reg, width = 12, height = 6, unit = "in", res = 600)
 p.reg.def/p.reg.deg
 dev.off()
+
+
 
 tab.ten <-
   list(AMZ = ten.sum$amz$mar, CAM = ten.sum$cam$mar) |>
