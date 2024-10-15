@@ -458,7 +458,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       stat_slab(aes(x = as.numeric(area.prop.mar), y = cat.label,
                     fill = cat.label, fill_ramp = after_stat(level)),
-                .width = c(0.5, 0.95, 1),
+                .width = c(0.5, 0.9, 1),
                 alpha = 0.8,
                 height = 1,
                 scale = 0.8,
@@ -476,7 +476,7 @@ for(i in seq_along(regions)) {
       geom_hline(yintercept = 2, linewidth = 0.1) +
       geom_vline(xintercept = 0, linewidth = 0.2, linetype = "dashed") +
       scale_fill_manual(values = col.cat, guide = "none") +
-      scale_fill_ramp_discrete(breaks = c(0.5, 0.95)) +
+      scale_fill_ramp_discrete(breaks = c(0.5, 0.9)) +
       scale_y_discrete(limits = rev) +
       scale_x_continuous(labels = scales::label_number(accuaracy = 1e3)) +
       guides(linetype = guide_legend(order = 1)) +
