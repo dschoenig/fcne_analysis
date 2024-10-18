@@ -50,8 +50,8 @@ posterior_summary <- function(x,
                               probs = c(0.05, 0.95),
                               prefix = NULL,
                               sep = ".",
-                              point.fun = mean,
-                              point.name = "mean",
+                              point.fun = median,
+                              point.name = "median",
                               ...) {
   if(is.null(prefix)) {
     prefix <- as.character(match.call()[2])
@@ -69,6 +69,91 @@ posterior_summary <- function(x,
   names(y) <- sum.names
   return(y)
 }
+
+
+model_summary <- function(model,
+                          post) {
+
+  if(is.null(colnames(post))) {
+    colnames(post) <- names(coef(model))
+  }
+
+  sp.est <- model$sp
+  sp.var <- diag(sp.vcov(model))
+  if(length(sp.var) > length(sp.est)) {
+    sp.var <- sp.var[1:length(sp.est)]
+    scale.var <- sp.var[length(sp.var)]
+  } else {
+    scale.var <- NA
+  }
+  names(sp.var) <- names(sp.fit)
+
+  sp.tab <- data.table(sp.label = names(sp.est), sp.est = sp.est, sp.var = sp.var)
+
+  n.sm <- length(model$smooth)
+
+  sm.tab.l <- list()
+  all.para.sm <- list()
+
+  for(i in 1:n.sm) {
+    para.range <- with(model$smooth[[i]], first.para:last.para)
+    sp.range <- with(model$smooth[[i]], first.sp:last.sp)
+    label <- model$smooth[[i]]$label
+    sp.labels <- names(model$smooth[[i]]$sp)
+    k <- model$smooth[[i]]$bs.dim
+    kp <- length(para.range)
+    edf <- sum(model$edf[para.range])
+    sp.id <- paste0("lambda", 0:(length(sp.labels)-1))
+    sm.tab.l[[i]] <-
+      data.table(sm.id = i,
+                 sm.label = label,
+                 sm.k = k,
+                 sm.kp = kp,
+                 sm.edf = edf,
+                 sp.id,
+                 sp.label = sp.labels)
+    all.para.sm[[i]] <- para.range
+  }
+
+  sm.tab <-
+    rbindlist(sm.tab.l) |>
+    merge(sp.tab, sort = FALSE) |>
+    dcast(sm.id + sm.label + sm.k + sm.kp + sm.edf ~ sp.id,
+          value.var = c("sp.est", "sp.var"), sep = ".", sort = FALSE)
+
+  pars.idx <- 1:ncol(post)
+  p.sel <- pars.idx[!pars.idx %in% unlist(all.para.sm)]
+  post.p <- post[, p.sel , drop = FALSE]
+  p.med <- apply(post.p, 2, median)
+  p.ci.l <- apply(post.p, 2, quantile, probs = 0.05)
+  p.ci.u <- apply(post.p, 2, quantile, probs = 0.95)
+  p.tab <-
+    data.table(p.id = p.sel,
+               p.label = names(p.med),
+               p.est = p.med,
+               p.ci.l = p.ci.l,
+               p.ci.u = p.ci.u)
+
+  return(list(p.terms = p.tab,
+              sm.terms = sm.tab,
+              scale.est = model$sig2,
+              scale.var = scale.var,
+              n = nobs(model),
+              dev.expl = with(model, (null.deviance - deviance) / null.deviance),
+              aic = AIC(model)))
+
+  }
+
+
+fill_na_empty <- function(x, empty = "") {
+  if(!is.character(x)) {
+    x <- as.character(x)
+  }
+  y <- x
+  y[is.na(x)] <- empty
+  return(y)
+}
+
 
 ## PLOTTING HELPERS #############################################################
 
@@ -120,6 +205,34 @@ label_per <- function(x, ndec = 0, psign = TRUE) {
 }
 
 
+format_power <- function(x, digits = 3, mag = 1, type = "mathjax", empty = "", nsmall = digits) {
+  if(length(x) > 1) {
+    y <- sapply(x, format_power, digits = digits, mag = mag, type = type)
+  } else {
+    if(is.numeric(x) & !is.na(x)) {
+      if(mag > digits) mag <- digits
+      b <- floor(log10(abs(x)))
+      a <- round(x/10^b, digits = digits)
+      if(abs(b) > mag) {
+        a <- format(a, nsmall = nsmall)
+        if(type == "mathjax") {
+          y <- paste0(a, " \\times 10^{", b, "}")
+        }
+        if(type == "md") {
+          y <- paste0(a, " × 10^", b, "^")
+        }
+        if(type == "expr") {
+          y <- paste0(a, " %*% 10^", b)
+        }
+      } else {
+        y <- format(a*10^b, nsmall = nsmall)
+      }
+    } else {
+      y <- empty
+    }
+  }
+  return(y)
+}
 
 
 
