@@ -112,7 +112,7 @@ terms <-
 model.summary <- list(terms = terms,
                       n = mod.sum$n,
                       dev.expl = mod.sum$dev.expl,
-                      aic = mod.sum$aic
+                      aic = mod.sum$aic,
                       unformatted = mod.sum)
 
 saveRDS(model.summary, file.sum)
