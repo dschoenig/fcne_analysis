@@ -109,11 +109,18 @@ areas.undist.px.cam <-
             by = .(ea_east.bin, ea_north.bin)]
 areas.undist.px.cam[, area := set_units(area, "km^2")]
 
-
 areas.undist.amz <-
   list(stats.amz[tmf_annual_2010 == 1,
                  .(area = .N*p.amz,
                    area.rel = .N/n.amz)],
+       stats.amz[tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(it_type)],
+       stats.amz[tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(pa_type)],
        stats.amz[tmf_annual_2010 == 1,
                  .(area = .N*p.amz,
                    area.rel = .N/n.amz),
@@ -132,6 +139,14 @@ areas.undist.cam <-
        stats.cam[tmf_annual_2010 == 1,
                  .(area = .N*p.cam,
                    area.rel = .N/n.cam),
+                 by = .(it_type)],
+       stats.cam[tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
+                 by = .(pa_type)],
+       stats.cam[tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
                  by = .(it_type, pa_type)],
        stats.cam[tmf_annual_2010 == 1,
                  .(area = .N*p.cam,
@@ -140,11 +155,60 @@ areas.undist.cam <-
   rbindlist(fill = TRUE)
 setorder(areas.undist.cam, adm0, it_type, pa_type)
 
+areas.undist.ov.amz <-
+  list(stats.amz[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz)],
+       stats.amz[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(it_type)],
+       stats.amz[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(pa_type)],
+       stats.amz[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(it_type, pa_type)],
+       stats.amz[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.amz,
+                   area.rel = .N/n.amz),
+                 by = .(it_type, pa_type, adm0)]) |>
+  rbindlist(fill = TRUE)
+setorder(areas.undist.ov.amz, adm0, it_type, pa_type)
+
+areas.undist.ov.cam <-
+  list(stats.cam[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam)],
+       stats.cam[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
+                 by = .(it_type)],
+       stats.cam[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
+                 by = .(pa_type)],
+       stats.cam[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
+                 by = .(it_type, pa_type)],
+       stats.cam[overlap != "none" & tmf_annual_2010 == 1,
+                 .(area = .N*p.cam,
+                   area.rel = .N/n.cam),
+                 by = .(it_type, pa_type, adm0)]) |>
+  rbindlist(fill = TRUE)
+setorder(areas.undist.ov.cam, adm0, it_type, pa_type)
+
+
 areas.amz <-
   list(undist = areas.undist.amz,
+       undist.ov = areas.undist.ov.amz,
        undist.px = areas.undist.px.amz)
 areas.cam <-
   list(undist = areas.undist.cam,
+       undist.ov = areas.undist.ov.cam,
        undist.px = areas.undist.px.cam)
 
 saveRDS(areas.amz, file.area.amz)
