@@ -86,9 +86,9 @@ model_summary <- function(model,
   } else {
     scale.var <- NA
   }
-  names(sp.var) <- names(sp.fit)
+  names(sp.var) <- names(sp.est)
 
-  sp.tab <- data.table(sp.label = names(sp.est), sp.est = sp.est, sp.var = sp.var)
+  sp.tab <- data.table(sp.label = names(sp.est), sp.est = log(sp.est), sp.var = sp.var)
 
   n.sm <- length(model$smooth)
 
