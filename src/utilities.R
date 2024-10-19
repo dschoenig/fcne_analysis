@@ -79,16 +79,16 @@ model_summary <- function(model,
   }
 
   sp.est <- model$sp
-  sp.var <- diag(sp.vcov(model))
-  if(length(sp.var) > length(sp.est)) {
-    sp.var <- sp.var[1:length(sp.est)]
-    scale.var <- sp.var[length(sp.var)]
+  lsp.var <- diag(sp.vcov(model))
+  if(length(lsp.var) > length(sp.est)) {
+    lsp.var <- lsp.var[1:length(sp.est)]
+    log.scale.var <- lsp.var[length(lsp.var)]
   } else {
-    scale.var <- NA
+    log.scale.var <- NA
   }
-  names(sp.var) <- names(sp.est)
+  names(lsp.var) <- names(sp.est)
 
-  sp.tab <- data.table(sp.label = names(sp.est), sp.est = log(sp.est), sp.var = sp.var)
+  lsp.tab <- data.table(sp.label = names(sp.est), lsp.est = log(sp.est), lsp.var = lsp.var)
 
   n.sm <- length(model$smooth)
 
@@ -117,27 +117,25 @@ model_summary <- function(model,
 
   sm.tab <-
     rbindlist(sm.tab.l) |>
-    merge(sp.tab, sort = FALSE) |>
+    merge(lsp.tab, sort = FALSE) |>
     dcast(sm.id + sm.label + sm.k + sm.kp + sm.edf ~ sp.id,
-          value.var = c("sp.est", "sp.var"), sep = ".", sort = FALSE)
+          value.var = c("lsp.est", "lsp.var"), sep = ".", sort = FALSE)
 
   pars.idx <- 1:ncol(post)
   p.sel <- pars.idx[!pars.idx %in% unlist(all.para.sm)]
   post.p <- post[, p.sel , drop = FALSE]
-  p.med <- apply(post.p, 2, median)
-  p.ci.l <- apply(post.p, 2, quantile, probs = 0.05)
-  p.ci.u <- apply(post.p, 2, quantile, probs = 0.95)
+  p.est <- apply(post.p, 2, mean)
+  p.var <- apply(post.p, 2, var)
   p.tab <-
     data.table(p.id = p.sel,
-               p.label = names(p.med),
-               p.est = p.med,
-               p.ci.l = p.ci.l,
-               p.ci.u = p.ci.u)
+               p.label = names(p.est),
+               p.est = p.est,
+               p.var = p.var)
 
   return(list(p.terms = p.tab,
               sm.terms = sm.tab,
               scale.est = model$sig2,
-              scale.var = scale.var,
+              log.scale.var = log.scale.var,
               n = nobs(model),
               dev.expl = with(model, (null.deviance - deviance) / null.deviance),
               aic = AIC(model)))
@@ -150,7 +148,7 @@ fill_na_empty <- function(x, empty = "") {
     x <- as.character(x)
   }
   y <- x
-  y[is.na(x)] <- empty
+  y[is.na(x) | x == "NA"] <- empty
   return(y)
 }
 

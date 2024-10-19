@@ -20,6 +20,7 @@ file.sum <- paste0(path.gam, region, ".m1.", model.resp, ".sum.rds")
 model <- readRDS(file.model)
 post <- readRDS(file.post)
 
+
 mod.sum <- model_summary(model, post)
 
 p.desc <-
@@ -48,16 +49,16 @@ sm.desc <-
                c("Geographic variation (overall)",
                  "Geographic variation (IL, recognized)",
                  "Geographic variation (IL, not recognized)",
-                 "Geographic variation (PA, category I-IV)",
-                 "Geographic variation (PA, category V-VI)",
-                 "Geographic variation (IL, rec.; PA cat. I-IV)",
-                 "Geographic variation (IL, rec.; PA cat. V-VI)",
-                 "Geographic variation (IL, not rec.; PA cat. I-IV)",
-                 "Geographic variation (IL, not rec.; PA cat. V-VI)",
-                 "Between country variation (overall)",
-                 "Between country variation (IL)",
-                 "Between country variation (PA)",
-                 "Between country variation (IL, PA)",
+                 "Geographic variation (PA, category I‑IV)",
+                 "Geographic variation (PA, category V‑VI)",
+                 "Geographic variation (IL, rec.; PA cat. I‑IV)",
+                 "Geographic variation (IL, rec.; PA cat. V‑VI)",
+                 "Geographic variation (IL, not rec.; PA cat. I‑IV)",
+                 "Geographic variation (IL, not rec.; PA cat. V‑VI)",
+                 "Between-country variation (overall)",
+                 "Between-country variation (IL)",
+                 "Between-country variation (PA)",
+                 "Between-country variation (IL, PA)",
                  "Variation in covariate space (SOM)"),
              sm.term =
                c("f^{\\textrm{GEO}}_0(u_i)",
@@ -83,30 +84,46 @@ terms <-
   rbind(mod.sum$p.terms, mod.sum$sm.terms, fill = TRUE) |>
   merge(term.desc, sort = FALSE)
 
-col.format <-
-  c("p.est", "p.ci.l", "p.ci.u",
-    "sp.est.lambda0", "sp.var.lambda0",
-    "sp.est.lambda1", "sp.var.lambda1")
-col.na.rm <-
-  c("p.ci", "sm.k", "sm.edf")
+terms[,
+      `:=`(p.sd = sqrt(p.var),
+           lsp.sd.lambda0 = sqrt(lsp.var.lambda0),
+           lsp.sd.lambda1 = sqrt(lsp.var.lambda1))]
 
-terms[, (col.format) := lapply(.SD, format_power, mag = 0, digits = 2), .SDcols = col.format]
-terms[!is.na(p.id), p.ci := paste0("[", p.ci.l, ",\\ ", p.ci.u, "]")]
+col.format <-
+  c("p.est", "p.sd",
+    "lsp.est.lambda0", "lsp.sd.lambda0",
+    "lsp.est.lambda1", "lsp.sd.lambda1")
+col.na.rm <-
+  c("p.comb", "sm.k", "sm.edf", "lsp.lambda0.comb", "lsp.lambda1.comb")
+
+# terms[, (col.format) := lapply(.SD, format_power, mag = 1, digits = 2), .SDcols = col.format]
+terms[,
+      (col.format) := lapply(.SD, \(x) trimws(format(round(x, 2), nsmall = 2))),
+      .SDcols = col.format]
+
+terms[, lsp.lambda0.comb := fifelse(lsp.est.lambda0 == "NA",
+                                    "",
+                                    paste0(lsp.est.lambda0, "\\ (", lsp.sd.lambda0, ")"))]
+
+terms[, lsp.lambda1.comb := fifelse(lsp.est.lambda1 == "NA",
+                                    "",
+                                    paste0(lsp.est.lambda1, "\\ (", lsp.sd.lambda1, ")"))]
+
+terms[!is.na(p.id), p.comb := paste0(p.est, "\\ (", p.sd, ")")]
 terms[, sm.edf := fifelse(is.na(sm.edf),
                           NA_character_,
                           format(round(sm.edf, digits = 2), nsmall = 2))]
 terms[, sm.k := as.character(sm.k)]
 terms[, (col.na.rm) := lapply(.SD, fill_na_empty), .SDcols = col.na.rm] 
-terms[is.na(p.id), p.ci := ""]
 terms[, `:=`(term.desc = fifelse(is.na(sm.id), p.desc, sm.desc),
              term = fifelse(is.na(sm.id), p.term, sm.term))]
 
 terms <-
   terms[, .(term.id, term.desc, term,
-            p.est, p.ci,
+            p.comb,
             sm.k, sm.edf,
-            sp.est.lambda0, sp.var.lambda0,
-            sp.est.lambda1, sp.var.lambda1)]
+            lsp.lambda0.comb,
+            lsp.lambda1.comb)]
 
 
 model.summary <- list(terms = terms,
