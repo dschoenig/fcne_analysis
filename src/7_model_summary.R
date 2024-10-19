@@ -84,32 +84,18 @@ terms <-
   rbind(mod.sum$p.terms, mod.sum$sm.terms, fill = TRUE) |>
   merge(term.desc, sort = FALSE)
 
-terms[,
-      `:=`(p.sd = sqrt(p.var),
-           lsp.sd.lambda0 = sqrt(lsp.var.lambda0),
-           lsp.sd.lambda1 = sqrt(lsp.var.lambda1))]
+terms[, `:=`(p.sd = sqrt(p.var))]
 
-col.format <-
-  c("p.est", "p.sd",
-    "lsp.est.lambda0", "lsp.sd.lambda0",
-    "lsp.est.lambda1", "lsp.sd.lambda1")
+col.format <- c("p.est", "p.sd", "lsp.est.lambda0", "lsp.est.lambda1")
 col.na.rm <-
-  c("p.comb", "sm.k", "sm.edf", "lsp.lambda0.comb", "lsp.lambda1.comb")
+  c("p.comb", "sm.k", "sm.edf", "lsp.est.lambda0", "lsp.est.lambda1")
 
 # terms[, (col.format) := lapply(.SD, format_power, mag = 1, digits = 2), .SDcols = col.format]
 terms[,
       (col.format) := lapply(.SD, \(x) trimws(format(round(x, 2), nsmall = 2))),
       .SDcols = col.format]
 
-terms[, lsp.lambda0.comb := fifelse(lsp.est.lambda0 == "NA",
-                                    "",
-                                    paste0(lsp.est.lambda0, "\\ (", lsp.sd.lambda0, ")"))]
-
-terms[, lsp.lambda1.comb := fifelse(lsp.est.lambda1 == "NA",
-                                    "",
-                                    paste0(lsp.est.lambda1, "\\ (", lsp.sd.lambda1, ")"))]
-
-terms[!is.na(p.id), p.comb := paste0(p.est, "\\ (", p.sd, ")")]
+terms[!is.na(p.id), p.comb := paste0(p.est, " (", p.sd, ")")]
 terms[, sm.edf := fifelse(is.na(sm.edf),
                           NA_character_,
                           format(round(sm.edf, digits = 2), nsmall = 2))]
@@ -122,8 +108,8 @@ terms <-
   terms[, .(term.id, term.desc, term,
             p.comb,
             sm.k, sm.edf,
-            lsp.lambda0.comb,
-            lsp.lambda1.comb)]
+            lsp.est.lambda0,
+            lsp.est.lambda1)]
 
 
 model.summary <- list(terms = terms,
