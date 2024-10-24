@@ -49,10 +49,7 @@ vars.pred <-
   c("id", var.resp,
     "it_type", "pa_type", "overlap",
     "ed_east", "ed_north", "adm0",
-    "som_x", "som_y",
-    "elevation", "slope", "sx",
-    "dist_set", "dist_roads", "dist_rivers",
-    "dens_pop", "dens_roads", "travel_time")
+    "som_x", "som_y")
 
 # Data for prediction
 data.pred <- data[, ..vars.pred]

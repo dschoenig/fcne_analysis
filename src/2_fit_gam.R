@@ -22,7 +22,6 @@ if(length(args) < 4) {
 
 ## Paths
 path.data.proc <- "../data/processed/"
-path.som <- "../models/som/"
 path.gam <- "../models/gam/"
 
 if(!dir.exists(path.gam))

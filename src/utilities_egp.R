@@ -1138,12 +1138,12 @@ get_weights <- function(cf.def,
 
 
   idx.f <-
-    cf.def$groups[,
+    cf.def$groups[group.col %in% group,
                   .(id.col = unlist(fac.col)),
                   by = group.col, env = env.w]
   idx.f[, .w := 1/.N, by = group.col, env = env.w]
   idx.cf <-
-    cf.def$groups[,
+    cf.def$groups[group.col %in% group,
                   .(id.col = unlist(cf.col),
                     .w = unlist(.w)),
                   by = group.col, env = env.w]

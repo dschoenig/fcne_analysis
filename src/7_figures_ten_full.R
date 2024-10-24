@@ -46,6 +46,7 @@ if(hurr_type == "no_hurr") {
 file.data.vis <- paste0(path.data.vis, "tenure_adm", hurr_suf, ".rds")
 file.fig.ten <- paste0(path.figures, "ten.full", hurr_suf, ".png")
 file.fig.ten.reg <- paste0(path.figures, "ten.full.reg", hurr_suf, ".png")
+file.fig.ten.reg.av <- paste0(path.figures, "ten.full.reg.av", hurr_suf, ".png")
 file.fig.ten.area <- paste0(path.figures, "ten.full.area", hurr_suf, ".png")
 file.fig.ten.av <- paste0(path.figures, "ten.full.av", hurr_suf, ".png")
 file.fig.ten.def <- paste0(path.figures, "ten.full.def", hurr_suf, ".png")
@@ -72,6 +73,14 @@ regions <- c("amz", "cam")
 # col.est <- c("#D55E00", "#0072B2", "#E69F00")
 col.est <- c("#e41a1c", "#377eb8", "#984ea3")
 names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(reference)", "Marginal\ndifference")
+col.est.pt <- col.est
+col.est.pt[2] <- "#FFFFFF"
+size.est.pt <- c(0.2, 0.4, 0.3)
+names(size.est.pt) <- names(col.est)
+size.est.pt.comp <- c(0.15, 0.3, 0.225)
+names(size.est.pt.comp) <- names(col.est)
+stroke.pt.comp <- 0.5
+linewidth.comp <- 0.3
 
 # Angle for tenure categories in posterior summaries
 ten.cat.angle <- 45
@@ -142,7 +151,6 @@ post_theme <-
         axis.title.y = element_text(size = rel(1),
                                     margin = margin(r = 0.75*base.size),
                                     lineheight = rel(1.15)),
-        axis.text = element_text(family = "IBMPlexSansCondensed"),
         axis.text.x = element_text(color = "black",
                                    size = rel(1.1),
                                    margin = margin(t = base.size/2)),
@@ -173,7 +181,7 @@ post_theme <-
                                   margin = margin(l = 0, b = base.size*2, t = base.size/3)),
         plot.subtitle = element_text(size = rel(1.35),
                                      margin = margin(b = 14)),
-        plot.tag = element_text(face = "bold"),
+        plot.tag = element_text(face = "plain", margin = margin(r = base.size/2)),
         strip.text = element_text(size = rel(1),
                                   lineheight = rel(1.15),
                                   hjust = 0.5,
@@ -193,17 +201,17 @@ post_theme <-
 # Labels for tenure categories and administrative regions
 
 cat.lab <- 
-  data.table(cat.label = c("Non-IT, non-PA",
-                            "IT, recognized", "IT, not recognized",
+  data.table(cat.label = c("Reference",
+                            "IL, recognized", "IL, not recognized",
                             "PA, category I-IV", "PA, category V-VI",
-                            "IT, rec.; PA, cat. I-IV",
-                            "IT, rec.; PA, cat. V-VI",
-                            "IT, not rec.; PA, cat. I-IV",
-                            "IT, not rec.; PA, cat. V-VI"),
-                            # "IT, recognized &\nPA, category I-IV",
-                            # "IT, recognized &\nPA, category V-VI",
-                            # "IT, not recognized &\nPA, category I-IV",
-                            # "IT, not recognized &\nPA, category V-VI"),
+                            "IL, rec.; PA, cat. I-IV",
+                            "IL, rec.; PA, cat. V-VI",
+                            "IL, not rec.; PA, cat. I-IV",
+                            "IL, not rec.; PA, cat. V-VI"),
+                            # "IL, recognized &\nPA, category I-IV",
+                            # "IL, recognized &\nPA, category V-VI",
+                            # "IL, not recognized &\nPA, category I-IV",
+                            # "IL, not recognized &\nPA, category V-VI"),
              it_type = c("none",
                          "recognized", "not_recognized",
                          "none", "none",
@@ -257,8 +265,10 @@ wrap_title <- function(x, width = 25, ...) {
 area.title <- wrap_title("Area covered by least-disturbed TMF in 2010 (km²)")
 # mar.title <- wrap_title("Marginal avoided disturbances 2011–2020 (proportion of least-disturbed TMF)")
 mar.title.def.l <- "Absolute marginal difference in proportion of area affected"
+mar.title.def.2l <- "Absolute marginal difference in\nproportion of area affected"
 mar.title.def <- wrap_title(mar.title.def.l)
 mar.title.deg.l <- "Absolute marginal difference in proportion of area affected"
+mar.title.deg.2l <- "Absolute marginal difference in\nproportion of area affected"
 mar.title.deg <- wrap_title(mar.title.deg.l)
 mar.title.def.av.l <- "Absolute marginal difference in area affected by disturbances (km²)"
 mar.title.def.av.2l <- "Absolute marginal difference in\narea affected by disturbances (km²)"
@@ -401,6 +411,7 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     # Mark where 90% CI includes 0:
     mar.ten[, ci_0 := ifelse(mar.q5 < 0 & mar.q95 > 0, "yes", "no")]
     mar.ten[ci_0 == "yes", mar.lab.mean := paste0("(", mar.lab.mean, ")")]
+    mar.ten[ci_0 == "yes", mar.lab.median := paste0("(", mar.lab.median, ")")]
     mar.ten[, mar.lab.shade := ifelse(abs(mar.median) < 0.1, "dark", "light")]
 
     ten.sum[[region]]$mar <-
@@ -713,7 +724,7 @@ for(i in seq_along(regions)) {
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.median),
                 linewidth = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
-                    label = mar.lab.mean,
+                    label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
                 size = size.mar.lab) +
@@ -750,7 +761,7 @@ for(i in seq_along(regions)) {
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.median),
                 linewidth = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
-                    label = mar.lab.mean,
+                    label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
                 size = size.mar.lab) +
@@ -786,7 +797,7 @@ for(i in seq_along(regions)) {
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.median),
                 linewidth = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
-                    label = mar.lab.mean,
+                    label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
                 size = size.mar.lab) +
@@ -822,7 +833,7 @@ for(i in seq_along(regions)) {
       geom_tile(aes(x = reg.label, y = cat.label, fill = mar.median),
                 linewidth = 1, colour = "white") +
       geom_text(aes(x = reg.label, y = cat.label,
-                    label = mar.lab.mean,
+                    label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
                 size = size.mar.lab) +
@@ -898,10 +909,6 @@ for(i in seq_along(regions)) {
   col.to.num <- paste0("est.", c("median", "q5", "q95"))
   ten.sum.av.l[[region]][, (col.to.num) := lapply(.SD, as.numeric), .SDcols = col.to.num]
 
-  col.est.pt <- col.est
-  col.est.pt[2] <- "#FFFFFF"
-  size.est.pt <- c(0.2, 0.4, 0.3)
-  names(size.est.pt) <- names(col.est)
              
   plots.av.post[[region]]$def.comp <-
     ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") &
@@ -994,7 +1001,6 @@ for(i in seq_along(regions)) {
 
 
   plots.av.post[[region]]$reg.def.comp <-
-
     ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
                         dist_type == "def" & est_type %in% c("1", "2")
                       ][order(-est.label)] |>
@@ -1003,12 +1009,13 @@ for(i in seq_along(regions)) {
                           ymin = est.q5, ymax = est.q95,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
-                          shape = 21, stroke = 0.7) +
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       scale_y_continuous(label = scales::label_number(accuracy = 1),
                          expand = expansion(mult = c(0.2, 0.2))) +
-      scale_size_manual(values = size.est.pt, guide = "none") +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
       labs(colour = "", fill = "", y = abs.area.title.def, x = "",
            subtitle = reg.title) +
       post_theme +
@@ -1024,12 +1031,13 @@ for(i in seq_along(regions)) {
                           ymin = est.q5, ymax = est.q95,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
-                          shape = 21, stroke = 0.7) +
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       scale_y_continuous(label = scales::label_number(accuracy = 1),
                          expand = expansion(mult = c(0.2, 0.2))) +
-      scale_size_manual(values = size.est.pt, guide = "none") +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
       labs(colour = "", fill = "", y = mar.title.def.av.2l, x = "",
            subtitle = reg.title) +
       post_theme +
@@ -1044,12 +1052,13 @@ for(i in seq_along(regions)) {
                           ymin = est.q5, ymax = est.q95,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
-                          shape = 21, stroke = 0.7) +
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       scale_y_continuous(label = scales::label_number(accuracy = 1),
                          expand = expansion(mult = c(0.2, 0.2))) +
-      scale_size_manual(values = size.est.pt, guide = "none") +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
       labs(colour = "", fill = "", y = abs.area.title.deg, x = "",
            subtitle = reg.title) +
       post_theme +
@@ -1065,12 +1074,13 @@ for(i in seq_along(regions)) {
                           ymin = est.q5, ymax = est.q95,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
-                          shape = 21, stroke = 0.7) +
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       scale_y_continuous(label = scales::label_number(accuracy = 1),
                          expand = expansion(mult = c(0.2, 0.2))) +
-      scale_size_manual(values = size.est.pt, guide = "none") +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
       labs(colour = "", fill = "", y = mar.title.deg.av.2l, x = "",
            subtitle = reg.title) +
       post_theme +
@@ -1167,11 +1177,6 @@ for(i in seq_along(regions)) {
   ten.sum.l[[region]][reg.label == "Region", reg.label := reg.title]
   ten.sum.l[[region]][, reg.label := factor(reg.label, levels = reg.lev.new)]
 
-  col.est.pt <- col.est
-  col.est.pt[2] <- "#FFFFFF"
-  size.est.pt <- c(0.2, 0.4, 0.3)
-  names(size.est.pt) <- names(col.est)
-             
   plots.post[[region]]$def.comp <-
     ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") &
                         dist_type == "def" & est_type %in% c("1", "2")
@@ -1184,7 +1189,7 @@ for(i in seq_along(regions)) {
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
-      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+      scale_y_continuous(label = scales::label_number(accuracy = 0.1, scale = 100,
                                                       style_positive = "none", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
@@ -1209,7 +1214,7 @@ for(i in seq_along(regions)) {
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       # scale_y_continuous(label = scales::label_number(accuracy = 0.01),
-      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+      scale_y_continuous(label = scales::label_number(accuracy = 0.1, scale = 100,
                                                       style_positive = "plus", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
@@ -1231,12 +1236,12 @@ for(i in seq_along(regions)) {
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
-      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+      scale_y_continuous(label = scales::label_number(accuracy = 0.1, scale = 100,
                                                       style_positive = "none", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
       facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +
-      labs(colour = "", fill = "", y = abs.title.def, x = "",
+      labs(colour = "", fill = "", y = abs.title.deg, x = "",
            title = "") +
       post_theme +
       theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
@@ -1254,7 +1259,7 @@ for(i in seq_along(regions)) {
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
-      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+      scale_y_continuous(label = scales::label_number(accuracy = 0.1, scale = 100,
                                                       style_positive = "plus", suffix = " %"),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
@@ -1264,6 +1269,103 @@ for(i in seq_along(regions)) {
       post_theme +
       theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
+
+  plots.post[[region]]$reg.def.comp <-
+    ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
+                        dist_type == "def" & est_type %in% c("1", "2")
+                        ][order(-est.label)] |>
+    ggplot() +
+      geom_pointrange(aes(x = cat.label, y = est.median,
+                          ymin = est.q5, ymax = est.q95,
+                          group = est.label, fill = est.label,
+                          colour = est.label, size = est.label),
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
+      scale_fill_manual(values = col.est.pt, drop = TRUE) +
+      scale_colour_manual(values = col.est, drop = TRUE) +
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "none", suffix = " %"),
+                         expand = expansion(mult = c(0.2, 0.2))) +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
+      labs(colour = "", fill = "", y = abs.title.def, x = "",
+           subtitle = reg.title) +
+      post_theme +
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
+  plots.post[[region]]$reg.def.mar <-
+    ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
+                        dist_type == "def" & est_type %in% c("3")
+                        ][order(-est.label)] |>
+    ggplot() +
+      geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
+      geom_pointrange(aes(x = cat.label, y = est.median,
+                          ymin = est.q5, ymax = est.q95,
+                          group = est.label, fill = est.label,
+                          colour = est.label, size = est.label),
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
+      scale_fill_manual(values = col.est.pt, drop = TRUE) +
+      scale_colour_manual(values = col.est, drop = TRUE) +
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "plus", suffix = " %"),
+                         expand = expansion(mult = c(0.2, 0.2))) +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
+      labs(colour = "", fill = "", y = mar.title.def.2l, x = "",
+           subtitle = reg.title) +
+      post_theme +
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
+  plots.post[[region]]$reg.deg.comp <-
+    ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
+                        dist_type == "deg" & est_type %in% c("1", "2")
+                        ][order(-est.label)] |>
+    ggplot() +
+      geom_pointrange(aes(x = cat.label, y = est.median,
+                          ymin = est.q5, ymax = est.q95,
+                          group = est.label, fill = est.label,
+                          colour = est.label, size = est.label),
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
+      scale_fill_manual(values = col.est.pt, drop = TRUE) +
+      scale_colour_manual(values = col.est, drop = TRUE) +
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "none", suffix = " %"),
+                         expand = expansion(mult = c(0.2, 0.2))) +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
+      labs(colour = "", fill = "", y = abs.title.deg, x = "",
+           subtitle = reg.title) +
+      post_theme +
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
+  plots.post[[region]]$reg.deg.mar <-
+    ten.sum.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
+                        dist_type == "deg" & est_type %in% c("3")
+                        ][order(-est.label)] |>
+    ggplot() +
+      geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
+      geom_pointrange(aes(x = cat.label, y = est.median,
+                          ymin = est.q5, ymax = est.q95,
+                          group = est.label, fill = est.label,
+                          colour = est.label, size = est.label),
+                          shape = 21, stroke = stroke.pt.comp,
+                          linewidth = linewidth.comp) +
+      scale_fill_manual(values = col.est.pt, drop = TRUE) +
+      scale_colour_manual(values = col.est, drop = TRUE) +
+      scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                      style_positive = "plus", suffix = " %"),
+                         expand = expansion(mult = c(0.2, 0.2))) +
+      scale_size_manual(values = size.est.pt.comp, guide = "none") +
+      labs(colour = "", fill = "", y = mar.title.deg.2l, x = "",
+           subtitle = reg.title) +
+      post_theme +
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
+
+
+
+
+
+    
 }
 
 
@@ -1603,36 +1705,137 @@ png(file.fig.ten.av.post.deg.cam, width = 7, height = 9.25, unit = "in", res = 6
 dev.off()
 
 
-p.reg.def <-
+p.reg.av.def <-
 (plots.av.post$amz$reg.def.comp + labs(title = "Long-term disturbance (deforestation)") &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(5, 5, 0, 0), "pt"),
+        plot.margin = unit(c(5, 5, 0, 0), "pt")/2,
         plot.title.position = "plot",
-        plot.title = element_text(size = rel(1.35)),
-        plot.subtitle = element_text(size = rel(1.2),
-                                     margin = margin(b = 14)))) +
+        plot.title = element_text(size = rel(1),
+                                  margin = margin(t = base.size,
+                                                  b = base.size)),
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
 (plots.av.post$amz$reg.def.mar &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(5, 5, 0, 10), "pt"),
+        plot.margin = unit(c(5, 5, 0, 10), "pt")/2,
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
 (plots.av.post$cam$reg.def.comp &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(5, 5, 0, 25), "pt"),
+        plot.margin = unit(c(5, 5, 0, 25), "pt")/2,
         plot.title.position = "plot",
-        plot.subtitle = element_text(size = rel(1.2),
-                                     margin = margin(b = 14)))) +
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
 (plots.av.post$cam$reg.def.mar &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(5, 5, 0, 10), "pt"),
+        plot.margin = unit(c(5, 5, 0, 10), "pt")/2,
+        plot.title.position = "plot",
+        plot.subtitle = element_blank())) +
+plot_layout(nrow = 1, guides = "collect") &
+  theme(legend.spacing.y = unit(0, "pt"),
+        legend.title = element_blank(),
+        legend.margin = margin(0, 0, 0, 0),
+        # legend.key.size = unit(10, "pt"),
+        legend.text = element_text(size = rel(0.8)))
+p.reg.av.deg <-
+(plots.av.post$amz$reg.deg.comp + labs(title = "Short-term disturbance (not followed by deforestation)") &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(15, 5, 0, 0), "pt")/2,
+        plot.tag = element_blank(),
+        plot.title.position = "plot",
+        plot.title = element_text(size = rel(1),
+                                  margin = margin(t = base.size,
+                                                  b = base.size)),
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
+(plots.av.post$amz$reg.deg.mar &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(15, 5, 0, 10), "pt")/2,
+        plot.tag = element_blank(),
+        plot.title.position = "plot",
+        plot.subtitle = element_blank())) +
+(plots.av.post$cam$reg.deg.comp &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(15, 5, 0, 25), "pt")/2,
+        plot.tag = element_blank(),
+        plot.title.position = "plot",
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
+(plots.av.post$cam$reg.deg.mar &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(15, 5, 0, 10), "pt")/2,
+        plot.tag = element_blank(),
+        plot.title.position = "plot",
+        plot.subtitle = element_blank())) +
+plot_layout(nrow = 1, guides = "collect") &
+  theme(legend.spacing.y = unit(0, "pt"),
+        legend.title = element_blank(),
+        legend.margin = margin(0, 0, 0, 0),
+        # legend.key.size = unit(10, "pt"),
+        legend.text = element_text(size = rel(0.8)))
+
+
+png(file.fig.ten.reg.av, width = 7, height = 4, unit = "in", res = 600)
+p.reg.av.def/p.reg.av.deg +
+  plot_annotation(tag_levels = list("", "", "", "", "", "", "", ""),
+                  theme = post_theme) &
+  theme(axis.title = element_text(size = rel(0.7)),
+        axis.title.y = element_text(margin = margin(r = 0.5*base.size)),
+        axis.text.y = element_text(size = rel(0.7)),
+        axis.text.x = element_text(size = rel(0.7)),
+        legend.text = element_text(size = rel(0.7)),
+        legend.key.size = unit(base.size, "pt"))
+dev.off()
+
+
+p.reg.def <-
+(plots.post$amz$reg.def.comp + labs(title = "Long-term disturbance (deforestation)") &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(5, 5, 0, 0), "pt")/2,
+        plot.title.position = "plot",
+        plot.title = element_text(size = rel(1),
+                                  margin = margin(t = base.size,
+                                                  b = base.size)),
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
+(plots.post$amz$reg.def.mar &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(5, 5, 0, 10), "pt")/2,
+        plot.title.position = "plot",
+        plot.subtitle = element_blank())) +
+(plots.post$cam$reg.def.comp &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(5, 5, 0, 25), "pt")/2,
+        plot.title.position = "plot",
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
+(plots.post$cam$reg.def.mar &
+  theme(
+        # axis.title.y = element_text(size = rel(0.9)),
+        # axis.text = element_text(size = rel(0.6)),
+        plot.margin = unit(c(5, 5, 0, 10), "pt")/2,
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
 plot_layout(nrow = 1, guides = "collect") &
@@ -1642,35 +1845,41 @@ plot_layout(nrow = 1, guides = "collect") &
         # legend.key.size = unit(10, "pt"),
         legend.text = element_text(size = rel(0.8)))
 p.reg.deg <-
-(plots.av.post$amz$reg.deg.comp + labs(title = "Short-term disturbance (not followed by deforestation)") &
+(plots.post$amz$reg.deg.comp + labs(title = "Short-term disturbance (not followed by deforestation)") &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(15, 5, 0, 0), "pt"),
+        plot.margin = unit(c(15, 5, 0, 0), "pt")/2,
+        plot.tag = element_blank(),
         plot.title.position = "plot",
-        plot.title = element_text(size = rel(1.35)),
-        plot.subtitle = element_text(size = rel(1.2),
-                                     margin = margin(b = 14)))) +
-(plots.av.post$amz$reg.deg.mar &
+        plot.title = element_text(size = rel(1),
+                                  margin = margin(t = base.size,
+                                                  b = base.size)),
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
+(plots.post$amz$reg.deg.mar &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(15, 5, 0, 10), "pt"),
+        plot.margin = unit(c(15, 5, 0, 10), "pt")/2,
+        plot.tag = element_blank(),
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
-(plots.av.post$cam$reg.deg.comp &
+(plots.post$cam$reg.deg.comp &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(15, 5, 0, 25), "pt"),
+        plot.margin = unit(c(15, 5, 0, 25), "pt")/2,
+        plot.tag = element_blank(),
         plot.title.position = "plot",
-        plot.subtitle = element_text(size = rel(1.2),
-                                     margin = margin(b = 14)))) +
-(plots.av.post$cam$reg.deg.mar &
+        plot.subtitle = element_text(size = rel(0.9),
+                                     margin = margin(b = base.size)))) +
+(plots.post$cam$reg.deg.mar &
   theme(
         # axis.title.y = element_text(size = rel(0.9)),
         # axis.text = element_text(size = rel(0.6)),
-        plot.margin = unit(c(15, 5, 0, 10), "pt"),
+        plot.margin = unit(c(15, 5, 0, 10), "pt")/2,
+        plot.tag = element_blank(),
         plot.title.position = "plot",
         plot.subtitle = element_blank())) +
 plot_layout(nrow = 1, guides = "collect") &
@@ -1681,10 +1890,17 @@ plot_layout(nrow = 1, guides = "collect") &
         legend.text = element_text(size = rel(0.8)))
 
 
-png(file.fig.ten.reg, width = 12, height = 6, unit = "in", res = 600)
-p.reg.def/p.reg.deg
+png(file.fig.ten.reg, width = 7, height = 4, unit = "in", res = 600)
+p.reg.def/p.reg.deg +
+  plot_annotation(tag_levels = list("", "", "", "", "", "", "", ""),
+                  theme = post_theme) &
+  theme(axis.title = element_text(size = rel(0.7)),
+        axis.title.y = element_text(margin = margin(r = 0.5*base.size)),
+        axis.text.y = element_text(size = rel(0.7)),
+        axis.text.x = element_text(size = rel(0.7)),
+        legend.text = element_text(size = rel(0.7)),
+        legend.key.size = unit(base.size, "pt"))
 dev.off()
-
 
 
 tab.ten <-

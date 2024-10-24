@@ -56,7 +56,7 @@ regions <- c("amz", "cam")
 # col.cat <- c("#984ea3", "#4daf4a")
 col.div <- diverging_hcl(20, palette = "Purple-Green")
 col.cat <- col.div[c(3, 17)]
-names(col.cat) <- c("IT, recognized \n—against IT, not recognized",
+names(col.cat) <- c("IL, recognized \n—against IL, not recognized",
                     "PA, category I-IV\n—against PA, category V-VI")
 
 
@@ -125,22 +125,22 @@ post_theme <-
 
 cat.lab <- 
   data.table(cat.label = c(
-                           "IT, recognized \n—against IT, not recognized",
-                           "IT, rec., outside PA\n—against IT not rec., outside PA",
-                           "IT, rec.; PA, cat. I-IV\n—against IT, not rec., PA, cat. I-IV",
-                           "IT, rec.; PA, cat. V-VI\n—against IT, not rec., PA, cat. V-VI",
-                           "IT, not recognized\n—against IT, recognized",
-                           "IT, not rec., outside PA\n—against IT rec., outside PA",
-                           "IT, not rec.; PA, cat. I-IV\n—against IT, rec., PA, cat. I-IV",
-                           "IT, not rec.; PA, cat. V-VI\n—against IT, rec., PA, cat. V-VI",
+                           "IL, recognized \n—against IL, not recognized",
+                           "IL, rec., outside PA\n—against IL not rec., outside PA",
+                           "IL, rec.; PA, cat. I-IV\n—against IL, not rec., PA, cat. I-IV",
+                           "IL, rec.; PA, cat. V-VI\n—against IL, not rec., PA, cat. V-VI",
+                           "IL, not recognized\n—against IL, recognized",
+                           "IL, not rec., outside PA\n—against IL rec., outside PA",
+                           "IL, not rec.; PA, cat. I-IV\n—against IL, rec., PA, cat. I-IV",
+                           "IL, not rec.; PA, cat. V-VI\n—against IL, rec., PA, cat. V-VI",
                            "PA, category I-IV\n—against PA, category V-VI",
-                           "PA, cat. I-IV, outside IT\n—against PA, cat. V-VI, outside IT",
-                           "PA, cat. I-IV; IT, rec.\n—against PA, cat. V-VI; IT, rec.",
-                           "PA, cat. I-IV; IT, not rec.\n—against PA, cat. V-VI; IT, not rec.",
+                           "PA, cat. I-IV, outside IL\n—against PA, cat. V-VI, outside IL",
+                           "PA, cat. I-IV; IL, rec.\n—against PA, cat. V-VI; IL, rec.",
+                           "PA, cat. I-IV; IL, not rec.\n—against PA, cat. V-VI; IL, not rec.",
                            "PA, category V-VI\n—against PA, category I-IV",
-                           "PA, cat. V-VI, outside IT\n—against PA, cat. I-IV, outside IT",
-                           "PA, cat. V-VI; IT, rec.\n—against PA, cat. I-IV; IT, rec.",
-                           "PA, cat. V-VI; IT, not rec.\n—against PA, cat. I-IV; IT, not rec."
+                           "PA, cat. V-VI, outside IL\n—against PA, cat. I-IV, outside IL",
+                           "PA, cat. V-VI; IL, rec.\n—against PA, cat. I-IV; IL, rec.",
+                           "PA, cat. V-VI; IL, not rec.\n—against PA, cat. I-IV; IL, not rec."
                            ),
              mar_type = c(rep("rec", 4), rep("nrec", 4), rep("ind", 4), rep("dir", 4)),
              it_type = c(

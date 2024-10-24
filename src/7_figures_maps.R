@@ -20,8 +20,11 @@ if(is.na(overwrite)) {
   overwrite <- FALSE
 }
 
-hurr_type <- "no_hurr"
-overwrite <- FALSE
+# hurr_type <- "no_hurr"
+# overwrite <- TRUE
+
+# hurr_type <- "rurr"
+# overwrite <- FALSE
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
 path.base <- "../"
@@ -31,6 +34,7 @@ path.data.proc <- paste0(path.data, "processed/")
 path.data.vis <- paste0(path.data, "visualization/")
 if(!dir.exists(path.data.vis)) dir.create(path.data.vis, recursive = TRUE)
 path.marginal <- paste0(path.base, "models/marginal/")
+path.agg <- paste0(path.base, "models/gam/agg/")
 path.forestloss <- paste0(path.base, "models/forestloss/")
 path.figures <- paste0(path.base, "results/figures/")
 if(!dir.exists(path.figures)) dir.create(path.figures, recursive = TRUE)
@@ -133,22 +137,6 @@ map_guide_fill <-
                                draw.llim = TRUE
                                ))
 
-cat.lab <- 
-  data.table(cat.label = c("Long-term disturbance (deforestation)",
-                           "Short-term distrubance (not followed by deforestation)",
-                           "IT, recognized", "IT, not recognized",
-                           "PA, category I-IV", "PA, category V-VI"),
-             it_type = c(NA, NA,
-                         "recognized", "not_recognized",
-                         NA, NA),
-             pa_type = c(NA, NA,
-                         NA, NA,
-                         "indirect_use", "direct_use"),
-             resp_type = c("def", "deg",
-                           NA, NA,
-                           NA, NA))
-cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
-
 dist.lab <-
   data.table(dist_type = c("def", "deg"),
              dist.label = c("Long-term disturbance (deforestation)",
@@ -163,6 +151,11 @@ fac.est.lab <-
   data.table(est_type = paste0("fac.", c("q5", "q25", "median", "q75", "q95")),
              est.label = c("5% quantile", "25% quantile", "Median", "75% quantile", "95% quantile"))
 fac.est.lab[, est.label := factor(est.label, levels = est.label)]
+
+agg.est.lab <-
+  data.table(est_type = paste0("agg.", c("q5", "q25", "median", "q75", "q95")),
+             est.label = c("5% quantile", "25% quantile", "Median", "75% quantile", "95% quantile"))
+agg.est.lab[, est.label := factor(est.label, levels = est.label)]
 
 area.est.lab <-
   data.table(est_type = paste0("area.mar.", c("q5", "q25", "median", "q75", "q95")),
@@ -245,10 +238,11 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
     file.area <- paste0(path.data.proc, region, ".sumstats.area.rds")
     file.mar.sam <- paste0(path.marginal, region, "/", region, ".sam.rds")
-    # file.fl.geo.all <- paste0(path.forestloss, region, "/", region, ".geo.af", hurr_suf_mar, ".rds")
     name.sam <- paste0(region, ".geo.itpa", hurr_suf_mar, ".rds")
     file.mar.def.geo <- paste0(path.marginal, region, "/", region, ".def.geo.itpa", hurr_suf_mar, ".rds")
     file.mar.deg.geo <- paste0(path.marginal, region, "/", region, ".deg.geo.itpa", hurr_suf_mar, ".rds")
+    file.agg.def.geo <- paste0(path.agg, region, "/", region, ".def.geo.rds")
+    file.agg.deg.geo <- paste0(path.agg, region, "/", region, ".deg.geo.rds")
     file.limit <- paste0(path.data.raw, region, ".limit.gpkg")
     file.areas <- paste0(path.data.raw, region, ".areas_union_2015.gpkg")
 
@@ -377,6 +371,46 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     gc()
 
 
+    # Aggregated model predictions
+
+    message("Disturbance risk …")
+
+    agg.def.geo <- readRDS(file.agg.def.geo)
+    agg.deg.geo <- readRDS(file.agg.deg.geo)
+
+    agg.def.geo[, dist_type := factor("def", levels = c("def", "deg"))]
+    agg.deg.geo[, dist_type := factor("deg", levels = c("def", "deg"))]
+
+    setnames(agg.def.geo, "deforestation", "disturbance")
+    setnames(agg.deg.geo, "degradation", "disturbance")
+
+    agg.post <- rbind(agg.def.geo, agg.deg.geo)
+    rm(agg.def.geo, agg.deg.geo)
+    gc()
+    # mar.post[, `:=`(area.prop.mar = marginal * area)]
+    # mar.post[, `:=`(area.prop.mar = marginal * area,
+    #                 area.prop.fac = factual * area,
+    #                 area.prop.cf = counterfactual * area)]
+
+    agg.geo <-
+      agg.post[,
+               .(agg.mean = mean(disturbance),
+                 agg.median = median(disturbance),
+                 agg.sd = sd(disturbance),
+                 agg.mad = mad(disturbance),
+                 agg.q5 = quantile(disturbance, 0.05),
+                 agg.q25 = quantile(disturbance, 0.25),
+                 agg.q75 = quantile(disturbance, 0.75),
+                 agg.q95 = quantile(disturbance, 0.95)
+                 ),
+               by = c("dist_type", "ea_east.bin", "ea_north.bin")]
+
+    geo.sum[[region]]$agg <- merge(agg.geo, dist.lab)
+
+    rm(agg.geo)
+    gc()
+
+
   } # End loop over regions
 
   message(paste0("Storing summaries in `", file.data.vis, "` …"))
@@ -401,6 +435,7 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
 
 maps <- list()
 geo.sum.fac.l <- list()
+geo.sum.dist.l <- list()
 geo.sum.area.l <- list()
 
 for(i in seq_along(regions)) {
@@ -426,7 +461,7 @@ for(i in seq_along(regions)) {
     scale_fill_manual(values = c.map[1:2],
                       breaks = c("recognized", "not_recognized"),
                       labels = c("Recognized", "Not recognized"),
-                      name = "Indigenous lands",
+                      name = "Mapped Indigenous lands",
                       guide = guide_legend(byrow = TRUE,
                                            order = 1)) +
     scale_pattern_manual(values = c("indirect_use" = "stripe", "direct_use" = "none"),
@@ -448,7 +483,7 @@ for(i in seq_along(regions)) {
     labs(x = NULL, y = NULL) +
     map_theme
 
-  if(hurr_type == "no_hurr") {
+  if(region == "cam" & hurr_type == "hurr") {
     maps[[region]]$hurr.lf <-
       ggplot() +
       geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", linewidth = 0.3) +
@@ -484,17 +519,17 @@ for(i in seq_along(regions)) {
 
   # Disturbance loss risk (posterior)
 
-  geo.sum.fac.l[[region]] <-
-    geo.sum[[region]]$mar[n.fac >= 10] |>
-           melt(measure.vars = c("fac.q5", "fac.q25", "fac.median", "fac.q75", "fac.q95"),
+  geo.sum.dist.l[[region]] <-
+    geo.sum[[region]]$agg |>
+           melt(measure.vars = c("agg.q5", "agg.q25", "agg.median", "agg.q75", "agg.q95"),
                 variable.name = "est_type", value.name = "estimate") |>
-    merge(fac.est.lab)
+    merge(agg.est.lab)
 
-  maps[[region]]$fac.post <- 
-    geo.sum.fac.l[[region]][n.fac >= 10] |>
+  maps[[region]]$dist.post <- 
+    geo.sum.dist.l[[region]] |>
     ggplot() +
     geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.3) +
-    geom_sf(data = poly[[region]]$areas, fill = "grey65", colour = NA) +
+    geom_sf(data = poly[[region]]$limit, fill = "grey65", colour = NA) +
     geom_raster(mapping = aes(fill = as.numeric(estimate),
                               x = ea_east.bin, y = ea_north.bin),
                 interpolate = FALSE) +
@@ -555,7 +590,7 @@ for(i in seq_along(regions)) {
                      style = "ticks", text_cex = 0.5,
                      line_width = 0.5, text_family = "IBMPlexSans") +
     map_guide_fill +
-    labs(fill = dist.title, x = NULL, y = NULL) +
+    labs(fill = mar.title.av, x = NULL, y = NULL) +
     map_theme
 
 
@@ -668,29 +703,28 @@ if(hurr_type == "hurr") {
   print(maps.areas)
   dev.off()
 
-  png(file.fig.dist.amz, width = 7, height = 9.5, unit = "in", res = 600)
-  print(maps$amz$fac.post)
+  png(file.fig.dist.amz, width = 7, height = 8.5, unit = "in", res = 600)
+  print(maps$amz$dist.post)
   dev.off()
 
-  png(file.fig.area.amz, width = 7, height = 9.5, unit = "in", res = 600)
+  png(file.fig.area.amz, width = 7, height = 8.5, unit = "in", res = 600)
   print(maps$amz$area.post)
   dev.off()
 
-}
-
-png(file.fig.dist.cam, width = 7, height = 9.5, unit = "in", res = 600)
-maps$cam$fac.post
-dev.off()
-
-png(file.fig.area.cam, width = 7, height = 9.5, unit = "in", res = 600)
-maps$cam$area.post
-dev.off()
-
-if(hurr_type == "no_hurr") {
   png(file.fig.hurr, width = 3.5, height = 3.5, unit = "in", res = 600)
   print(maps[[region]]$hurr.lf)
   dev.off()
+
 }
+
+png(file.fig.dist.cam, width = 7, height = 8.5, unit = "in", res = 600)
+maps$cam$dist.post
+dev.off()
+
+png(file.fig.area.cam, width = 7, height = 8.5, unit = "in", res = 600)
+maps$cam$area.post
+dev.off()
+
 
 
 ## EXPORT (GEODATA) ############################################################
