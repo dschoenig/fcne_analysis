@@ -73,8 +73,8 @@ cov <-
 
 cov.labs <-
   c("Elevation", "Slope",
-    "Agricultural suitability", "Climate moisture index",
-    "Distance to roads", "Distance to built-up areas", "Distance to rivers",
+    "Agricultural suitability", "Min. climate moisture index",
+    "Distance to built-up areas", "Distance to roads", "Distance to rivers",
     "Population density", "Road density",
     "Travel time to cities")
 cov.labs <- factor(cov.labs, levels = cov.labs)

@@ -215,10 +215,10 @@ var.cont.rank <- paste0(var.cont, ".rank")
 var.cont.bin <- paste0(var.cont.rank, ".bin")
 
 var.cont.label <-
-  c("Fitted", 
+  c("Posterior predictive median", 
     "Elevation", "Slope",
-    "Agricultural suitability", "Climate moisture index",
-    "Distance to roads", "Distance to built-up areas", "Distance to rivers",
+    "Agricultural suitability", "Minimal climate moisture index",
+    "Distance to built-up areas", "Distance to roads", "Distance to rivers",
     "Population density", "Road density",
     "Travel time to cities") |>
   paste0("\n(rank transformed)")

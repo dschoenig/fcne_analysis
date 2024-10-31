@@ -26,3 +26,7 @@ Rscript 7_validation_ten_comp.R amz
 Rscript 7_validation_ten_full.R cam no_hurr
 Rscript 7_validation_ten_comp.R cam no_hurr
 
+Rscript 7_figures_cov.R amz def
+Rscript 7_figures_cov.R amz deg
+Rscript 7_figures_cov.R cam def
+Rscript 7_figures_cov.R cam deg
