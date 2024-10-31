@@ -110,12 +110,12 @@ for(q in seq_along(n.quant)) {
     cov.foc.bin <- paste0(cov.foc, ".bin")
     cov.env <- list(cov.col = cov.foc,
                     cov.bin.col = cov.foc.bin)
-    cov.quant <- seq(1/n.quant[q], 1, length.out = n.quant[q])
-    cov.breaks <- c(min(cov.map[[cov.foc]], na.rm = TRUE),
-                    unique(unname(quantile(cov.map[[cov.foc]], probs = cov.quant))))
+    cov.p <- seq(1/n.quant[q], 1, length.out = n.quant[q])
+    cov.q <- unique(unname(data[, quantile(cov.col, probs = cov.p), env = cov.env]))
+    cov.breaks <- c(min(cov.map[[cov.foc]], na.rm = TRUE), cov.q)
     cov.map.foc <- cov.map[, .(som_bmu, cov.col), env = cov.env]
     cov.map.foc[,
-                cov.bin.col := cov.breaks[cut(cov.col, cov.breaks, labels = FALSE, include.lowest = TRUE)],
+                cov.bin.col := cov.q[cut(cov.col, cov.breaks, labels = FALSE, include.lowest = TRUE)],
                 env = cov.env]
     cov.sum.l[[i]] <-
       merge(lp.som, cov.map.foc) |>
