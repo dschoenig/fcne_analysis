@@ -46,6 +46,19 @@ bin_cols <- function(data, columns, bin.res, bin.min = NULL, bin.round = NULL, b
 
 ## GENERAL HELPERS ##############################################################
 
+
+hdci2 <- function(x,
+                  .width = 0.90,
+                  var.name = "",
+                  prefix = "hdi",
+                  suffix = c("l", "u"), ...) {
+  hint <- as.list(ggdist::hdci(x = x, .width = .width))
+  var.names <- paste0(var.name, prefix, .width*100, suffix)
+  names(hint) <- var.names
+  return(hint)
+}
+
+
 posterior_summary <- function(x,
                               probs = c(0.05, 0.95),
                               prefix = NULL,

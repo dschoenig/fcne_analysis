@@ -435,6 +435,30 @@ get_grid <- function(x) {x$grid}
 get_poly <- function(x) {x$grid.poly}
 get_nb <- function(x) {x$grid.nb}
 
+get_mapping <- function(x,
+                        rescale = TRUE,
+                        prefix = "som.",
+                        bmu.name = "unit"
+                        ) {
+  bmu.var <- paste0(prefix, bmu.name)
+  coord <- as.data.table(x$grid$pts)
+  coord.var <- paste0(prefix, names(coord))
+  setnames(coord, coord.var)
+  coord[, bmu.col := 1:.N, env = list(bmu.col = bmu.var)]
+  if(rescale == TRUE) {
+    x.dt <-
+      t(apply(x$codes[[1]], 1, \(r) (r * x$scale$sd) + x$scale$mean)) |>
+      as.data.table()
+  } else {
+    x.dt <- as.data.table(x$codes[[1]])
+  }
+  x.dt[, bmu.col := 1:.N, env = list(bmu.col = bmu.var)]
+  x.dt <- merge(x.dt, coord)
+  setcolorder(x.dt, c(bmu.var, coord.var))
+  setkeyv(x.dt, bmu.var)
+  return(copy(x.dt))
+}
+
 
 .ids_by_group <- function(data,
                           id.var,

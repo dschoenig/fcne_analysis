@@ -1,25 +1,39 @@
+# To re-run
+
+
+
+# Running
+
+sbatch cc_6_aggregate_all_AMZ.sh
+sbatch cc_6_aggregate_geo_AMZ.sh
+sbatch cc_6_aggregate_noitpa_AMZ.sh
+sbatch cc_6_aggregate_som_AMZ.sh
+
+
 # Done
 
-
 sbatch cc_5_counterfactual_geo_AMZ.sh
+sbatch cc_5_counterfactual_ten_AMZ.sh
+sbatch cc_5_counterfactual_ten_comp_AMZ.sh
+
+
+sbatch cc_6_marginal_ten_itpa_AMZ.sh
+sbatch cc_6_marginal_geo_itpa_def_AMZ.sh
+sbatch cc_6_marginal_geo_itpa_deg_AMZ.sh
+sbatch cc_6_marginal_ten_comp_AMZ.sh
+
 sbatch cc_5_counterfactual_geo_CAM.sh
 sbatch cc_5_counterfactual_geo_no_hurr.CAM.sh
-sbatch cc_5_counterfactual_ten_AMZ.sh
 sbatch cc_5_counterfactual_ten_CAM.sh
 sbatch cc_5_counterfactual_ten_no_hurr_CAM.sh
-sbatch cc_5_counterfactual_ten_comp_AMZ.sh
 sbatch cc_5_counterfactual_ten_comp_CAM.sh
 sbatch cc_5_counterfactual_ten_comp_no_hurr_CAM.sh
 
-sbatch cc_6_marginal_ten_itpa_AMZ.sh
 sbatch cc_6_marginal_ten_itpa_CAM.sh
 sbatch cc_6_marginal_ten_itpa_no_hurr_CAM.sh
 sbatch cc_6_marginal_geo_itpa_CAM.sh
 sbatch cc_6_marginal_geo_itpa_no_hurr_CAM.sh
-sbatch cc_6_marginal_geo_itpa_def_AMZ.sh
-sbatch cc_6_marginal_geo_itpa_deg_AMZ.sh
 
-sbatch cc_6_marginal_ten_comp_AMZ.sh
 sbatch cc_6_marginal_ten_comp_CAM.sh
 sbatch cc_6_marginal_ten_comp_no_hurr_CAM.sh
 
@@ -32,8 +46,6 @@ sbatch cc_6_marginal_geo_pa_def_AMZ.sh
 sbatch cc_6_marginal_geo_pa_deg_AMZ.sh
 sbatch cc_6_marginal_geo_pa_no_hurr_CAM.sh
 
-
-# Running
 
 sbatch cc_6_marginal_ten_it_ov_AMZ.sh
 sbatch cc_6_marginal_ten_it_ov_CAM.sh

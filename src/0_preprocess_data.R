@@ -4,7 +4,7 @@ library(data.table)
 library(sf)
 
 region <- tolower(as.character(args[1]))
-# region <- "amz"
+# region <- "cam"
 
 ## Paths
 path.data.raw <- "../data/raw/"
@@ -121,6 +121,9 @@ if(region == "cam") {
 
   crs.cam.ed <-
     st_crs('PROJCS["Central_America_Equidistant_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Equidistant_Conic"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900001"]]')
+
+  crs.cam.ea <- 
+    st_crs('PROJCS["Central_America_Albers_Equal_Area_Conic",GEOGCS["SIRGAS 2000",DATUM["Sistema_de_Referencia_Geocentrico_para_America_del_Sur_2000",SPHEROID["GRS 1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6674"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4674"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["latitude_of_center",14.89],PARAMETER["longitude_of_center",-87.48],PARAMETER["standard_parallel_1",19.69],PARAMETER["standard_parallel_2",8.34],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH]AUTHORITY["USER","900002"]]')
 
   lim <- st_read(file.lim)
   lim.line <- st_cast(st_exterior_ring(lim), "MULTILINESTRING")
@@ -267,10 +270,26 @@ stats[, overlap := factor(overlap,
                                      "not_recognized:direct_use"),
                           ordered = TRUE)]
 
+
+if(region == "cam") {
+  pts.stats.cri_nic <-
+    stats[adm0 %in% c("CRI", "NIC"), .(id, ea_east, ea_north)] |>
+    st_as_sf(coords = c("ea_east", "ea_north")) |>
+    st_set_crs(crs.cam.ea)
+    
+  pts.stats.lf <-
+    st_intersection(pts.stats.cri_nic, st_transform(lf, crs.cam.ea))
+  idx.stats.lf <- sort(unique(pts.lf$id))
+
+  stats[id %in% idx.stats.lf, hurr_lf := TRUE]
+  stats[is.na(hurr_lf), hurr_lf := FALSE]
+}
+
 stats.sel <- 
   c("id", "adm0",
     "tmf_annual_2010", "tmf_def", "tmf_deg",
     "it", "it_type", "pa", "pa_type", "overlap",
+    "hurr_lf",
     "ea_east", "ea_north")
 
 stats <- stats[, ..stats.sel]

@@ -45,6 +45,7 @@ if(hurr_type == "no_hurr") {
 
 file.data.vis <- paste0(path.data.vis, "tenure_adm", hurr_suf, ".rds")
 file.fig.ten <- paste0(path.figures, "ten.full", hurr_suf, ".png")
+file.fig.ten.reg.c <- paste0(path.figures, "ten.full.reg.c", hurr_suf, ".png")
 file.fig.ten.reg <- paste0(path.figures, "ten.full.reg", hurr_suf, ".png")
 file.fig.ten.reg.av <- paste0(path.figures, "ten.full.reg.av", hurr_suf, ".png")
 file.fig.ten.area <- paste0(path.figures, "ten.full.area", hurr_suf, ".png")
@@ -74,7 +75,7 @@ regions <- c("amz", "cam")
 col.est <- c("#e41a1c", "#377eb8", "#984ea3")
 names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(reference)", "Marginal\ndifference")
 col.est.pt <- col.est
-col.est.pt[2] <- "#FFFFFF"
+col.est.pt[2] <- "#FFFFFFFF"
 size.est.pt <- c(0.2, 0.4, 0.3)
 names(size.est.pt) <- names(col.est)
 size.est.pt.comp <- c(0.15, 0.3, 0.225)
@@ -85,8 +86,9 @@ linewidth.comp <- 0.3
 # Angle for tenure categories in posterior summaries
 ten.cat.angle <- 45
 
+
 ten_theme <- 
-  theme_minimal(base_family = "IBMPlexSans", base_size = 7) +
+  theme_minimal(base_family = "IBMPlexSansCondensed", base_size = 7) +
   theme(
         panel.grid.major = element_blank(),
         legend.position = "right",
@@ -107,7 +109,7 @@ ten_theme <-
         )
 
 
-# theme_minimal(base_family = "IBMPlexSans") +
+# theme_minimal(base_family = "IBMPlexSansCondensed") +
 #       theme(
 #             legend.position = "right",
 #             legend.justification = c(0,1),
@@ -135,10 +137,10 @@ ten_guide_fill <-
                                draw.llim = TRUE
                                ))
 
-
 base.size <- 7 
+
 post_theme <-
-  theme_light(base_family = "IBMPlexSans",
+  theme_light(base_family = "IBMPlexSansCondensed",
               base_size = base.size) +
   theme(
         axis.line.x = element_line(color = "black",
@@ -253,7 +255,10 @@ dist.lab <-
              dist.label = c("Long-term disturbance (deforestation)",
                             "Short-term disturbance (not followed by deforestation)"))
 dist.lab[, dist.label := factor(dist.label, levels = dist.label)]
-
+dist.lab.2l <- c("Long-term disturbance\n(deforestation)",
+                 "Short-term disturbance\n(not followed by deforestation)")
+dist.lab.2l <- factor(dist.lab.2l, levels = dist.lab.2l)
+names(dist.lab.2l) <- dist.lab$dist.label
 
 wrap_title <- function(x, width = 25, ...) {
   paste(stri_wrap(x,
@@ -262,25 +267,26 @@ wrap_title <- function(x, width = 25, ...) {
         collapse = "\n")
 }
 
-area.title <- wrap_title("Area covered by least-disturbed TMF in 2010 (km²)")
-# mar.title <- wrap_title("Marginal avoided disturbances 2011–2020 (proportion of least-disturbed TMF)")
+area.title <- wrap_title("Area covered by undisturbed TMF in 2010 (km²)")
+# mar.title <- wrap_title("Marginal avoided disturbances 2011–2020 (proportion of undisturbed TMF)")
 mar.title.def.l <- "Absolute marginal difference in proportion of area affected"
 mar.title.def.2l <- "Absolute marginal difference in\nproportion of area affected"
 mar.title.def <- wrap_title(mar.title.def.l)
 mar.title.deg.l <- "Absolute marginal difference in proportion of area affected"
 mar.title.deg.2l <- "Absolute marginal difference in\nproportion of area affected"
 mar.title.deg <- wrap_title(mar.title.deg.l)
-mar.title.def.av.l <- "Absolute marginal difference in area affected by disturbances (km²)"
-mar.title.def.av.2l <- "Absolute marginal difference in\narea affected by disturbances (km²)"
+mar.title.def.av.l <- "Absolute marginal difference in area affected (km²)"
+mar.title.def.av.2l <- "Absolute marginal difference\nin area affected (km²)"
 mar.title.def.av <- wrap_title(mar.title.def.av.l)
-mar.title.deg.av.l <- "Absolute marginal difference in area affected by disturbances (km²)"
-mar.title.deg.av.2l <- "Absolute marginal difference in\narea affected by disturbances (km²)"
+mar.title.deg.av.l <- "Absolute marginal difference in area affected (km²)"
+mar.title.deg.av.2l <- "Absolute marginal difference\nin area affected (km²)"
 mar.title.deg.av <- wrap_title(mar.title.deg.av.l)
 abs.title.def <- "Proportion of area affected"
 abs.title.deg <- "Proportion of area affected"
 abs.area.title.def <- "Area affected (km²)"
 abs.area.title.deg <- "Area affected (km²)"
 size.mar.lab <- 1.5
+size.mar.lab2 <- 1.75
 
 
 
@@ -302,7 +308,7 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
       hurr_suf_mar <- ""
     }
 
-    file.area <- paste0(path.data.proc, region, ".sumstats.area.rds")
+    file.area <- paste0(path.data.proc, region, ".sumstats.area", hurr_suf_mar, ".rds")
     file.mar.sam <- paste0(path.marginal, region, "/", region, ".sam.rds")
     name.mar.ten.sam <- paste0(region, ".ten.itpa.all.rds")
     name.mar.ten.def <- paste0(region, ".def.ten.itpa.all", hurr_suf_mar, ".rds")
@@ -340,62 +346,90 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
                     area.prop.fac = factual * area,
                     area.prop.cf = counterfactual * area)]
 
+
+
+    agg.cols <- c("dist_type", "it_type", "pa_type", "adm0")
+    mar.post.hdi <-
+      mar.post[,
+               c(
+                 hdci2(marginal, .width = c(0.9), "mar."),
+                 hdci2(marginal, .width = c(0.5), "mar."),
+                 hdci2(factual, .width = c(0.9), "fac."),
+                 hdci2(factual, .width = c(0.5), "fac."),
+                 hdci2(counterfactual, .width = c(0.9), "cf."),
+                 hdci2(counterfactual, .width = c(0.5), "cf."),
+                 hdci2(as.numeric(area.prop.mar), .width = c(0.9), "area.mar."),
+                 hdci2(as.numeric(area.prop.mar), .width = c(0.5), "area.mar."),
+                 hdci2(as.numeric(area.prop.fac), .width = c(0.9), "area.fac."),
+                 hdci2(as.numeric(area.prop.fac), .width = c(0.5), "area.fac."),
+                 hdci2(as.numeric(area.prop.cf), .width = c(0.9), "area.cf."),
+                 hdci2(as.numeric(area.prop.cf), .width = c(0.5), "area.cf.")
+                 ),
+               by = agg.cols]
+    mar.post.n <-
+      mar.post[,
+               .(
+                 n.fac = unique(n.fac),
+                 n.cf = unique(n.cf),
+                 n.frac = unique(n.fac)/1e7),
+               by = agg.cols]
     mar.ten <-
       mar.post[,
-               .(n.fac = unique(n.fac),
-                 n.cf = unique(n.cf),
-                 n.frac = unique(n.fac)/1e7,
+               .(
                  mar.mean = mean(marginal),
                  mar.median = median(marginal),
                  mar.sd = sd(marginal),
-                 mar.mad = mad(marginal),
-                 mar.q5 = quantile(marginal, 0.05),
-                 mar.q25 = quantile(marginal, 0.25),
-                 mar.q75 = quantile(marginal, 0.75),
-                 mar.q95 = quantile(marginal, 0.95),
+                 # mar.mad = mad(marginal),
+                 # mar.q5 = quantile(marginal, 0.05),
+                 # mar.q25 = quantile(marginal, 0.25),
+                 # mar.q75 = quantile(marginal, 0.75),
+                 # mar.q95 = quantile(marginal, 0.95),
                  fac.mean = mean(factual),
                  fac.median = median(factual),
                  fac.sd = sd(factual),
-                 fac.mad = mad(factual),
-                 fac.q5 = quantile(factual, 0.05),
-                 fac.q25 = quantile(factual, 0.25),
-                 fac.q75 = quantile(factual, 0.75),
-                 fac.q95 = quantile(factual, 0.95),
+                 # fac.mad = mad(factual),
+                 # fac.q5 = quantile(factual, 0.05),
+                 # fac.q25 = quantile(factual, 0.25),
+                 # fac.q75 = quantile(factual, 0.75),
+                 # fac.q95 = quantile(factual, 0.95),
                  cf.mean = mean(counterfactual),
                  cf.median = median(counterfactual),
                  cf.sd = sd(counterfactual),
-                 cf.mad = mad(counterfactual),
-                 cf.q5 = quantile(counterfactual, 0.05),
-                 cf.q25 = quantile(counterfactual, 0.25),
-                 cf.q75 = quantile(counterfactual, 0.75),
-                 cf.q95 = quantile(counterfactual, 0.95),
+                 # cf.mad = mad(counterfactual),
+                 # cf.q5 = quantile(counterfactual, 0.05),
+                 # cf.q25 = quantile(counterfactual, 0.25),
+                 # cf.q75 = quantile(counterfactual, 0.75),
+                 # cf.q95 = quantile(counterfactual, 0.95),
                  area.mar.mean = mean(area.prop.mar),
                  area.mar.median = median(area.prop.mar),
                  area.mar.sd = sd(area.prop.mar),
-                 area.mar.mad = mad(area.prop.mar),
-                 area.mar.q5 = quantile(area.prop.mar, 0.05),
-                 area.mar.q25 = quantile(area.prop.mar, 0.25),
-                 area.mar.q75 = quantile(area.prop.mar, 0.75),
-                 area.mar.q95 = quantile(area.prop.mar, 0.95),
+                 # area.mar.mad = mad(area.prop.mar),
+                 # area.mar.q5 = quantile(area.prop.mar, 0.05),
+                 # area.mar.q25 = quantile(area.prop.mar, 0.25),
+                 # area.mar.q75 = quantile(area.prop.mar, 0.75),
+                 # area.mar.q95 = quantile(area.prop.mar, 0.95),
                  area.fac.mean = mean(area.prop.fac),
                  area.fac.median = median(area.prop.fac),
                  area.fac.sd = sd(area.prop.fac),
-                 area.fac.mad = mad(area.prop.fac),
-                 area.fac.q5 = quantile(area.prop.fac, 0.05),
-                 area.fac.q25 = quantile(area.prop.fac, 0.25),
-                 area.fac.q75 = quantile(area.prop.fac, 0.75),
-                 area.fac.q95 = quantile(area.prop.fac, 0.95),
+                 # area.fac.mad = mad(area.prop.fac),
+                 # area.fac.q5 = quantile(area.prop.fac, 0.05),
+                 # area.fac.q25 = quantile(area.prop.fac, 0.25),
+                 # area.fac.q75 = quantile(area.prop.fac, 0.75),
+                 # area.fac.q95 = quantile(area.prop.fac, 0.95),
                  area.cf.mean = mean(area.prop.cf),
                  area.cf.median = median(area.prop.cf),
-                 area.cf.sd = sd(area.prop.cf),
-                 area.cf.mad = mad(area.prop.cf),
-                 area.cf.q5 = quantile(area.prop.cf, 0.05),
-                 area.cf.q25 = quantile(area.prop.cf, 0.25),
-                 area.cf.q75 = quantile(area.prop.cf, 0.75),
-                 area.cf.q95 = quantile(area.prop.cf, 0.95),
-                 mar.prob.pos = sum(marginal > 0)/.N,
-                 mar.prob.neg = sum(marginal < 0)/.N),
-               by = c("dist_type", "it_type", "pa_type", "adm0")]
+                 area.cf.sd = sd(area.prop.cf)
+                 # area.cf.mad = mad(area.prop.cf),
+                 # area.cf.q5 = quantile(area.prop.cf, 0.05),
+                 # area.cf.q25 = quantile(area.prop.cf, 0.25),
+                 # area.cf.q75 = quantile(area.prop.cf, 0.75),
+                 # area.cf.q95 = quantile(area.prop.cf, 0.95),
+                 # mar.prob.pos = sum(marginal > 0)/.N,
+                 # mar.prob.neg = sum(marginal < 0)/.N
+                 ),
+               by = agg.cols] |>
+    merge(mar.post.hdi, by = agg.cols) |>
+    merge(mar.post.n, by = agg.cols)
     # mar.ten[, mar.lab.mean := label_arc(mar.mean, 1, FALSE)]
     mar.ten[, mar.lab.mean := label_perc(mar.mean, 1, FALSE)]
     mar.ten[, mar.lab.median := label_perc(mar.median, 1, FALSE)]
@@ -407,9 +441,8 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
             area.mar.median.log :=
               sign(as.numeric(area.mar.median)) *
               log10(abs(as.numeric(area.mar.median)))]
-
     # Mark where 90% CI includes 0:
-    mar.ten[, ci_0 := ifelse(mar.q5 < 0 & mar.q95 > 0, "yes", "no")]
+    mar.ten[, ci_0 := ifelse(mar.hdi90l < 0 & mar.hdi90u > 0, "yes", "no")]
     mar.ten[ci_0 == "yes", mar.lab.mean := paste0("(", mar.lab.mean, ")")]
     mar.ten[ci_0 == "yes", mar.lab.median := paste0("(", mar.lab.median, ")")]
     mar.ten[, mar.lab.shade := ifelse(abs(mar.median) < 0.1, "dark", "light")]
@@ -437,13 +470,22 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
       merge(mar.post[n.fac > 1000], by = c("dist_type", "it_type", "pa_type", "adm0"),
             all.x = TRUE)
 
-    ten.sum[[region]]$area.undist <-
+    
+    ten.sum[[region]]$area.undist <- 
       expand.grid(cat.label = cat.lab$cat.label,
                   reg.label = reg.lab[[region]]$reg.label) |>
       as.data.table() |>
       merge(cat.lab, by = "cat.label", all = TRUE) |>
       merge(reg.lab[[region]], by = "reg.label", all = TRUE) |>
       merge(area.undist, by = c("it_type", "pa_type", "adm0"), all.x = TRUE)
+
+
+    ten.sum[[region]]$area.undist[, area.rel.lab := ""]
+    ten.sum[[region]]$area.undist[is.na(adm0) & (it_type != "none" | pa_type != "none"),
+                                  # area.rel.lab := format(as.numeric(round(area.rel/sum(area.rel), 2)),
+                                  #                        nsmall = 2)]
+                                  area.rel.lab := label_per(as.numeric(area.rel))]
+    ten.sum[[region]]$area.undist[, area.lab.shade := ifelse(abs(as.numeric(area)) < 1.7e5, "dark", "light")]
 
   }
 
@@ -480,7 +522,8 @@ for(i in seq_along(regions)) {
                       cam = "Central America",
                       amz = "Amazon")
 
-  breaks.area <- 10^(0:7)
+  breaks.area <- c(10^(0:6))
+  lim.area <- c(1, 5e6)
 
 
   plots.area[[region]]$undist.nov <-
@@ -489,13 +532,18 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_tile(aes(x = reg.label, y = cat.label, fill = as.numeric(area)),
                 linewidth = 1, colour = "white") +
+      geom_text(aes(x = reg.label, y = cat.label,
+                    label = area.rel.lab,
+                    colour = area.lab.shade),
+                size = size.mar.lab2, family = "IBMPlexSansCondensed",
+                fontface = "plain") +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
-      scale_fill_binned_sequential(
+      scale_fill_continuous_sequential(
                                    palette = "YlGn",
-                                   # palette = "Greens",
+                                   # palette = "Greens 3",
                                    rev = TRUE,
-                                   lim = c(1, 1e7),
+                                   lim = lim.area,
                                    breaks = breaks.area,
                                    trans = scales::log10_trans(),
                                    labels = scales::label_log(),
@@ -503,7 +551,7 @@ for(i in seq_along(regions)) {
                                        ) +
       scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
                             guide = "none") +
-      scale_colour_manual(values = c(dark = "grey15", light = "grey85"),
+      scale_colour_manual(values = c(dark = "grey5", light = "grey97"),
                           guide = "none") +
       scale_x_discrete(position = "top") +
       scale_y_discrete(limits = rev) +
@@ -522,7 +570,12 @@ for(i in seq_along(regions)) {
                 linewidth = 1, colour = "white") +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
-      scale_fill_binned_sequential(
+      geom_text(aes(x = reg.label, y = cat.label,
+                    label = area.rel.lab,
+                    colour = area.lab.shade),
+                size = size.mar.lab2, family = "IBMPlexSansCondensed",
+                fontface = "plain") +
+      scale_fill_continuous_sequential(
                                    palette = "YlGn",
                                    rev = TRUE,
                                    lim = c(1, 1e7),
@@ -533,7 +586,7 @@ for(i in seq_along(regions)) {
                                    ) +
       scale_discrete_manual("fontface", values = c(yes = "italic", no = "plain"),
                             guide = "none") +
-      scale_colour_manual(values = c(dark = "grey15", light = "grey85"),
+      scale_colour_manual(values = c(dark = "grey5", light = "grey97"),
                           guide = "none") +
       scale_x_discrete(position = "top") +
       scale_y_discrete(limits = rev) +
@@ -727,7 +780,7 @@ for(i in seq_along(regions)) {
                     label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = size.mar.lab) +
+                size = size.mar.lab, family = "IBMPlexSansCondensed") +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
@@ -764,7 +817,7 @@ for(i in seq_along(regions)) {
                     label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = size.mar.lab) +
+                size = size.mar.lab, family = "IBMPlexSansCondensed") +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
@@ -800,7 +853,7 @@ for(i in seq_along(regions)) {
                     label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = size.mar.lab) +
+                size = size.mar.lab, family = "IBMPlexSansCondensed") +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
@@ -836,7 +889,7 @@ for(i in seq_along(regions)) {
                     label = mar.lab.median,
                     fontface = ci_0,
                     colour = mar.lab.shade),
-                size = size.mar.lab) +
+                size = size.mar.lab, family = "IBMPlexSansCondensed") +
       geom_segment(x = sep.x, y = 0.5, xend = sep.x, yend = 4.5,
                    linewidth = 0.3, colour = "grey5") +
       scale_fill_continuous_divergingx(
@@ -892,8 +945,8 @@ for(i in seq_along(regions)) {
   ten.sum.av.l[[region]] <-
     ten.sum[[region]]$mar |>
          melt(measure.vars = list(est.median = c("area.fac.median", "area.cf.median", "area.mar.median"),
-                                  est.q5 = c("area.fac.q5", "area.cf.q5", "area.mar.q5"),
-                                  est.q95 = c("area.fac.q95", "area.cf.q95", "area.mar.q95")),
+                                  est.hdi90l = c("area.fac.hdi90l", "area.cf.hdi90l", "area.mar.hdi90l"),
+                                  est.hdi90u = c("area.fac.hdi90u", "area.cf.hdi90u", "area.mar.hdi90u")),
              variable.name = "est_type")
   ten.sum.av.l[[region]][, est.label := est.lab[as.integer(est_type)]]
   ten.sum.av.l[[region]][, est.group := factor(fifelse(est_type == "3",
@@ -906,7 +959,7 @@ for(i in seq_along(regions)) {
   reg.lev.new <- c(reg.title, reg.lev[1:(length(reg.lev)-1)])
   ten.sum.av.l[[region]][reg.label == "Region", reg.label := reg.title]
   ten.sum.av.l[[region]][, reg.label := factor(reg.label, levels = reg.lev.new)]
-  col.to.num <- paste0("est.", c("median", "q5", "q95"))
+  col.to.num <- paste0("est.", c("median", "hdi90l", "hdi90u"))
   ten.sum.av.l[[region]][, (col.to.num) := lapply(.SD, as.numeric), .SDcols = col.to.num]
 
              
@@ -916,7 +969,7 @@ for(i in seq_along(regions)) {
                       ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
@@ -939,7 +992,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
@@ -961,7 +1014,7 @@ for(i in seq_along(regions)) {
                       ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
@@ -983,7 +1036,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
@@ -1006,7 +1059,7 @@ for(i in seq_along(regions)) {
                       ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1028,7 +1081,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1049,7 +1102,7 @@ for(i in seq_along(regions)) {
                       ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1071,7 +1124,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1087,52 +1140,9 @@ for(i in seq_along(regions)) {
       theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
 
-  #   ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") & is.na(adm0) &
-  #                          dist_type == "def" & est_type %in% c("1", "2")
-  #                         ][order(-est.label)] |>
-  #   ggplot() +
-  #     geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
-  #     geom_pointrange(aes(x = cat.label, y = est.median,
-  #                         ymin = est.q5, ymax = est.q95,
-  #                         group = est.label, fill = est.label,
-  #                         colour = est.label),
-  #                     size = 0.3, shape = 21, stroke = 0.7) +
-  #     scale_fill_manual(values = col.est.pt, drop = TRUE) +
-  #     scale_colour_manual(values = col.est, drop = TRUE) +
-  #     scale_y_continuous(transform = "log10", label = scales::label_number(accuracy = 1)) +
-  #     expand_limits(y = 0) +
-  #     facet_grid(cols = vars(est.group), scales = "free") +
-  #     labs(colour = "", fill = "", y = abs.area.title.def, x = "",
-  #          title = "") +
-  #     post_theme +
-  #     theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1),
-  #           axis.title.y = element_text(margin = margin(l = 0, r = 10)))
-
-  # plots.av.post[[region]]$def.mar <-
-  #   ten.sum.av.l[[region]][!(it_type == "none" & pa_type == "none") &
-  #                       dist_type == "def" & est_type %in% c("3")
-  #                     ][order(-est.label)] |>
-  #   ggplot() +
-  #     geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
-  #     geom_pointrange(aes(x = cat.label, y = est.median,
-  #                         ymin = est.q5, ymax = est.q95,
-  #                         group = est.label, fill = est.label,
-  #                         colour = est.label),
-  #                     size = 0.3, shape = 21, stroke = 0.7) +
-  #     scale_fill_manual(values = col.est.pt, drop = TRUE) +
-  #     scale_colour_manual(values = col.est, drop = TRUE) +
-  #     scale_y_continuous(label = scales::label_number(accuracy = 1)) +
-  #     expand_limits(y = c(-0.01, 0.01)) +
-  #     facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +
-      # labs(colour = "", fill = "", y = mar.title.def.av.l, x = "",
-      #      title = "") +
-      # post_theme +
-      # theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1),
-      #       axis.title.y = element_text(margin = margin(l = 25, r = 10)))
 
 
 }
-
 
 
 ## TENURE EFFECTS BY COUNTRY (POSTERIOR DISTRIBUTIONS) ##########################
@@ -1161,8 +1171,8 @@ for(i in seq_along(regions)) {
   ten.sum.l[[region]] <-
     ten.sum[[region]]$mar |>
          melt(measure.vars = list(est.median = c("fac.median", "cf.median", "mar.median"),
-                                  est.q5 = c("fac.q5", "cf.q5", "mar.q5"),
-                                  est.q95 = c("fac.q95", "cf.q95", "mar.q95")),
+                                  est.hdi90l = c("fac.hdi90l", "cf.hdi90l", "mar.hdi90l"),
+                                  est.hdi90u = c("fac.hdi90u", "cf.hdi90u", "mar.hdi90u")),
              variable.name = "est_type")
   ten.sum.l[[region]][, est.label := est.lab[as.integer(est_type)]]
   ten.sum.l[[region]][, est.group := factor(fifelse(est_type == "3",
@@ -1183,7 +1193,7 @@ for(i in seq_along(regions)) {
                       ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
@@ -1207,7 +1217,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
@@ -1215,7 +1225,7 @@ for(i in seq_along(regions)) {
       scale_colour_manual(values = col.est, drop = TRUE) +
       # scale_y_continuous(label = scales::label_number(accuracy = 0.01),
       scale_y_continuous(label = scales::label_number(accuracy = 0.1, scale = 100,
-                                                      style_positive = "plus", suffix = " %"),
+                                                      style_positive = "plus", suffix = " pp."),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
       facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +
@@ -1230,7 +1240,7 @@ for(i in seq_along(regions)) {
                       ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
@@ -1253,14 +1263,14 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = 0.7) +
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       scale_y_continuous(label = scales::label_number(accuracy = 0.1, scale = 100,
-                                                      style_positive = "plus", suffix = " %"),
+                                                      style_positive = "plus", suffix = " pp."),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt, guide = "none") +
       facet_grid(rows = vars(reg.label), cols = vars(est.group), scales = "free_y") +
@@ -1276,7 +1286,7 @@ for(i in seq_along(regions)) {
                         ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1299,7 +1309,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1307,7 +1317,7 @@ for(i in seq_along(regions)) {
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
-                                                      style_positive = "plus", suffix = " %"),
+                                                      style_positive = "plus", suffix = " pp."),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt.comp, guide = "none") +
       labs(colour = "", fill = "", y = mar.title.def.2l, x = "",
@@ -1321,7 +1331,7 @@ for(i in seq_along(regions)) {
                         ][order(-est.label)] |>
     ggplot() +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1344,7 +1354,7 @@ for(i in seq_along(regions)) {
     ggplot() +
       geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
       geom_pointrange(aes(x = cat.label, y = est.median,
-                          ymin = est.q5, ymax = est.q95,
+                          ymin = est.hdi90l, ymax = est.hdi90u,
                           group = est.label, fill = est.label,
                           colour = est.label, size = est.label),
                           shape = 21, stroke = stroke.pt.comp,
@@ -1352,7 +1362,7 @@ for(i in seq_along(regions)) {
       scale_fill_manual(values = col.est.pt, drop = TRUE) +
       scale_colour_manual(values = col.est, drop = TRUE) +
       scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
-                                                      style_positive = "plus", suffix = " %"),
+                                                      style_positive = "plus", suffix = " pp."),
                          expand = expansion(mult = c(0.2, 0.2))) +
       scale_size_manual(values = size.est.pt.comp, guide = "none") +
       labs(colour = "", fill = "", y = mar.title.deg.2l, x = "",
@@ -1360,13 +1370,110 @@ for(i in seq_along(regions)) {
       post_theme +
       theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
-
-
-
-
-
     
 }
+
+
+## CONDENSED VERSION OF TENURE EFFECTS (PROPORTIONAL AND AREA)
+
+
+area.c <-
+  rbind(ten.sum.av.l$amz[!(it_type == "none" & pa_type == "none") & is.na(adm0),
+                         ][order(-est.label)],
+        ten.sum.av.l$cam[!(it_type == "none" & pa_type == "none") & is.na(adm0),
+                         ][order(-est.label)])
+area.c[, dist.label2 := dist.lab.2l[as.character(dist.label)]]
+setorder(area.c, -est_type)
+
+prop.c <-
+  rbind(ten.sum.l$amz[!(it_type == "none" & pa_type == "none") & is.na(adm0),
+                         ][order(-est.label)],
+        ten.sum.l$cam[!(it_type == "none" & pa_type == "none") & is.na(adm0),
+                         ][order(-est.label)])
+prop.c[, dist.label2 := dist.lab.2l[as.character(dist.label)]]
+setorder(prop.c, -est_type)
+
+p.area.comp.c <-
+  area.c[est_type %in% c("1", "2")] |>
+  ggplot() +
+    geom_pointrange(aes(x = cat.label, y = est.median,
+                        ymin = est.hdi90l, ymax = est.hdi90u,
+                        group = est.label, fill = est.label,
+                        colour = est.label, size = est.label),
+                        shape = 21, stroke = stroke.pt.comp,
+                        linewidth = linewidth.comp) +
+    scale_fill_manual(values = col.est.pt, drop = TRUE) +
+    scale_colour_manual(values = col.est, drop = TRUE) +
+    scale_y_continuous(label = scales::label_number(accuracy = 1),
+                       expand = expansion(mult = c(0.2, 0.2))) +
+    scale_size_manual(values = size.est.pt.comp, guide = "none") +
+    facet_grid(rows = vars(reg.label), cols = vars(dist.label2), scales = "free_y") +
+    labs(colour = "", fill = "", y = abs.area.title.def, x = "") +
+    post_theme +
+    theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
+p.area.mar.c <-
+  area.c[est_type %in% c("3")] |>
+  ggplot() +
+    geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
+    geom_pointrange(aes(x = cat.label, y = est.median,
+                        ymin = est.hdi90l, ymax = est.hdi90u,
+                        group = est.label, fill = est.label,
+                        colour = est.label, size = est.label),
+                        shape = 21, stroke = stroke.pt.comp,
+                        linewidth = linewidth.comp) +
+    scale_fill_manual(values = col.est.pt, drop = TRUE) +
+    scale_colour_manual(values = col.est, drop = TRUE) +
+    scale_y_continuous(label = scales::label_number(accuracy = 1),
+                       expand = expansion(mult = c(0.2, 0.2))) +
+    scale_size_manual(values = size.est.pt.comp, guide = "none") +
+    facet_grid(rows = vars(reg.label), cols = vars(dist.label2), scales = "free_y") +
+    labs(colour = "", fill = "", y = mar.title.def.av.l, x = "") +
+    post_theme +
+    theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
+
+p.prop.comp.c <-
+  prop.c[est_type %in% c("1", "2")] |>
+  ggplot() +
+    geom_pointrange(aes(x = cat.label, y = est.median,
+                        ymin = est.hdi90l, ymax = est.hdi90u,
+                        group = est.label, fill = est.label,
+                        colour = est.label, size = est.label),
+                        shape = 21, stroke = stroke.pt.comp,
+                        linewidth = linewidth.comp) +
+    scale_fill_manual(values = col.est.pt, drop = TRUE) +
+    scale_colour_manual(values = col.est, drop = TRUE) +
+    scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                    style_positive = "none", suffix = " %"),
+                       expand = expansion(mult = c(0.2, 0.2))) +
+    scale_size_manual(values = size.est.pt.comp, guide = "none") +
+    facet_grid(rows = vars(reg.label), cols = vars(dist.label2), scales = "free_y") +
+    labs(colour = "", fill = "", y = abs.title.def, x = "") +
+    post_theme +
+    theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
+
+p.prop.mar.c <-
+  prop.c[est_type %in% c("3")] |>
+  ggplot() +
+    geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
+    geom_pointrange(aes(x = cat.label, y = est.median,
+                        ymin = est.hdi90l, ymax = est.hdi90u,
+                        group = est.label, fill = est.label,
+                        colour = est.label, size = est.label),
+                        shape = 21, stroke = stroke.pt.comp,
+                        linewidth = linewidth.comp) +
+    scale_fill_manual(values = col.est.pt, drop = TRUE) +
+    scale_colour_manual(values = col.est, drop = TRUE) +
+    scale_y_continuous(label = scales::label_number(accuracy = 1, scale = 100,
+                                                    style_positive = "plus", suffix = " pp."),
+                       expand = expansion(mult = c(0.2, 0.2))) +
+    scale_size_manual(values = size.est.pt.comp, guide = "none") +
+    facet_grid(rows = vars(reg.label), cols = vars(dist.label2), scales = "free_y") +
+    labs(colour = "", fill = "", y = mar.title.def.l, x = "") +
+    post_theme +
+    theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
 
 
 
@@ -1413,6 +1520,15 @@ p.area <-
           plot.tag = element_blank()
           ))
   )
+
+
+png(file.fig.ten.area, width = 7, height = 3.5, unit = "in", res = 600)
+p.area +
+plot_layout(guides = "collect") &
+theme(legend.justification = c(0, 0.9))
+dev.off()
+
+
 
 p.def <-
   ((plots.dis$amz$ten.mar$def.nov &
@@ -1494,6 +1610,22 @@ p.def <-
           ))
    )
 
+
+p.ten <-
+  wrap_plots(
+             # A = (p.area + plot_layout(guides = "collect", axes = "collect")),
+             A = (p.def + plot_layout(guides = "collect", axes = "collect")),
+             B = (p.deg + plot_layout(guides = "collect", axes = "collect")),
+             nrow = 2) &
+  # plot_annotation(tag_levels = list(c("A", "", "", "", "B", "", "", ""))) &
+  theme(legend.justification = c(0, 0.9),
+        plot.tag = element_text(family = "IBMPlexSansCondensed", size = rel(1.2)))
+# png(file.fig.ten, width = 7, height = 10.125, unit = "in", res = 600)
+png(file.fig.ten, width = 7, height = 6.75, unit = "in", res = 600)
+p.ten
+dev.off()
+
+
 p.def.av <-
   ((plots.area.av$amz$ten.mar$def.nov &
     theme(
@@ -1574,19 +1706,6 @@ p.def.av <-
           ))
    )
 
-p.ten <-
-  wrap_plots(
-             # A = (p.area + plot_layout(guides = "collect", axes = "collect")),
-             A = (p.def + plot_layout(guides = "collect", axes = "collect")),
-             B = (p.deg + plot_layout(guides = "collect", axes = "collect")),
-             nrow = 2) &
-  # plot_annotation(tag_levels = list(c("A", "", "", "", "B", "", "", ""))) &
-  theme(legend.justification = c(0, 0.9),
-        plot.tag = element_text(family = "IBMPlexSans", size = rel(1.2)))
-# png(file.fig.ten, width = 7, height = 10.125, unit = "in", res = 600)
-png(file.fig.ten, width = 7, height = 6.75, unit = "in", res = 600)
-p.ten
-dev.off()
 
 p.ten.av <-
   wrap_plots(A = (p.def.av + plot_layout(guides = "collect", axes = "collect")),
@@ -1594,16 +1713,11 @@ p.ten.av <-
              nrow = 2) &
   # plot_annotation(tag_levels = list(c("A", "", "", "", "B", "", "", ""))) &
   theme(legend.justification = c(0, 0.9),
-        plot.tag = element_text(family = "IBMPlexSans"))
+        plot.tag = element_text(family = "IBMPlexSansCondensed"))
 png(file.fig.ten.av, width = 7, height = 6.75, unit = "in", res = 600)
 p.ten.av
 dev.off()
 
-png(file.fig.ten.area, width = 7, height = 3.5, unit = "in", res = 600)
-p.area +
-plot_layout(guides = "collect") &
-theme(legend.justification = c(0, 0.9))
-dev.off()
 
 png(file.fig.ten.deg, width = 7, height = 3.5, unit = "in", res = 600)
 p.def +
@@ -1901,6 +2015,59 @@ p.reg.def/p.reg.deg +
         legend.text = element_text(size = rel(0.7)),
         legend.key.size = unit(base.size, "pt"))
 dev.off()
+
+
+p.area.prop <-
+(((p.area.comp.c &
+   theme(
+        plot.margin = unit(c(10, 5, 0, 10), "pt")/2,
+         )) +
+  (p.area.mar.c &
+   theme(
+        plot.margin = unit(c(10, 5, 0, 25), "pt")/2,
+         ))) /
+ ((p.prop.comp.c &
+   theme(
+        plot.margin = unit(c(10, 5, 0, 10), "pt")/2,
+         )) +
+  (p.prop.mar.c &
+   theme(
+        plot.margin = unit(c(10, 5, 0, 25), "pt")/2,
+         )))) +
+plot_layout(guides = "collect", tag_level = "new") +
+plot_annotation(tag_levels = "A") &
+theme(
+      axis.title = element_text(size = rel(0.7)),
+      axis.title.y = element_text(margin = margin(r = 0.5*base.size)),
+      axis.text.y = element_text(size = rel(0.7), margin = margin(r = base.size/4)),
+      axis.text.x = element_text(size = rel(0.8)),
+      legend.text = element_text(size = rel(0.7)),
+      legend.key.size = unit(base.size, "pt"),
+      legend.spacing.y = unit(0, "pt"),
+      legend.title = element_blank(),
+      legend.margin = margin(0, 0, 0, 0),
+      strip.text = element_text(size = rel(0.7),
+                                margin = margin(
+                                                base.size/2,
+                                                base.size/2,
+                                                base.size/2,
+                                                base.size/2
+                                                )),
+      plot.tag = element_text(size = rel(1),
+                              family = "IBMPlexSansCondensed",
+                              face = "bold",
+                              margin = margin(
+                                              0,
+                                              base.size/2,
+                                              base.size,
+                                              0
+                                              ))
+      )
+
+png(file.fig.ten.reg.c, width = 7, height = 5.5, unit = "in", res = 600)
+p.area.prop
+dev.off()
+
 
 
 tab.ten <-
