@@ -13,9 +13,9 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 Rscript 6_marginal_effects.R 4 ten_comp amz def rec all
 Rscript 6_marginal_effects.R 4 ten_comp amz deg rec all
-Rscript 6_marginal_effects.R 4 ten_comp amz def nrec all
-Rscript 6_marginal_effects.R 4 ten_comp amz deg nrec all
+Rscript 6_marginal_effects.R 4 ten_comp amz def rec ov
+Rscript 6_marginal_effects.R 4 ten_comp amz deg rec ov
 Rscript 6_marginal_effects.R 4 ten_comp amz def ind all
 Rscript 6_marginal_effects.R 4 ten_comp amz deg ind all
-Rscript 6_marginal_effects.R 4 ten_comp amz def dir all
-Rscript 6_marginal_effects.R 4 ten_comp amz deg dir all
+Rscript 6_marginal_effects.R 4 ten_comp amz def ind ov
+Rscript 6_marginal_effects.R 4 ten_comp amz deg ind ov

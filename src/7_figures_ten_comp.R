@@ -557,6 +557,7 @@ for(i in seq_along(regions)) {
 
 ten.sum.av.l <- list()
 ten.sum.l <- list()
+ten.post.l <- list()
 
 plots.prop.av <- list()
 
@@ -657,6 +658,22 @@ for(i in seq_along(regions)) {
   ten.sum.l[[region]][, reg.label := factor(reg.label, levels = reg.lev.new)]
 
 
+  ten.post.l[[region]] <-
+    ten.sum[[region]]$post |>
+         melt(measure.vars = c("factual", "counterfactual", "marginal"),
+             variable.name = "est_type",
+             value.name = "estimate")
+  ten.post.l[[region]][, est.label := est.lab[as.integer(est_type)]]
+  ten.post.l[[region]][, est.group := factor(fifelse(est_type == "3",
+                                                    "Attributed effect",
+                                                    "Comparison against reference"),
+                                            levels = c("Comparison against reference",
+                                                       "Attributed effect"))]
+
+  reg.lev <- levels(ten.post.l[[region]]$reg.label)
+  reg.lev.new <- c(reg.title, reg.lev[1:(length(reg.lev)-1)])
+  ten.post.l[[region]][reg.label == "Region", reg.label := reg.title]
+  ten.post.l[[region]][, reg.label := factor(reg.label, levels = reg.lev.new)]
 
 }
 
@@ -664,20 +681,28 @@ for(i in seq_along(regions)) {
 ## CONDENSED VERSION OF TENURE EFFECTS (PROPORTIONAL AND AREA)
 
 area.c <-
-  rbind(ten.sum.av.l$amz[is.na(it_type) & is.na(pa_type) & is.na(adm0) &
+  rbind(ten.sum.av.l$amz[
+                         # is.na(it_type) & is.na(pa_type) &
+                         is.na(adm0) &
                          mar_type %in% c("rec", "ind")
                          ][order(-est.label)],
-        ten.sum.av.l$cam[is.na(it_type) & is.na(pa_type) & is.na(adm0) &
+        ten.sum.av.l$cam[
+                         # is.na(it_type) & is.na(pa_type) &
+                         is.na(adm0) &
                          mar_type %in% c("rec", "ind")
                          ][order(-est.label)])
 area.c[, dist.label2 := dist.lab.2l[as.character(dist.label)]]
 setorder(area.c, -est_type)
 
 prop.c <-
-  rbind(ten.sum.l$amz[is.na(it_type) & is.na(pa_type) & is.na(adm0) &
+  rbind(ten.sum.l$amz[
+                      # is.na(it_type) & is.na(pa_type) &
+                      is.na(adm0) &
                       mar_type %in% c("rec", "ind")
                       ][order(-est.label)],
-        ten.sum.l$cam[is.na(it_type) & is.na(pa_type) & is.na(adm0) &
+        ten.sum.l$cam[
+                      # is.na(it_type) & is.na(pa_type) &
+                      is.na(adm0) &
                       mar_type %in% c("rec", "ind")
                       ][order(-est.label)])
 prop.c[, dist.label2 := dist.lab.2l[as.character(dist.label)]]

@@ -205,3 +205,22 @@ _[, .(mar.fi = format_ci(mar.median*100, mar.hdi90l*100, mar.hdi90u*100,
                          digits = 2, postfix.p = " %", invert = TRUE))]
 
 areas.amz$undist[is.na(adm0)]
+
+
+
+# TENURE COMPARISONS
+
+
+ten.comp <- readRDS("../data/visualization/tenure_comp.no_hurr.rds")$ten.sum
+
+ten.comp.amz <- ten.comp$amz$mar
+
+
+ten.comp.amz[is.na(adm0) & mar_type == "ind", .(cat.label, mar.median)]
+ten.comp.amz[is.na(adm0) & mar_type == "rec", .(cat.label, mar.median)]
+
+
+
+
+
+

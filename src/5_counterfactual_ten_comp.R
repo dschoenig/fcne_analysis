@@ -7,7 +7,8 @@ source("utilities.R")
 n.threads <- as.integer(args[1])
 region <- tolower(as.character(args[2]))
 area_type <- tolower(as.character(args[3]))
-hurr_type <- tolower(as.character(args[4]))
+ov_type <- tolower(as.character(args[4]))
+hurr_type <- tolower(as.character(args[5]))
 
 # n.threads <- 1
 # region <- "amz"
@@ -26,7 +27,7 @@ if(hurr_type == "no_hurr" & region == "cam") {
 }
 
 
-paste0("Settings: ", paste(area_type, hurr_type, sep = ", ")) |>
+paste0("Settings: ", paste(area_type, ov_type, hurr_type, sep = ", ")) |>
 message()
 
 path.base <- "../"
@@ -38,7 +39,9 @@ if(!dir.exists(path.cf))
 
 file.data <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.som <- paste0(path.som, region, ".som.1e6.rds")
-file.out <- paste0(path.cf, region, ".ten_comp.", area_type, ".all", hurr_suf, ".rds")
+file.out <- paste0(path.cf, region, ".ten_comp.",
+                   area_type, ".",
+                   ov_type, hurr_suf, ".rds")
 
 data <- readRDS(file.data)
 som.fit <- readRDS(file.som)
@@ -56,6 +59,13 @@ silence <- gc()
 if(region == "cam" & hurr_type == "no_hurr") {
   data <- data[hurr_lf == FALSE]
 }
+if(ov_type == "no_ov") {
+  data <- data[overlap == "none"]
+}
+if(ov_type == "ov") {
+    data <- data[pa_type != "none" & it_type != "none"]
+}
+
 
 
 if(area_type %in% c("rec", "nrec")) {

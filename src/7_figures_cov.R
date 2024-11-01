@@ -14,8 +14,8 @@ region <- tolower(as.character(args[1]))
 model_resp <- tolower(as.character(args[2]))
 
 
-# region <- "cam"
-# model_resp <- "def"
+# region <- "amz"
+# model_resp <- "deg"
 
 
 path.base <- "../"
@@ -123,7 +123,7 @@ cov.rug <-
        value.name = "cov.val")
 cov.rug[, cov.label := cov.labs[as.character(cov)]]
 
-
+if(region == "cam") {
 cov.scales <-
   list(
        elevation = list(
@@ -174,7 +174,69 @@ cov.scales <-
                           labels = scales::label_number(big.mark = " "),
                           lim = c(10, NA))
   )
+  lp.lim <- switch(model_resp,
+                   def = c(-3.25, 2.15),
+                   deg = c(-2.25, 1))
+}
 
+
+if(region == "amz") {
+cov.scales <-
+  list(
+       elevation = list(
+                        # trans = "identity",
+                        trans = scales::log_trans(),
+                        breaks = c(30, 100, 300, 1000, 3000),
+                        labels = scales::label_number(big.mark = " "),
+                        lim = c(20, 3000)),
+       slope = list(
+                    trans = scales::log_trans(),
+                    breaks = c(1, 3, 10, 30),
+                    labels = scales::label_number(big.mark = " "),
+                    lim = c(1, 45)),
+       sx = list(
+                 trans = "identity",
+                 breaks = waiver(),
+                 labels = scales::label_number(big.mark = " "),
+                 lim = c(NA, 7000)),
+       cmi_min = list(
+                      trans = "identity",
+                      breaks = waiver(),
+                      labels = scales::label_number(big.mark = " "),
+                       lim = c(NA, 100)),
+       dist_set = list(trans = scales::log_trans(),
+                       breaks = c(1000, 10000, 1e5),
+                       labels = scales::label_number(big.mark = " "),
+                       lim = c(2000, 2e5)),
+       dist_roads = list(trans = scales::log_trans(),
+                         breaks = c(1000, 10000, 1e5),
+                         labels = scales::label_number(big.mark = " "),
+                         lim = c(400, 2e5)),
+       dist_rivers = list(trans = scales::log_trans(),
+                          breaks = c(30, 100, 300, 1000, 3000),
+                          labels = scales::label_number(big.mark = " "),
+                          lim = c(60, 3000)),
+       dens_pop = list(trans = scales::log_trans(),
+                       # breaks = unique(round(exp(seq(0, log(cov.sum[cov == "dens_pop", max(cov.val)]),
+                       #                               length.out = 4))/50) * 50),
+                       breaks = c(0.001, 0.01, 0.1, 1, 10, 100),
+                       labels = scales::label_log(),
+                       lim = c(.001, 200)),
+       dens_roads = list(
+                         trans = "identity",
+                         breaks = waiver(),
+                         labels = waiver(),
+                         lim = c(0, 200)),
+       travel_time = list(
+                          trans = scales::pseudo_log_trans(),
+                          breaks = c(10, 100, 1000),
+                          labels = scales::label_number(big.mark = " "),
+                          lim = c(NA, NA))
+  )
+  lp.lim <- switch(model_resp,
+                   def = c(-2.75, 1.5),
+                   deg = c(-1.75, 1))
+}
 
 quant.sel <- 100
 
@@ -191,16 +253,19 @@ for(i in seq_along(cov.var)) {
                       point_interval = median_hdci) +
       geom_rug(data = cov.rug[cov == cov.var[i]],
                aes(x = cov.val), sides = "b", alpha = 0.3,
-               length = unit(base.size, "pt")) +
+               length = unit(base.size*2/3, "pt")) +
+      scale_fill_brewer(labels = rev(c("0.50", "0.90", "0.97"))) +
       scale_x_continuous(
-                         # trans = scales::log_trans(),
                          trans = cov.scales[[cov.var[i]]]$trans,
                          breaks = cov.scales[[cov.var[i]]]$breaks,
                          labels = cov.scales[[cov.var[i]]]$labels,
                          ) +
-      scale_fill_brewer(labels = rev(c("0.50", "0.90", "0.97"))) +
+      coord_cartesian(
+                      xlim = cov.scales[[cov.var[i]]]$lim,
+                      ylim = lp.lim
+                      ) +
+      # scale_y_continuous(expand = expansion(mult = 0.1)) +
       facet_wrap(vars(cov.label), scales = "free_x") +
-      # coord_cartesian(xlim = cov.scales[[cov.var[i]]]$lim) +
       labs(x = "", y = "Contribution to the linear predictor",
            fill = "Uncertainty\ninterval") +
       cov_theme

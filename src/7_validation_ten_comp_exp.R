@@ -14,8 +14,8 @@ region <- tolower(as.character(args[1]))
 hurr_type <- tolower(as.character(args[2]))
 overwrite <- as.logical(as.character(args[3]))
 
-region <- "amz"
-hurr_type <- "hurr"
+# region <- "amz"
+# hurr_type <- "hurr"
 # overwrite <- TRUE
 
 # hurr_type <- "no_hurr"
@@ -49,9 +49,9 @@ if(hurr_type == "no_hurr") {
 }
 
 file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
-file.cf.ten_comp.rec <- paste0(path.cf, region, ".ten_comp.rec.all", hurr_suf, ".rds")
-file.cf.ten_comp.ind <- paste0(path.cf, region, ".ten_comp.ind.all", hurr_suf, ".rds")
-file.fig.imb.rec_ind <- paste0(path.figures, "imb.rec_ind.", region, hurr_suf, ".png")
+file.cf.ten_comp.rec <- paste0(path.cf, region, ".ten_comp.exp.rec.all", hurr_suf, ".rds")
+file.cf.ten_comp.ind <- paste0(path.cf, region, ".ten_comp.exp.ind.all", hurr_suf, ".rds")
+file.fig.imb.rec_ind <- paste0(path.figures, "imb.exp.rec_ind.", region, hurr_suf, ".png")
 # file.data.vis <- paste0(path.data.vis, region, "imb.rec_ind", hurr_suf, ".rds")
 
 
@@ -63,44 +63,6 @@ cat.lab <-
              mar_type = c("rec", "ind"),
              it_type = as.factor(c(NA, NA)),
              pa_type = as.factor(c(NA, NA)))
-cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
-
-
-
-
-cat.lab <- 
-  data.table(cat.label = c(
-                           "IL, recognized\n(incl. mixed regimes)\n—against IL, not recognized",
-                           "IL, rec., outside PA\n—against IL not rec., outside PA",
-                           "IL, rec.; PA, cat. I-IV\n—against IL, not rec., PA, cat. I-IV",
-                           "IL, rec.; PA, cat. V-VI\n—against IL, not rec., PA, cat. V-VI",
-                           "IL, not recognized\n(including mixed regimes)\n—against IL, recognized",
-                           "IL, not rec., outside PA\n—against IL rec., outside PA",
-                           "IL, not rec.; PA, cat. I-IV\n—against IL, rec., PA, cat. I-IV",
-                           "IL, not rec.; PA, cat. V-VI\n—against IL, rec., PA, cat. V-VI",
-                           "PA, category I-IV\n(incl. mixed regimes)\n—against PA, category V-VI",
-                           "PA, cat. I-IV, outside IL\n—against PA, cat. V-VI, outside IL",
-                           "PA, cat. I-IV; IL, rec.\n—against PA, cat. V-VI; IL, rec.",
-                           "PA, cat. I-IV; IL, not rec.\n—against PA, cat. V-VI; IL, not rec.",
-                           "PA, category V-VI\n(including mixed regimes)\n—against PA, category I-IV",
-                           "PA, cat. V-VI, outside IL\n—against PA, cat. I-IV, outside IL",
-                           "PA, cat. V-VI; IL, rec.\n—against PA, cat. I-IV; IL, rec.",
-                           "PA, cat. V-VI; IL, not rec.\n—against PA, cat. I-IV; IL, not rec."
-                           ),
-             mar_type = c(rep("rec", 4), rep("nrec", 4), rep("ind", 4), rep("dir", 4)),
-             it_type = c(
-                         NA, "recognized", "recognized", "recognized",
-                         NA, "not_recognized", "not_recognized", "not_recognized",
-                         NA, "none", "recognized", "not_recognized",
-                         NA, "none", "recognized", "not_recognized"
-                         ),
-             pa_type = c(
-                         NA, "none", "indirect_use", "direct_use",
-                         NA, "none", "indirect_use", "direct_use",
-                         NA, "indirect_use", "indirect_use", "indirect_use",
-                         NA, "direct_use", "direct_use", "direct_use"
-                         ))
-# cat.lab[, cat.label := stri_pad_left(cat.label, width = max(stri_width(cat.label)))]
 cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
 
 
@@ -204,14 +166,10 @@ cf.ten_comp.rec <- readRDS(file.cf.ten_comp.rec)
 cf.ten_comp.ind <- readRDS(file.cf.ten_comp.ind)
 
 
-rec.group.idx <- cf.ten_comp.rec$groups[is.na(adm0)
-                                        # & is.na(it_type) & is.na(pa_type)
-                                        , group.id]
+rec.group.idx <- cf.ten_comp.rec$groups[is.na(adm0) & is.na(it_type) & is.na(pa_type), group.id]
 rec.group.cols <- with(cf.ten_comp.rec, c(group.var, group.by.c))
 
-ind.group.idx <- cf.ten_comp.ind$groups[is.na(adm0)
-                                        # & is.na(it_type) & is.na(pa_type)
-                                        , group.id]
+ind.group.idx <- cf.ten_comp.ind$groups[is.na(adm0) & is.na(it_type) & is.na(pa_type), group.id]
 ind.group.cols <- with(cf.ten_comp.ind, c(group.var, group.by.c))
 
 
@@ -325,8 +283,8 @@ p.imb.ten_comp.rec_ind <-
   plot_layout(axes = "collect", guides = "collect")
 
 
-png(file.fig.imb.rec_ind, width = 7, height = 8.5, unit = "in", res = 600)
-  p.imb.ten_comp.rec_ind + theme(strip.text.y = element_text(size = rel(0.7)))
+png(file.fig.imb.rec_ind, width = 7, height = 3.5, unit = "in", res = 600)
+  p.imb.ten_comp.rec_ind
 dev.off()
 
 
