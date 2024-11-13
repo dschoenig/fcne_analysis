@@ -4,7 +4,7 @@ library(data.table)
 library(sf)
 
 region <- tolower(as.character(args[1]))
-# region <- "cam"
+# region <- "amz"
 
 ## Paths
 path.data.raw <- "../data/raw/"
@@ -26,6 +26,7 @@ n.val <- 2e6
 message(paste0("Processing region '", region, "` …")) 
 
 file.data.raw <- paste0(path.data.raw, region, ".1120.vars.csv")
+file.data.df <- paste0(path.data.raw, region, ".1120.df.csv")
 file.stats <- paste0(path.data.raw, region, ".sumstats_2015.csv")
 file.areas.it <- paste0(path.data.raw, region, ".indterr.csv")
 file.areas.it_pts <- paste0(path.data.raw, region, ".1120.indterr_pts.csv")
@@ -34,6 +35,7 @@ file.areas.pa_pts <- paste0(path.data.raw, region, ".1120.pareas_pts.csv")
 
 file.data.fit.int <- paste0(path.data.int, region, ".data.fit.int.rds")
 file.data.val.int <- paste0(path.data.int, region, ".data.val.int.rds")
+file.df.proc <- paste0(path.data.proc, region, ".df.proc.rds")
 file.areas.out <- paste0(path.data.proc, region, ".areas.it_pa.rds")
 file.stats.proc <- paste0(path.data.proc, region, ".sumstats.proc.rds")
 
@@ -168,6 +170,37 @@ if(region == "cam") {
   data.int[is.na(hurr_lf), hurr_lf := FALSE]
 
 }
+
+
+# Process drought and fire data
+
+# data.int.all <- readRDS(file.data.int)
+data.df <-
+  fread(file.data.df, na.strings = "", key = "id") |>
+  _[data.int[, .(id)], on = "id"]
+
+fire_cols <- paste0("fire_", 2011:2020)
+di_cols <- paste0("di12_", 2013:2020)
+
+data.df[,
+        (fire_cols) := lapply(.SD, \(x) fifelse(x == "t", TRUE, FALSE)),
+        .SDcols = fire_cols]
+
+data.df[, fire := apply(.SD, 1, any), .SDcols = fire_cols]
+data.df[, di12_min := apply(.SD, 1, min, na.rm = TRUE), .SDcols = di_cols]
+
+# Flag severe and extreme drought over 12 months
+data.df[, `:=`(drought_mod = FALSE,
+               drought_sev = FALSE)]
+data.df[di12_min <= -1, drought_mod := TRUE]
+data.df[di12_min <= -1.5, drought_sev := TRUE]
+
+saveRDS(data.df, file.df.proc)
+
+
+data.int <- merge(data.int, data.df[, .(id, fire, drought_mod, drought_sev)])
+setcolorder(data.int, c("drought_mod", "drought_sev", "fire"), after = "disturbance")
+
 
 # Assign samples to fit and validation set
 data.fit.int <- data.int[.(sam.idx[1:n.fit]), on = "id"]

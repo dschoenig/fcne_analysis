@@ -14,8 +14,8 @@ region <- tolower(as.character(args[1]))
 hurr_type <- tolower(as.character(args[2]))
 overwrite <- as.logical(as.character(args[3]))
 
-region <- "amz"
-hurr_type <- "hurr"
+# region <- "amz"
+# hurr_type <- "hurr"
 # overwrite <- TRUE
 
 # hurr_type <- "no_hurr"
@@ -50,57 +50,45 @@ if(hurr_type == "no_hurr") {
 
 file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.cf.ten_comp.rec <- paste0(path.cf, region, ".ten_comp.rec.all", hurr_suf, ".rds")
+file.cf.ten_comp.recov <- paste0(path.cf, region, ".ten_comp.rec.ov", hurr_suf, ".rds")
 file.cf.ten_comp.ind <- paste0(path.cf, region, ".ten_comp.ind.all", hurr_suf, ".rds")
+file.cf.ten_comp.indov <- paste0(path.cf, region, ".ten_comp.ind.ov", hurr_suf, ".rds")
+
 file.fig.imb.rec_ind <- paste0(path.figures, "imb.rec_ind.", region, hurr_suf, ".png")
 # file.data.vis <- paste0(path.data.vis, region, "imb.rec_ind", hurr_suf, ".rds")
 
 
 cat.lab <- 
   data.table(cat.label = c(
-                           "IT, recognized \n—against IT, not recognized",
-                           "PA, category I-IV\n—against PA, category V-VI"
+                           "IL, recognized vs. IL, not recognized\n(incl. mixed regimes)",
+                           "IL, recognized vs. IL, not recognized\n(outside PA)",
+                           "IL, recognized vs. IL, not recognized\n(inside PA)",
+                           # "IL, rec.; PA, cat. I-IV\n—vs. IL, not rec., PA, cat. I-IV",
+                           # "IL, rec.; PA, cat. V-VI\n—vs. IL, not rec., PA, cat. V-VI",
+                           "PA, category I-IV vs. PA, category V-VI\n(incl. mixed regimes)",
+                           "PA, category I-IV vs. PA, category V-VI\n(outside IL)",
+                           "PA, category I-IV vs. PA, category V-VI\n(inside IL)"
+                           # "PA, cat. I-IV; IL, rec.\n—vs. PA, cat. V-VI; IL, rec.",
+                           # "PA, cat. I-IV; IL, not rec.\n—vs. PA, cat. V-VI; IL, not rec."
                            ),
-             mar_type = c("rec", "ind"),
-             it_type = as.factor(c(NA, NA)),
-             pa_type = as.factor(c(NA, NA)))
-cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
-
-
-
-
-cat.lab <- 
-  data.table(cat.label = c(
-                           "IL, recognized\n(incl. mixed regimes)\n—against IL, not recognized",
-                           "IL, rec., outside PA\n—against IL not rec., outside PA",
-                           "IL, rec.; PA, cat. I-IV\n—against IL, not rec., PA, cat. I-IV",
-                           "IL, rec.; PA, cat. V-VI\n—against IL, not rec., PA, cat. V-VI",
-                           "IL, not recognized\n(including mixed regimes)\n—against IL, recognized",
-                           "IL, not rec., outside PA\n—against IL rec., outside PA",
-                           "IL, not rec.; PA, cat. I-IV\n—against IL, rec., PA, cat. I-IV",
-                           "IL, not rec.; PA, cat. V-VI\n—against IL, rec., PA, cat. V-VI",
-                           "PA, category I-IV\n(incl. mixed regimes)\n—against PA, category V-VI",
-                           "PA, cat. I-IV, outside IL\n—against PA, cat. V-VI, outside IL",
-                           "PA, cat. I-IV; IL, rec.\n—against PA, cat. V-VI; IL, rec.",
-                           "PA, cat. I-IV; IL, not rec.\n—against PA, cat. V-VI; IL, not rec.",
-                           "PA, category V-VI\n(including mixed regimes)\n—against PA, category I-IV",
-                           "PA, cat. V-VI, outside IL\n—against PA, cat. I-IV, outside IL",
-                           "PA, cat. V-VI; IL, rec.\n—against PA, cat. I-IV; IL, rec.",
-                           "PA, cat. V-VI; IL, not rec.\n—against PA, cat. I-IV; IL, not rec."
-                           ),
-             mar_type = c(rep("rec", 4), rep("nrec", 4), rep("ind", 4), rep("dir", 4)),
+             mar_type = c(
+                          "rec", "rec", "recov",
+                          # "rec", "rec",
+                          "ind", "ind", "indov"
+                          # "ind", "ind"
+                          ),
              it_type = c(
-                         NA, "recognized", "recognized", "recognized",
-                         NA, "not_recognized", "not_recognized", "not_recognized",
-                         NA, "none", "recognized", "not_recognized",
-                         NA, "none", "recognized", "not_recognized"
+                         NA, "recognized", NA,
+                         # "recognized", "recognized",
+                         NA, "none", NA
+                         # "recognized", "not_recongized"
                          ),
              pa_type = c(
-                         NA, "none", "indirect_use", "direct_use",
-                         NA, "none", "indirect_use", "direct_use",
-                         NA, "indirect_use", "indirect_use", "indirect_use",
-                         NA, "direct_use", "direct_use", "direct_use"
+                         NA, "none", NA,
+                         # "indirect_use", "direct_use",
+                         NA, "indirect_use", NA
+                         # "indirect_use", "indirect_use"
                          ))
-# cat.lab[, cat.label := stri_pad_left(cat.label, width = max(stri_width(cat.label)))]
 cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
 
 
@@ -201,19 +189,22 @@ data.proc <- readRDS(file.data.proc)
 
 
 cf.ten_comp.rec <- readRDS(file.cf.ten_comp.rec)
+cf.ten_comp.recov <- readRDS(file.cf.ten_comp.recov)
 cf.ten_comp.ind <- readRDS(file.cf.ten_comp.ind)
+cf.ten_comp.indov <- readRDS(file.cf.ten_comp.indov)
 
 
-rec.group.idx <- cf.ten_comp.rec$groups[is.na(adm0)
-                                        # & is.na(it_type) & is.na(pa_type)
-                                        , group.id]
+rec.group.idx <- cf.ten_comp.rec$groups[is.na(adm0), group.id]
 rec.group.cols <- with(cf.ten_comp.rec, c(group.var, group.by.c))
 
-ind.group.idx <- cf.ten_comp.ind$groups[is.na(adm0)
-                                        # & is.na(it_type) & is.na(pa_type)
-                                        , group.id]
+recov.group.idx <- cf.ten_comp.recov$groups[is.na(adm0) & is.na(it_type) & is.na(pa_type), group.id]
+recov.group.cols <- with(cf.ten_comp.recov, c(group.var, group.by.c))
+
+ind.group.idx <- cf.ten_comp.ind$groups[is.na(adm0), group.id]
 ind.group.cols <- with(cf.ten_comp.ind, c(group.var, group.by.c))
 
+indov.group.idx <- cf.ten_comp.indov$groups[is.na(adm0) & is.na(it_type) & is.na(pa_type), group.id]
+indov.group.cols <- with(cf.ten_comp.indov, c(group.var, group.by.c))
 
 rec.imb <-
   egp_imbalance(data.proc,
@@ -221,7 +212,15 @@ rec.imb <-
                 cf = cf.ten_comp.rec,
                 group = rec.group.idx,
                 measure = imb.measures)
-rec.imb[, mar_type := factor("rec", levels = c("rec", "ind"))]
+rec.imb[, mar_type := factor("rec", levels = c("rec", "recov", "ind", "indov"))]
+
+recov.imb <-
+  egp_imbalance(data.proc,
+                variables = cov,
+                cf = cf.ten_comp.recov,
+                group = recov.group.idx,
+                measure = imb.measures)
+recov.imb[, mar_type := factor("recov", levels = c("rec", "recov", "ind", "indov"))]
 
 ind.imb <-
   egp_imbalance(data.proc,
@@ -229,8 +228,15 @@ ind.imb <-
                 cf = cf.ten_comp.ind,
                 group = ind.group.idx,
                 measure = imb.measures)
-ind.imb[, mar_type := factor("ind", levels = c("rec", "ind"))]
+ind.imb[, mar_type := factor("ind", levels = c("rec", "recov", "ind", "indov"))]
 
+indov.imb <-
+  egp_imbalance(data.proc,
+                variables = cov,
+                cf = cf.ten_comp.indov,
+                group = indov.group.idx,
+                measure = imb.measures)
+indov.imb[, mar_type := factor("indov", levels = c("rec", "recov", "ind", "indov"))]
 
 
 rec.imb <-
@@ -238,12 +244,23 @@ rec.imb <-
         cf.ten_comp.rec$groups[group.id %in% rec.group.idx, ..rec.group.cols], sort = FALSE) |>
   merge(rec.imb)
 
+recov.imb <-
+  merge(cat.lab[mar_type == "recov"],
+        cf.ten_comp.recov$groups[group.id %in% recov.group.idx, ..recov.group.cols], sort = FALSE) |>
+  merge(recov.imb)
+
 ind.imb <-
   merge(cat.lab[mar_type == "ind"],
         cf.ten_comp.ind$groups[group.id %in% ind.group.idx, ..ind.group.cols], sort = FALSE) |>
   merge(ind.imb)
 
-rec_ind.imb <- rbind(rec.imb, ind.imb, fill = TRUE)
+indov.imb <-
+  merge(cat.lab[mar_type == "indov"],
+        cf.ten_comp.indov$groups[group.id %in% indov.group.idx, ..indov.group.cols], sort = FALSE) |>
+  merge(indov.imb)
+
+
+rec_ind.imb <- rbind(rec.imb, recov.imb, ind.imb, indov.imb, fill = TRUE)
 
 rec_ind.imb[, cov.label := cov.labs[as.character(.variable)]]
 rec_ind.imb[, imb.measure.label := imb.measure.labs[as.character(.measure)]]
@@ -325,8 +342,8 @@ p.imb.ten_comp.rec_ind <-
   plot_layout(axes = "collect", guides = "collect")
 
 
-png(file.fig.imb.rec_ind, width = 7, height = 8.5, unit = "in", res = 600)
-  p.imb.ten_comp.rec_ind + theme(strip.text.y = element_text(size = rel(0.7)))
+png(file.fig.imb.rec_ind, width = 7, height = 7.5, unit = "in", res = 600)
+  p.imb.ten_comp.rec_ind + theme(strip.text.y = element_text(size = rel(0.8)))
 dev.off()
 
 

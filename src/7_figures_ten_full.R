@@ -49,6 +49,8 @@ file.fig.ten.reg.c <- paste0(path.figures, "ten.full.reg.c", hurr_suf, ".png")
 file.fig.ten.reg <- paste0(path.figures, "ten.full.reg", hurr_suf, ".png")
 file.fig.ten.reg.av <- paste0(path.figures, "ten.full.reg.av", hurr_suf, ".png")
 file.fig.ten.area <- paste0(path.figures, "ten.full.area", hurr_suf, ".png")
+file.fig.ten.area.c.amz <- paste0(path.figures, "ten.full.area.c.amz", hurr_suf, ".png")
+file.fig.ten.area.c.cam <- paste0(path.figures, "ten.full.area.c.cam", hurr_suf, ".png")
 file.fig.ten.av <- paste0(path.figures, "ten.full.av", hurr_suf, ".png")
 file.fig.ten.def <- paste0(path.figures, "ten.full.def", hurr_suf, ".png")
 file.fig.ten.deg <- paste0(path.figures, "ten.full.deg", hurr_suf, ".png")
@@ -73,7 +75,7 @@ regions <- c("amz", "cam")
 # col.est <- c("#D55E00", "#0072B2", "#CC79A7")
 # col.est <- c("#D55E00", "#0072B2", "#E69F00")
 col.est <- c("#e41a1c", "#377eb8", "#984ea3")
-names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(reference)", "Marginal\ndifference")
+names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(expected)", "Marginal\ndifference")
 col.est.pt <- col.est
 col.est.pt[2] <- "#FFFFFFFF"
 size.est.pt <- c(0.2, 0.4, 0.3)
@@ -300,6 +302,10 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     
     region <- regions[i]
 
+    reg.title <- switch(region,
+                        cam = "Central America",
+                        amz = "Amazon")
+
     message(paste0("Preparing data for region `", region, "` …"))
    
     if(region == "cam") {
@@ -310,7 +316,7 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
 
     file.area <- paste0(path.data.proc, region, ".sumstats.area", hurr_suf_mar, ".rds")
     file.mar.sam <- paste0(path.marginal, region, "/", region, ".sam.rds")
-    name.mar.ten.sam <- paste0(region, ".ten.itpa.all.rds")
+    name.mar.ten.sam <- paste0(region, ".ten.itpa.all", hurr_suf_mar, ".rds")
     name.mar.ten.def <- paste0(region, ".def.ten.itpa.all", hurr_suf_mar, ".rds")
     file.mar.ten.def <- paste0(path.marginal, region, "/", name.mar.ten.def)
     name.mar.ten.deg <- paste0(region, ".deg.ten.itpa.all", hurr_suf_mar, ".rds")
@@ -487,6 +493,10 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
                                   area.rel.lab := label_per(as.numeric(area.rel))]
     ten.sum[[region]]$area.undist[, area.lab.shade := ifelse(abs(as.numeric(area)) < 1.7e5, "dark", "light")]
 
+    ten.sum[[region]]$area.undist[, reg.label2 := reg.label]
+    ten.sum[[region]]$area.undist[reg.label2 == "Region", reg.label2 := reg.title]
+    ten.sum[[region]]$area.undist[, reg.label2 := relevel(reg.label2, reg.title)]
+
   }
 
   message(paste0("Storing summaries in `", file.data.vis, "` …"))
@@ -597,6 +607,30 @@ for(i in seq_along(regions)) {
            fill = area.title,
            y = "Non-overlapping regimes\n", x = NULL) +
       ten_theme
+
+
+  plots.area[[region]]$undist.c <-
+    ten.sum[[region]]$area.undist |>
+    ggplot() +
+      geom_point(aes(y = cat.label, x = as.numeric(area)),
+                 size = 1, colour = "#4daf4a") +
+      geom_segment(aes(y = cat.label, yend = cat.label,
+                       x = 0, xend = as.numeric(area)),
+                   linewidth = 0.3, colour = "#4daf4a") +
+      scale_x_continuous(label = scales::label_number(accuracy = 1),
+                         expand = expansion(mult = c(0.05, 0.2))) +
+      scale_y_discrete(limits = rev) +
+      # scale_size_manual(values = size.est.pt.comp, guide = "none") +
+      facet_wrap(vars(reg.label2), ncol = 3, scales = "free_x") +
+      # labs(colour = "", fill = "", y = abs.area.title.def, x = "") +
+      expand_limits(x = 0) +
+      labs(x = "Undisturbed tropical moist forest in 2010 (km²)", y = "") +
+      post_theme +
+      theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1),
+            axis.text.y = element_text(hjust = 0),
+            axis.title.x = element_text(margin = margin(t = base.size/2)),
+            panel.spacing.x = unit(2*base.size, "pt"),
+            panel.spacing.y = unit(2*base.size, "pt"))
 
 }
 
@@ -1376,7 +1410,6 @@ for(i in seq_along(regions)) {
 
 ## CONDENSED VERSION OF TENURE EFFECTS (PROPORTIONAL AND AREA)
 
-
 area.c <-
   rbind(ten.sum.av.l$amz[!(it_type == "none" & pa_type == "none") & is.na(adm0),
                          ][order(-est.label)],
@@ -1480,6 +1513,17 @@ p.prop.mar.c <-
 ## FIGURES #####################################################################
 
 message("Assembling plots …")
+
+if(hurr_type == "hurr") {
+  png(file.fig.ten.area.c.amz, width = 5, height = 8, unit = "in", res = 600)
+    print(plots.area$amz$undist.c)
+  dev.off()
+}
+
+png(file.fig.ten.area.c.cam, width = 5, height = 6, unit = "in", res = 600)
+plots.area$cam$undist.c
+dev.off()
+
 
 p.area <-
   ((plots.area$amz$undist.nov &
@@ -2067,7 +2111,6 @@ theme(
 png(file.fig.ten.reg.c, width = 7, height = 5.5, unit = "in", res = 600)
 p.area.prop
 dev.off()
-
 
 
 tab.ten <-

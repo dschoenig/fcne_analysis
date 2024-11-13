@@ -59,7 +59,7 @@ ten.amz[,
              area.fi = format_ci(area.mar.median, area.mar.hdi90l, area.mar.hdi90u,
                                  postfix.p = " km^2^", invert = TRUE),
              mar.fi = format_ci(mar.median*100, mar.hdi90l*100, mar.hdi90u*100,
-                                digits = 2, postfix.p = " %", invert = TRUE),
+                                digits = 2, postfix.p = " pp.", invert = TRUE),
              cf.fi = format_ci(cf.median*100, cf.hdi90l*100, cf.hdi90u*100,
                                 digits = 2, postfix.p = " %", invert = FALSE)
           )]
@@ -73,7 +73,7 @@ ten.cam[,
              area.fi = format_ci(area.mar.median, area.mar.hdi90l, area.mar.hdi90u,
                                  postfix.p = " km^2^", invert = TRUE),
              mar.fi = format_ci(mar.median*100, mar.hdi90l*100, mar.hdi90u*100,
-                                digits = 2, postfix.p = " %", invert = TRUE),
+                                digits = 2, postfix.p = " pp.", invert = TRUE),
              cf.fi = format_ci(cf.median*100, cf.hdi90l*100, cf.hdi90u*100,
                                 digits = 2, postfix.p = " %", invert = FALSE)
           )]
@@ -99,7 +99,7 @@ area.amz.deg.inv <-
   ten.amz[dist_type == "deg" & is.na(adm0),
           extract_labeled(area.fi, cat.label)]
 
-
+ten.amz[dist_type == "def" & is.na(adm0)]
 
 prop.amz.def.inv <-
   ten.amz[dist_type == "def" & is.na(adm0),
@@ -109,7 +109,9 @@ prop.cf.amz.def.inv <-
   ten.amz[dist_type == "def" & is.na(adm0),
           extract_labeled(cf.fi, cat.label)]
 
-
+prop.amz.deg.inv <-
+  ten.amz[dist_type == "deg" & is.na(adm0),
+          extract_labeled(mar.fi, cat.label)]
 
 
 ten.cam[dist_type == "def" & is.na(adm0),
@@ -137,6 +139,12 @@ prop.cam.def.inv <-
 prop.cf.cam.def.inv <-
   ten.cam[dist_type == "def" & is.na(adm0),
           extract_labeled(cf.fi, cat.label)]
+
+prop.cam.deg.inv <-
+  ten.cam[dist_type == "deg" & is.na(adm0),
+          extract_labeled(mar.fi, cat.label)]
+
+
 
 
 area.amz.def.inv["IL, recognized"]
@@ -215,12 +223,97 @@ ten.comp <- readRDS("../data/visualization/tenure_comp.no_hurr.rds")$ten.sum
 
 ten.comp.amz <- ten.comp$amz$mar
 
+ten.comp.amz[,
+             `:=`(
+                  area.f = format_ci(area.mar.median, area.mar.hdi90l, area.mar.hdi90u,
+                                     postfix.p = " km^2^"),
+                  area.fi = format_ci(area.mar.median, area.mar.hdi90l, area.mar.hdi90u,
+                                      postfix.p = " km^2^", invert = TRUE),
+                  area.50.fi = format_ci(area.mar.median, area.mar.hdi50l, area.mar.hdi50u,
+                                      postfix.p = " km^2^", invert = TRUE),
+                  mar.fi = format_ci(mar.median*100, mar.hdi90l*100, mar.hdi90u*100,
+                                     digits = 2, postfix.p = " pp.", invert = TRUE),
+                  cf.fi = format_ci(cf.median*100, cf.hdi90l*100, cf.hdi90u*100,
+                                     digits = 2, postfix.p = " %", invert = FALSE)
+                 )]
+setorder(ten.comp.amz, cat.label)
+
+
+ten.comp.cam <- ten.comp$cam$mar
+
+ten.comp.cam[,
+             `:=`(
+                  area.f = format_ci(area.mar.median, area.mar.hdi90l, area.mar.hdi90u,
+                                     postfix.p = " km^2^"),
+                  area.fi = format_ci(area.mar.median, area.mar.hdi90l, area.mar.hdi90u,
+                                      postfix.p = " km^2^", invert = TRUE),
+                  area.50.fi = format_ci(area.mar.median, area.mar.hdi50l, area.mar.hdi50u,
+                                      postfix.p = " km^2^", invert = TRUE),
+                  mar.fi = format_ci(mar.median*100, mar.hdi90l*100, mar.hdi90u*100,
+                                     digits = 2, postfix.p = " pp.", invert = TRUE),
+                  cf.fi = format_ci(cf.median*100, cf.hdi90l*100, cf.hdi90u*100,
+                                     digits = 2, postfix.p = " %", invert = FALSE)
+                 )]
+setorder(ten.comp.cam, cat.label)
+
+
+
+
+ten.comp.amz[adm0 == "ECU", .(dist_type, cat.label)]
+
+
+area.comp.amz.def.inv <-
+  ten.comp.amz[dist_type == "def" & is.na(adm0),
+               extract_labeled(area.fi, cat.label)]
+
+
+area.comp.amz.def.inv50 <-
+  ten.comp.amz[dist_type == "def" & is.na(adm0),
+               extract_labeled(area.50.fi, cat.label)]
+
+area.comp.amz.deg.inv <-
+  ten.comp.amz[dist_type == "deg" & is.na(adm0),
+               extract_labeled(area.fi, cat.label)]
+
+
+
+
+area.comp.cam.def.inv <-
+  ten.comp.cam[dist_type == "def" & is.na(adm0),
+               extract_labeled(area.fi, cat.label)]
+
+area.comp.cam.deg.inv <-
+  ten.comp.cam[dist_type == "deg" & is.na(adm0),
+               extract_labeled(area.fi, cat.label)]
+
+
+
+prop.comp.cam.def.inv <-
+  ten.comp.cam[dist_type == "def" & is.na(adm0),
+               extract_labeled(mar.fi, cat.label)]
+
+prop.comp.cam.deg.inv <-
+  ten.comp.cam[dist_type == "deg" & is.na(adm0),
+               extract_labeled(mar.fi, cat.label)]
 
 ten.comp.amz[is.na(adm0) & mar_type == "ind", .(cat.label, mar.median)]
 ten.comp.amz[is.na(adm0) & mar_type == "rec", .(cat.label, mar.median)]
+ten.comp.amz[is.na(adm0) & mar_type == "rec", .(cat.label, area.mar.median,
+                                                area.mar.hdi90l, area.mar.hdi90u)]
 
 
 
+agg.all.amz.def <- readRDS("../models/gam/agg/amz/amz.def.all.rds")
+agg.amz.def <-
+  merge(agg.all.amz.def[is.na(adm0)],
+        areas.amz$undist[is.na(it_type) & is.na(pa_type)]) |>
+    _[, .(ggdist::median_hdci(as.numeric(deforestation * area), .width = 0.9))] |>
+    _[, format_ci(y, ymin, ymax, postfix.p = " km^2^", invert = FALSE)]
 
 
-
+agg.all.cam.def <- readRDS("../models/gam/agg/cam/cam.def.all.rds")
+agg.cam.def <-
+  merge(agg.all.cam.def[is.na(adm0)],
+        areas.cam$undist[is.na(it_type) & is.na(pa_type)]) |>
+    _[, .(ggdist::median_hdci(as.numeric(deforestation * area), .width = 0.9))] |>
+    _[, format_ci(y, ymin, ymax, postfix.p = " km^2^", invert = FALSE)]

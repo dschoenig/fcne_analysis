@@ -13,8 +13,8 @@ source("utilities.R")
 hurr_type <- tolower(as.character(args[1]))
 overwrite <- as.logical(as.character(args[2]))
 
-hurr_type <- "no_hurr"
-overwrite <- TRUE
+# hurr_type <- "no_hurr"
+# overwrite <- TRUE
 # overwrite <- TRUE
 
 
@@ -57,12 +57,11 @@ regions <- c("amz", "cam")
 # col.cat <- c("#984ea3", "#4daf4a")
 col.div <- diverging_hcl(20, palette = "Purple-Green")
 col.cat <- col.div[c(3, 17)]
-names(col.cat) <- c("IL, recognized\n(incl. mixed regimes)\n—against IL, not recognized",
-                    "PA, category I-IV\n(incl. mixed regimes)\n—against PA, category V-VI")
-
+names(col.cat) <- c("IL, recognized vs. IL, not recognized\n(incl. mixed regimes)",
+                    "PA, category I-IV vs. PA, category V-VI\n(incl. mixed regimes)")
 
 col.est <- c("#e41a1c", "#377eb8", "#984ea3")
-names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(reference)", "Marginal\ndifference")
+names(col.est) <- c("Factual\n(observed)", "Counterfactual\n(expected)", "Marginal\ndifference")
 col.est.pt <- col.est
 col.est.pt[2] <- "#FFFFFF"
 size.est.pt <- c(0.2, 0.4, 0.3)
@@ -141,41 +140,76 @@ post_theme <-
 
 # Labels for tenure categories and administrative regions
 
+# cat.lab <- 
+#   data.table(cat.label = c(
+#                            "IL, recognized\n(incl. mixed regimes)\n—against IL, not recognized",
+#                            "IL, rec., outside PA\n—against IL not rec., outside PA",
+#                            "IL, rec.; PA, cat. I-IV\n—against IL, not rec., PA, cat. I-IV",
+#                            "IL, rec.; PA, cat. V-VI\n—against IL, not rec., PA, cat. V-VI",
+#                            "IL, not recognized\n(including mixed regimes)\n—against IL, recognized",
+#                            "IL, not rec., outside PA\n—against IL rec., outside PA",
+#                            "IL, not rec.; PA, cat. I-IV\n—against IL, rec., PA, cat. I-IV",
+#                            "IL, not rec.; PA, cat. V-VI\n—against IL, rec., PA, cat. V-VI",
+#                            "PA, category I-IV\n(incl. mixed regimes)\n—against PA, category V-VI",
+#                            "PA, cat. I-IV, outside IL\n—against PA, cat. V-VI, outside IL",
+#                            "PA, cat. I-IV; IL, rec.\n—against PA, cat. V-VI; IL, rec.",
+#                            "PA, cat. I-IV; IL, not rec.\n—against PA, cat. V-VI; IL, not rec.",
+#                            "PA, category V-VI\n(including mixed regimes)\n—against PA, category I-IV",
+#                            "PA, cat. V-VI, outside IL\n—against PA, cat. I-IV, outside IL",
+#                            "PA, cat. V-VI; IL, rec.\n—against PA, cat. I-IV; IL, rec.",
+#                            "PA, cat. V-VI; IL, not rec.\n—against PA, cat. I-IV; IL, not rec."
+#                            ),
+#              mar_type = c(rep("rec", 4), rep("nrec", 4), rep("ind", 4), rep("dir", 4)),
+#              it_type = c(
+#                          NA, "recognized", "recognized", "recognized",
+#                          NA, "not_recognized", "not_recognized", "not_recognized",
+#                          NA, "none", "recognized", "not_recognized",
+#                          NA, "none", "recognized", "not_recognized"
+#                          ),
+#              pa_type = c(
+#                          NA, "none", "indirect_use", "direct_use",
+#                          NA, "none", "indirect_use", "direct_use",
+#                          NA, "indirect_use", "indirect_use", "indirect_use",
+#                          NA, "direct_use", "direct_use", "direct_use"
+#                          ))
+# # cat.lab[, cat.label := stri_pad_left(cat.label, width = max(stri_width(cat.label)))]
+# cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
+
+
 cat.lab <- 
   data.table(cat.label = c(
-                           "IL, recognized\n(incl. mixed regimes)\n—against IL, not recognized",
-                           "IL, rec., outside PA\n—against IL not rec., outside PA",
-                           "IL, rec.; PA, cat. I-IV\n—against IL, not rec., PA, cat. I-IV",
-                           "IL, rec.; PA, cat. V-VI\n—against IL, not rec., PA, cat. V-VI",
-                           "IL, not recognized\n(including mixed regimes)\n—against IL, recognized",
-                           "IL, not rec., outside PA\n—against IL rec., outside PA",
-                           "IL, not rec.; PA, cat. I-IV\n—against IL, rec., PA, cat. I-IV",
-                           "IL, not rec.; PA, cat. V-VI\n—against IL, rec., PA, cat. V-VI",
-                           "PA, category I-IV\n(incl. mixed regimes)\n—against PA, category V-VI",
-                           "PA, cat. I-IV, outside IL\n—against PA, cat. V-VI, outside IL",
-                           "PA, cat. I-IV; IL, rec.\n—against PA, cat. V-VI; IL, rec.",
-                           "PA, cat. I-IV; IL, not rec.\n—against PA, cat. V-VI; IL, not rec.",
-                           "PA, category V-VI\n(including mixed regimes)\n—against PA, category I-IV",
-                           "PA, cat. V-VI, outside IL\n—against PA, cat. I-IV, outside IL",
-                           "PA, cat. V-VI; IL, rec.\n—against PA, cat. I-IV; IL, rec.",
-                           "PA, cat. V-VI; IL, not rec.\n—against PA, cat. I-IV; IL, not rec."
+                           "IL, recognized vs. IL, not recognized\n(incl. mixed regimes)",
+                           "IL, recognized vs. IL, not recognized\n(outside PA)",
+                           "IL, recognized vs. IL, not recognized\n(inside PA)",
+                           # "IL, rec.; PA, cat. I-IV\n—vs. IL, not rec., PA, cat. I-IV",
+                           # "IL, rec.; PA, cat. V-VI\n—vs. IL, not rec., PA, cat. V-VI",
+                           "PA, category I-IV vs. PA, category V-VI\n(incl. mixed regimes)",
+                           "PA, category I-IV vs. PA, category V-VI\n(outside IL)",
+                           "PA, category I-IV vs. PA, category V-VI\n(inside IL)"
+                           # "PA, cat. I-IV; IL, rec.\n—vs. PA, cat. V-VI; IL, rec.",
+                           # "PA, cat. I-IV; IL, not rec.\n—vs. PA, cat. V-VI; IL, not rec."
                            ),
-             mar_type = c(rep("rec", 4), rep("nrec", 4), rep("ind", 4), rep("dir", 4)),
+             mar_type = c(
+                          "rec", "rec", "recov",
+                          # "rec", "rec",
+                          "ind", "ind", "indov"
+                          # "ind", "ind"
+                          ),
              it_type = c(
-                         NA, "recognized", "recognized", "recognized",
-                         NA, "not_recognized", "not_recognized", "not_recognized",
-                         NA, "none", "recognized", "not_recognized",
-                         NA, "none", "recognized", "not_recognized"
+                         NA, "recognized", NA,
+                         # "recognized", "recognized",
+                         NA, "none", NA
+                         # "recognized", "not_recongized"
                          ),
              pa_type = c(
-                         NA, "none", "indirect_use", "direct_use",
-                         NA, "none", "indirect_use", "direct_use",
-                         NA, "indirect_use", "indirect_use", "indirect_use",
-                         NA, "direct_use", "direct_use", "direct_use"
+                         NA, "none", NA,
+                         # "indirect_use", "direct_use",
+                         NA, "indirect_use", NA
+                         # "indirect_use", "indirect_use"
                          ))
 # cat.lab[, cat.label := stri_pad_left(cat.label, width = max(stri_width(cat.label)))]
 cat.lab[, cat.label := factor(cat.label, levels = cat.label)]
-
+cat.lab <- cat.lab[c(1, 6)]
 
 reg.lab <- list()
 reg.lab$amz <-
@@ -218,7 +252,8 @@ wrap_title <- function(x, width = 25, ...) {
 }
 
 area.title <- wrap_title("Area covered by least-disturbed TMF in 2010 (km²)")
-mar.title.l <- "Absolut marginal difference in\narea affected by disturbances (km²)"
+mar.title.l <- "Absolut marginal difference in area affected by disturbances (km²)"
+mar.title.2l <- "Absolut marginal difference in\narea affected by disturbances (km²)"
 mar.title <- wrap_title(mar.title.l)
 mar.title.def.l <- "Absolute marginal difference in proportion of area affected"
 mar.title.def.2l <- "Absolute marginal difference in\nproportion of area affected"
@@ -248,6 +283,10 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     
     region <- regions[i]
 
+    reg.title <- switch(region,
+                        cam = "Central America",
+                        amz = "Amazon")
+
     message(paste0("Preparing data for region `", region, "` …"))
    
     if(region == "cam") {
@@ -258,33 +297,35 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
 
     file.area <- paste0(path.data.proc, region, ".sumstats.area", hurr_suf_mar, ".rds")
     file.mar.sam <- paste0(path.marginal, region, "/", region, ".sam.rds")
-    name.mar.ten_comp.rec.sam <- paste0(region, ".ten_comp.rec.all.rds")
-    name.mar.ten_comp.nrec.sam <- paste0(region, ".ten_comp.nrec.all.rds")
-    name.mar.ten_comp.ind.sam <- paste0(region, ".ten_comp.ind.all.rds")
-    name.mar.ten_comp.dir.sam <- paste0(region, ".ten_comp.dir.all.rds")
+    name.mar.ten_comp.rec.sam <- paste0(region, ".ten_comp.rec.all", hurr_suf_mar, ".rds")
+    name.mar.ten_comp.recov.sam <- paste0(region, ".ten_comp.rec.ov", hurr_suf_mar, ".rds")
+    name.mar.ten_comp.ind.sam <- paste0(region, ".ten_comp.ind.all", hurr_suf_mar, ".rds")
+    name.mar.ten_comp.indov.sam <- paste0(region, ".ten_comp.ind.ov", hurr_suf_mar, ".rds")
     name.mar.ten_comp.def.rec <- paste0(region, ".def.ten_comp.rec.all", hurr_suf_mar, ".rds")
     file.mar.ten_comp.def.rec <- paste0(path.marginal, region, "/", name.mar.ten_comp.def.rec)
     name.mar.ten_comp.deg.rec <- paste0(region, ".deg.ten_comp.rec.all", hurr_suf_mar, ".rds")
     file.mar.ten_comp.deg.rec <- paste0(path.marginal, region, "/", name.mar.ten_comp.deg.rec)
-    name.mar.ten_comp.def.nrec <- paste0(region, ".def.ten_comp.nrec.all", hurr_suf_mar, ".rds")
-    file.mar.ten_comp.def.nrec <- paste0(path.marginal, region, "/", name.mar.ten_comp.def.nrec)
-    name.mar.ten_comp.deg.nrec <- paste0(region, ".deg.ten_comp.nrec.all", hurr_suf_mar, ".rds")
-    file.mar.ten_comp.deg.nrec <- paste0(path.marginal, region, "/", name.mar.ten_comp.deg.nrec)
+    name.mar.ten_comp.def.recov <- paste0(region, ".def.ten_comp.rec.ov", hurr_suf_mar, ".rds")
+    file.mar.ten_comp.def.recov <- paste0(path.marginal, region, "/", name.mar.ten_comp.def.recov)
+    name.mar.ten_comp.deg.recov <- paste0(region, ".deg.ten_comp.rec.ov", hurr_suf_mar, ".rds")
+    file.mar.ten_comp.deg.recov <- paste0(path.marginal, region, "/", name.mar.ten_comp.deg.recov)
     name.mar.ten_comp.def.ind <- paste0(region, ".def.ten_comp.ind.all", hurr_suf_mar, ".rds")
     file.mar.ten_comp.def.ind <- paste0(path.marginal, region, "/", name.mar.ten_comp.def.ind)
     name.mar.ten_comp.deg.ind <- paste0(region, ".deg.ten_comp.ind.all", hurr_suf_mar, ".rds")
     file.mar.ten_comp.deg.ind <- paste0(path.marginal, region, "/", name.mar.ten_comp.deg.ind)
-    name.mar.ten_comp.def.dir <- paste0(region, ".def.ten_comp.dir.all", hurr_suf_mar, ".rds")
-    file.mar.ten_comp.def.dir <- paste0(path.marginal, region, "/", name.mar.ten_comp.def.dir)
-    name.mar.ten_comp.deg.dir <- paste0(region, ".deg.ten_comp.dir.all", hurr_suf_mar, ".rds")
-    file.mar.ten_comp.deg.dir <- paste0(path.marginal, region, "/", name.mar.ten_comp.deg.dir)
+    name.mar.ten_comp.def.indov <- paste0(region, ".def.ten_comp.ind.ov", hurr_suf_mar, ".rds")
+    file.mar.ten_comp.def.indov <- paste0(path.marginal, region, "/", name.mar.ten_comp.def.indov)
+    name.mar.ten_comp.deg.indov <- paste0(region, ".deg.ten_comp.ind.ov", hurr_suf_mar, ".rds")
+    file.mar.ten_comp.deg.indov <- paste0(path.marginal, region, "/", name.mar.ten_comp.deg.indov)
 
     # Tenure categories by administrative areas
 
     message("Tenure category by administrative areas …")
 
-    area.undist <-
-      readRDS(file.area)$undist.comp
+    area.sum <- readRDS(file.area)
+
+    area.undist <- area.sum$undist.comp
+    area.undist.ov <- area.sum$undist.ov
 
     mar.sam <- readRDS(file.mar.sam)
 
@@ -294,24 +335,24 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     mar.ten_comp.deg.rec <-
       readRDS(file.mar.ten_comp.deg.rec) |>
       merge(mar.sam[[name.mar.ten_comp.rec.sam]])
-    mar.ten_comp.def.nrec <-
-      readRDS(file.mar.ten_comp.def.nrec) |>
-      merge(mar.sam[[name.mar.ten_comp.nrec.sam]])
-    mar.ten_comp.deg.nrec <-
-      readRDS(file.mar.ten_comp.deg.nrec) |>
-      merge(mar.sam[[name.mar.ten_comp.nrec.sam]])
+    mar.ten_comp.def.recov <-
+      readRDS(file.mar.ten_comp.def.recov) |>
+      merge(mar.sam[[name.mar.ten_comp.recov.sam]])
+    mar.ten_comp.deg.recov <-
+      readRDS(file.mar.ten_comp.deg.recov) |>
+      merge(mar.sam[[name.mar.ten_comp.recov.sam]])
     mar.ten_comp.def.ind <-
       readRDS(file.mar.ten_comp.def.ind) |>
       merge(mar.sam[[name.mar.ten_comp.ind.sam]])
     mar.ten_comp.deg.ind <-
       readRDS(file.mar.ten_comp.deg.ind) |>
       merge(mar.sam[[name.mar.ten_comp.ind.sam]])
-    mar.ten_comp.def.dir <-
-      readRDS(file.mar.ten_comp.def.dir) |>
-      merge(mar.sam[[name.mar.ten_comp.dir.sam]])
-    mar.ten_comp.deg.dir <-
-      readRDS(file.mar.ten_comp.deg.dir) |>
-      merge(mar.sam[[name.mar.ten_comp.dir.sam]])
+    mar.ten_comp.def.indov <-
+      readRDS(file.mar.ten_comp.def.indov) |>
+      merge(mar.sam[[name.mar.ten_comp.indov.sam]])
+    mar.ten_comp.deg.indov <-
+      readRDS(file.mar.ten_comp.deg.indov) |>
+      merge(mar.sam[[name.mar.ten_comp.indov.sam]])
 
     mar.ten_comp.def.rec[,
                    `:=`(dist_type = factor("def", levels = c("def", "deg")),
@@ -319,37 +360,42 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
     mar.ten_comp.deg.rec[,
                    `:=`(dist_type = factor("deg", levels = c("def", "deg")),
                         mar_type = "rec")]
-    mar.ten_comp.def.nrec[,
+    mar.ten_comp.def.recov[,
                    `:=`(dist_type = factor("def", levels = c("def", "deg")),
-                        mar_type = "nrec")]
-    mar.ten_comp.deg.nrec[,
+                        mar_type = "recov")]
+    mar.ten_comp.deg.recov[,
                    `:=`(dist_type = factor("deg", levels = c("def", "deg")),
-                        mar_type = "nrec")]
+                        mar_type = "recov")]
     mar.ten_comp.def.ind[,
                    `:=`(dist_type = factor("def", levels = c("def", "deg")),
                         mar_type = "ind")]
     mar.ten_comp.deg.ind[,
                    `:=`(dist_type = factor("deg", levels = c("def", "deg")),
                         mar_type = "ind")]
-    mar.ten_comp.def.dir[,
+    mar.ten_comp.def.indov[,
                    `:=`(dist_type = factor("def", levels = c("def", "deg")),
-                        mar_type = "dir")]
-    mar.ten_comp.deg.dir[,
+                        mar_type = "indov")]
+    mar.ten_comp.deg.indov[,
                    `:=`(dist_type = factor("deg", levels = c("def", "deg")),
-                        mar_type = "dir")]
+                        mar_type = "indov")]
 
-    mar.post <-
+    mar.post.nov <-
       rbind(
             mar.ten_comp.def.rec,
             mar.ten_comp.deg.rec,
-            mar.ten_comp.def.nrec,
-            mar.ten_comp.deg.nrec,
             mar.ten_comp.def.ind,
-            mar.ten_comp.deg.ind,
-            mar.ten_comp.def.dir,
-            mar.ten_comp.deg.dir
+            mar.ten_comp.deg.ind
             ) |>
       merge(area.undist[, -"area.rel"], by = c("mar_type", "it_type", "pa_type", "adm0"))
+    mar.post.ov <-
+      rbind(
+            mar.ten_comp.def.recov,
+            mar.ten_comp.deg.recov,
+            mar.ten_comp.def.indov,
+            mar.ten_comp.deg.indov
+            ) |>
+      merge(area.undist.ov[, -"area.rel"], by = c("it_type", "pa_type", "adm0"))
+    mar.post <- rbind(mar.post.nov, mar.post.ov)
     mar.post[, `:=`(area.prop.mar = marginal * area,
                     area.prop.fac = factual * area,
                     area.prop.cf = counterfactual * area)]
@@ -475,6 +521,9 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
       merge(mar.post[n.fac > 1000], by = c("dist_type", "mar_type", "it_type", "pa_type", "adm0"),
             all.x = TRUE)
 
+
+    ten.sum[[region]]$post[, study.label := factor(reg.title, levels = c("Amazon", "Central America"))]
+
   }
 
   message(paste0("Storing summaries in `", file.data.vis, "` …"))
@@ -495,6 +544,7 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
 
 
 plots.area.av <- list()
+ten.sum.av.l <- list()
 
 for(i in seq_along(regions)) {
 
@@ -508,112 +558,100 @@ for(i in seq_along(regions)) {
                       cam = "Central America",
                       amz = "Amazon")
 
-  comp.av.xlim <- list(amz = c(-4e4,7.5e3), cam = c(-5e3, 2.5e3))
-  comp.av.sh <- c(amz = 0.75, cam = 0.875)
+  comp.av.xlim <- list(amz = c(-5e4, 5e3), cam = c(-3e3, 1e3))
+  comp.av.sh <- c(amz = 0.575, cam = 0.725)
+
+  # plots.area.av[[region]] <-
+  #   ten.sum[[region]]$post[
+  #                          # is.na(it_type) & is.na(pa_type) &
+  #                          is.na(adm0) &
+  #                          # mar_type %in% c("rec", "ind")] |>
+  #                          mar_type %in% c("rec", "recov", "ind", "indov")] |>
+  #   ggplot() +
+  #     stat_slab(aes(x = as.numeric(area.prop.mar), y = cat.label,
+  #                   group = cat.label,
+  #                   fill = cat.label, fill_ramp = after_stat(level)),
+  #               .width = c(0.5, 0.9, 1),
+  #               alpha = 0.8,
+  #               height = 1,
+  #               scale = 0.8,
+  #               n = 1001,
+  #               # normalize = "groups",
+  #               point_interval = median_hdci) +
+  #     stat_spike(aes(x = as.numeric(area.prop.mar), y = cat.label,
+  #                    linetype = after_stat(at)), at = c(Median = "median") ,
+  #                height = comp.av.sh[region],
+  #                size = 0.8,
+  #                linewidth = 0.3,
+  #                # height = 0.8,
+  #                normalize = "all"
+  #                ) +
+  #     geom_hline(yintercept = 1, linewidth = 0.1) +
+  #     geom_hline(yintercept = 2, linewidth = 0.1) +
+  #     geom_vline(xintercept = 0, linewidth = 0.2, linetype = "dashed") +
+  #     scale_fill_manual(values = col.cat, guide = "none") +
+  #     scale_fill_ramp_discrete(breaks = c(0.5, 0.9)) +
+  #     scale_y_discrete(limits = rev) +
+  #     scale_x_continuous(labels = scales::label_number(accuracy = 1e2)) +
+  #     guides(linetype = guide_legend(order = 1)) +
+  #     coord_cartesian(xlim =  comp.av.xlim[[region]]) +
+  #     facet_grid(rows = vars(dist.label)) +
+  #     labs(x = mar.title.l, y = "Direct tenure comparison",
+  #          fill_ramp = "Uncertainty interval", linetype = "Point estimate") +
+  #     post_theme
+
 
   plots.area.av[[region]] <-
-    ten.sum[[region]]$post[is.na(it_type) & is.na(pa_type) & is.na(adm0) &
-                           mar_type %in% c("rec", "ind")] |>
+    ten.sum[[region]]$post[is.na(adm0) & mar_type %in% c("rec")] |>
     ggplot() +
       stat_slab(aes(x = as.numeric(area.prop.mar), y = cat.label,
                     group = cat.label,
-                    fill = cat.label, fill_ramp = after_stat(level)),
+                    fill = cat.label,
+                    fill_ramp = after_stat(level)),
+                # fill = "#854B8F",
                 .width = c(0.5, 0.9, 1),
                 alpha = 0.8,
                 height = 1,
-                scale = 0.8,
+                scale = 0.65,
                 n = 1001,
-                # normalize = "groups",
+                # normalize = "panels",
                 point_interval = median_hdci) +
       stat_spike(aes(x = as.numeric(area.prop.mar), y = cat.label,
                      linetype = after_stat(at)), at = c(Median = "median") ,
                  height = comp.av.sh[region],
-                 size = 0.8,
-                 linewidth = 0.3,
-                 # height = 0.8,
-                 normalize = "all"
-                 ) +
-      geom_hline(yintercept = 1, linewidth = 0.1) +
-      geom_hline(yintercept = 2, linewidth = 0.1) +
-      geom_vline(xintercept = 0, linewidth = 0.2, linetype = "dashed") +
-      scale_fill_manual(values = col.cat, guide = "none") +
-      scale_fill_ramp_discrete(breaks = c(0.5, 0.9)) +
-      scale_y_discrete(limits = rev) +
-      scale_x_continuous(labels = scales::label_number(accuracy = 1e2)) +
-      guides(linetype = guide_legend(order = 1)) +
-      coord_cartesian(xlim =  comp.av.xlim[[region]]) +
-      facet_grid(rows = vars(dist.label)) +
-      labs(x = mar.title.l, y = "Direct tenure comparison",
-           fill_ramp = "Uncertainty interval", linetype = "Point estimate") +
-      post_theme
-
-
-}
-
-
-## AVOIDED DISTURBANCES (PROPORTION) ###################################
-
-
-
-ten.sum.av.l <- list()
-ten.sum.l <- list()
-ten.post.l <- list()
-
-plots.prop.av <- list()
-
-for(i in seq_along(regions)) {
-
-  region <- regions[i]
-
-  message(paste0("Preparing plots for region `", region, "` …"))
-
-  message("Tenure category by country …")
-
-  reg.title <- switch(region,
-                      cam = "Central America",
-                      amz = "Amazon")
-
-  comp.prop.xlim <- list(amz = c(-0.035, 0.005), cam = c(-0.11, 0.03))
-  comp.prop.sh <- c(amz = 0.75, cam = 0.875)
-
-  plots.prop.av[[region]] <-
-    ten.sum[[region]]$post[is.na(it_type) & is.na(pa_type) & is.na(adm0) &
-                           mar_type %in% c("rec", "ind")] |>
-                           # mar_type %in% c("rec", "nrec", "ind", "dir")] |>
-    ggplot() +
-      stat_slab(aes(x = as.numeric(marginal), y = cat.label,
-                    fill = cat.label, fill_ramp = after_stat(level)),
-                .width = c(0.5, 0.9, 1),
-                alpha = 0.8,
-                height = 1,
-                scale = 0.8,
-                n = 1001,
-                normalize = "all",
-                point_interval = ggdist::median_hdci) +
-      stat_spike(aes(x = as.numeric(marginal), y = cat.label,
-                     linetype = after_stat(at)), at = c(Median = "median") ,
-                 height = comp.av.sh[region],
-                 size = 0.8,
-                 linewidth = 0.3,
+                 size = 0.3,
+                 linewidth = 0.15,
                  # height = 0.8,
                  # normalize = "all"
                  ) +
       geom_hline(yintercept = 1, linewidth = 0.1) +
-      geom_hline(yintercept = 2, linewidth = 0.1) +
+      # geom_hline(yintercept = 2, linewidth = 0.1) +
       geom_vline(xintercept = 0, linewidth = 0.2, linetype = "dashed") +
       scale_fill_manual(values = col.cat, guide = "none") +
       scale_fill_ramp_discrete(breaks = c(0.5, 0.9)) +
-      scale_y_discrete(limits = rev) +
-      scale_x_continuous(labels = scales::label_number(accuracy = 1, scale = 100,
-                                                       style_positive = "plus",
-                                                       suffix = " pp.")) +
+      # scale_y_discrete(limits = rev) +
+      scale_x_continuous(labels = scales::label_number(accuracy = 1e2)) +
       guides(linetype = guide_legend(order = 1)) +
-      coord_cartesian(xlim =  comp.prop.xlim[[region]]) +
-      facet_grid(rows = vars(dist.label)) +
-      labs(x = mar.title.l, y = "Direct tenure comparison",
-           fill_ramp = "Credible interval", linetype = "Point estimate") +
-      post_theme
-
+      coord_cartesian(xlim =  comp.av.xlim[[region]]) +
+      facet_grid(rows = vars(dist.label), cols = vars (study.label), scales = "free_x") +
+      labs(x = mar.title.l, y = "IL, recognized vs. IL, not recognized\n(incl. mixed regimes)",
+           fill_ramp = "Uncertainty interval", linetype = "Point estimate") +
+      post_theme +
+      theme(axis.text.y = element_blank(),
+            strip.text.y = element_text(size = rel(0.6),
+                                        margin = margin(
+                                                        base.size/2,
+                                                        base.size/2,
+                                                        base.size/2,
+                                                        base.size/2
+                                                        )),
+            strip.text.x = element_text(size = rel(0.7),
+                                        margin = margin(
+                                                        base.size/2,
+                                                        base.size/2,
+                                                        base.size/2,
+                                                        base.size/2
+                                                        )))
 
   ten.sum.av.l[[region]] <-
     ten.sum[[region]]$mar |>
@@ -637,6 +675,74 @@ for(i in seq_along(regions)) {
   # col.to.num <- paste0("est.", c("median", "q5", "q95"))
   col.to.num <- paste0("est.", c("median", "hdi90l", "hdi90u"))
   ten.sum.av.l[[region]][, (col.to.num) := lapply(.SD, as.numeric), .SDcols = col.to.num]
+
+
+}
+
+
+## AVOIDED DISTURBANCES (PROPORTION) ###################################
+
+
+
+ten.sum.l <- list()
+ten.post.l <- list()
+
+plots.prop.av <- list()
+
+for(i in seq_along(regions)) {
+
+  region <- regions[i]
+
+  message(paste0("Preparing plots for region `", region, "` …"))
+
+  message("Tenure category by country …")
+
+  reg.title <- switch(region,
+                      cam = "Central America",
+                      amz = "Amazon")
+
+  comp.prop.xlim <- list(amz = c(-0.035, 0.005), cam = c(-0.11, 0.03))
+  comp.prop.sh <- c(amz = 0.75, cam = 0.875)
+
+  # plots.prop.av[[region]] <-
+  #   ten.sum[[region]]$post[
+  #                          # is.na(it_type) & is.na(pa_type) &
+  #                          is.na(adm0) &
+  #                          # mar_type %in% c("rec", "ind")] |>
+  #                          mar_type %in% c("rec", "recov", "ind", "indov")] |>
+  #   ggplot() +
+  #     stat_slab(aes(x = as.numeric(marginal), y = cat.label,
+  #                   fill = cat.label, fill_ramp = after_stat(level)),
+  #               .width = c(0.5, 0.9, 1),
+  #               alpha = 0.8,
+  #               height = 1,
+  #               scale = 0.8,
+  #               n = 1001,
+  #               normalize = "all",
+  #               point_interval = ggdist::median_hdci) +
+  #     stat_spike(aes(x = as.numeric(marginal), y = cat.label,
+  #                    linetype = after_stat(at)), at = c(Median = "median") ,
+  #                height = comp.av.sh[region],
+  #                size = 0.8,
+  #                linewidth = 0.3,
+  #                # height = 0.8,
+  #                # normalize = "all"
+  #                ) +
+  #     geom_hline(yintercept = 1, linewidth = 0.1) +
+  #     geom_hline(yintercept = 2, linewidth = 0.1) +
+  #     geom_vline(xintercept = 0, linewidth = 0.2, linetype = "dashed") +
+  #     # scale_fill_manual(values = col.cat, guide = "none") +
+  #     scale_fill_ramp_discrete(breaks = c(0.5, 0.9)) +
+  #     scale_y_discrete(limits = rev) +
+  #     scale_x_continuous(labels = scales::label_number(accuracy = 1, scale = 100,
+  #                                                      style_positive = "plus",
+  #                                                      suffix = " pp.")) +
+  #     guides(linetype = guide_legend(order = 1)) +
+  #     coord_cartesian(xlim =  comp.prop.xlim[[region]]) +
+  #     facet_grid(rows = vars(dist.label)) +
+  #     labs(x = mar.title.l, y = "Direct tenure comparison",
+  #          fill_ramp = "Credible interval", linetype = "Point estimate") +
+  #     post_theme
 
 
   ten.sum.l[[region]] <-
@@ -678,18 +784,20 @@ for(i in seq_along(regions)) {
 }
 
 
+
+
 ## CONDENSED VERSION OF TENURE EFFECTS (PROPORTIONAL AND AREA)
 
 area.c <-
   rbind(ten.sum.av.l$amz[
                          # is.na(it_type) & is.na(pa_type) &
                          is.na(adm0) &
-                         mar_type %in% c("rec", "ind")
+                         mar_type %in% c("rec", "recov", "ind", "indov")
                          ][order(-est.label)],
         ten.sum.av.l$cam[
                          # is.na(it_type) & is.na(pa_type) &
                          is.na(adm0) &
-                         mar_type %in% c("rec", "ind")
+                         mar_type %in% c("rec", "recov", "ind", "indov")
                          ][order(-est.label)])
 area.c[, dist.label2 := dist.lab.2l[as.character(dist.label)]]
 setorder(area.c, -est_type)
@@ -698,15 +806,37 @@ prop.c <-
   rbind(ten.sum.l$amz[
                       # is.na(it_type) & is.na(pa_type) &
                       is.na(adm0) &
-                      mar_type %in% c("rec", "ind")
+                      mar_type %in% c("rec", "recov", "ind", "indov")
                       ][order(-est.label)],
         ten.sum.l$cam[
                       # is.na(it_type) & is.na(pa_type) &
                       is.na(adm0) &
-                      mar_type %in% c("rec", "ind")
+                      mar_type %in% c("rec", "recov", "ind", "indov")
                       ][order(-est.label)])
 prop.c[, dist.label2 := dist.lab.2l[as.character(dist.label)]]
 setorder(prop.c, -est_type)
+
+p.area.mar.c <-
+  area.c[est_type %in% c("3")] |>
+  ggplot() +
+    geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey50", linetype = "dashed") +
+    geom_pointrange(aes(x = cat.label, y = est.median,
+                        ymin = est.hdi90l, ymax = est.hdi90u,
+                        group = est.label, fill = est.label,
+                        colour = est.label, size = est.label),
+                        shape = 21, stroke = stroke.pt.comp,
+                        linewidth = linewidth.comp) +
+    scale_fill_manual(values = col.est.pt, drop = TRUE) +
+    scale_colour_manual(values = col.est, drop = TRUE) +
+    scale_y_continuous(label = scales::label_number(accuracy = 1),
+                       expand = expansion(mult = c(0.2, 0.2))) +
+    scale_size_manual(values = size.est.pt.comp, guide = "none") +
+    expand_limits(y = 0) +
+    facet_grid(rows = vars(reg.label), cols = vars(dist.label2), scales = "free_y") +
+    labs(colour = "", fill = "", y = mar.title.def.av.2l, x = "") +
+    post_theme +
+    theme(axis.text.x = element_text(angle = ten.cat.angle, hjust = 1))
+
 
 p.area.comp.c <-
   area.c[est_type %in% c("1", "2")] |>
@@ -817,43 +947,62 @@ p.prop.mar.c <-
 # plots.area.av$amz + plots.area.av$cam + plot_layout(guides = "collect")
 
 p.ten.comp <-
-(plots.area.av$amz + labs(subtitle = "Amazon") &
+(plots.area.av$amz &
   theme(
-        plot.margin = unit(c(0, 20, 0, 0), "pt"),
-        plot.title.position = "plot")) +
-(plots.area.av$cam & labs(subtitle = "Central America") &
+        plot.margin = unit(c(0, base.size, 0, 0), "pt"),
+        plot.title.position = "plot",
+        strip.text.y = element_blank())) +
+(plots.area.av$cam &
   theme(
-        plot.margin = unit(c(15, 5, 0, 10), "pt"),
+        # plot.margin = unit(c(15, 5, 0, 10), "pt"),
         plot.title.position = "plot")) +
-
-plot_layout(nrow = 1, guides = "collect")
-png(file.fig.ten.comp, width = 10, height = 4.25, unit = "in", res = 600)
-p.ten.comp
-dev.off()
+plot_layout(nrow = 1, guides = "collect", axes = "collect") &
+theme(
+      axis.title = element_text(size = rel(0.7)),
+      axis.title.y = element_text(margin = margin(r = 0.5*base.size), size = rel(0.9)),
+      axis.title.x = element_text(size = rel(0.9)),
+      # axis.text.y = element_text(size = rel(0.7), margin = margin(r = base.size/4)),
+      axis.text.x = element_text(size = rel(0.8)),
+      legend.text = element_text(size = rel(0.7)),
+      legend.key.size = unit(base.size, "pt"),
+      # legend.spacing.y = unit(0, "pt"),
+      legend.title = element_text(size = rel(0.7)),
+      legend.margin = margin(0, 0, 0, 0),
+      plot.tag = element_text(size = rel(1),
+                              family = "IBMPlexSansCondensed",
+                              face = "bold",
+                              margin = margin(
+                                              0,
+                                              base.size/2,
+                                              base.size,
+                                              0
+                                              )))
 
 
 p.area.prop <-
-(((p.area.comp.c &
-   theme(
-        plot.margin = unit(c(10, 5, 0, 10), "pt")/2,
-         )) +
-  (p.area.mar.c &
-   theme(
-        plot.margin = unit(c(10, 5, 0, 25), "pt")/2,
-         ))) /
+(
+ # ((p.area.comp.c &
+ #   theme(
+ #        plot.margin = unit(c(10, 5, 0, 10), "pt")/2,
+ #         )) +
+ #  (p.area.mar.c &
+ #   theme(
+ #        plot.margin = unit(c(10, 5, 0, 25), "pt")/2,
+ #         ))) /
  ((p.prop.comp.c &
    theme(
-        plot.margin = unit(c(10, 5, 0, 10), "pt")/2,
+        plot.margin = unit(c(10, 10, 0, 10), "pt")/2,
          )) +
   (p.prop.mar.c &
    theme(
-        plot.margin = unit(c(10, 5, 0, 25), "pt")/2,
+        plot.margin = unit(c(10, 10, 0, 10), "pt")/2,
          )))) +
-plot_layout(guides = "collect", tag_level = "new") +
-plot_annotation(tag_levels = "A") &
+# plot_layout(guides = "collect", tag_level = "new") +
+# plot_annotation(tag_levels = "A") &
+plot_layout(guides = "collect") &
 theme(
       axis.title = element_text(size = rel(0.7)),
-      axis.title.y = element_text(margin = margin(r = 0.5*base.size)),
+      axis.title.y = element_text(margin = margin(r = 0.5*base.size), size = rel(0.9)),
       axis.text.y = element_text(size = rel(0.7),
                                  margin = margin(r = base.size/4),
                                  hjust = 1),
@@ -863,7 +1012,14 @@ theme(
       legend.spacing.y = unit(0, "pt"),
       legend.title = element_blank(),
       legend.margin = margin(0, 0, 0, 0),
-      strip.text = element_text(size = rel(0.6),
+      strip.text.x = element_text(size = rel(0.6),
+                                margin = margin(
+                                                base.size/2,
+                                                base.size/2,
+                                                base.size/2,
+                                                base.size/2
+                                                )),
+      strip.text.y = element_text(size = rel(0.7),
                                 margin = margin(
                                                 base.size/2,
                                                 base.size/2,
@@ -881,12 +1037,19 @@ theme(
                                               ))
       )
 
-png(file.fig.ten.comp.c, width = 5.75, height = 5.5, unit = "in", res = 600)
-p.area.prop
+
+
+p.comb <-
+  ((p.ten.comp +
+   theme(plot.margin = margin(b = base.size))
+   ) /
+  p.area.prop) +
+plot_layout(heights = c(1, 1)) +
+plot_annotation(tag_levels = list(c("A", "", "B", "C")))
+
+png(file.fig.ten.comp.c, width = 5.5, height = 5.65, unit = "in", res = 600)
+p.comb
 dev.off()
-
-
-
 
 tab.ten <-
   list(amz = ten.sum$amz$mar[, -c("ci_0")],

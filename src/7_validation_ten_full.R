@@ -50,7 +50,6 @@ if(hurr_type == "no_hurr") {
 
 file.data.proc <- paste0(path.data.proc, region, ".data.fit.proc.rds")
 file.cf.ten.itpa <- paste0(path.cf, region, ".ten.itpa.all", hurr_suf, ".rds")
-file.fig.imb.itpa <- paste0(path.figures, "imb.itpa.", region, hurr_suf, ".png")
 # file.data.vis <- paste0(path.data.vis, region, "imb.itpa", hurr_suf, ".rds")
 
 
@@ -168,103 +167,129 @@ imb_theme <-
 data.proc <- readRDS(file.data.proc)
 cf.ten.itpa <- readRDS(file.cf.ten.itpa)
 
-group.idx <- cf.ten.itpa$groups[is.na(adm0) & !is.na(it_type) & !is.na(pa_type), group.id]
-group.cols <- with(cf.ten.itpa, c(group.var, group.by.c))
 
-itpa.imb <-
-  egp_imbalance(data.proc,
-                variables = cov,
-                cf = cf.ten.itpa,
-                group = group.idx,
-                measure = img.measures)
-
-itpa.imb <-
-  merge(cat.lab,
-        cf.ten.itpa$groups[group.id %in% group.idx, ..group.cols], sort = FALSE) |>
-  merge(itpa.imb)
-
-itpa.imb[, cov.label := cov.labs[as.character(.variable)]]
-itpa.imb[, imb.measure.label := imb.measure.labs[as.character(.measure)]]
-
-itpa.imb.l <-
-  melt(itpa.imb,
-       measure.vars = c("raw", "effective"), 
-       variable.name = "imb.type",
-       value.name = "imbalance")
-
-itpa.imb.l[, imb.type.label := imb.type.labs[as.character(imb.type)]]
+adm0.lev <- unique(cf.ten.itpa$groups$adm0)
 
 
-lim.smd <- c(-1, 1) * rep(itpa.imb.l[.measure == "d_cohen", max(abs(range(imbalance)))], 2)
-lim.vr <- c(-1, 1) * rep(itpa.imb.l[.measure == "var_ratio", max(abs(range(log(imbalance))))], 2)
-lim.ks <- c(0, 1)
+for(i in seq_along(adm0.lev)) {
 
-plots.ten.itpa <- list()
-
-plots.ten.itpa$smd <-
-  ggplot(itpa.imb.l[.measure == "d_cohen"]) +
-    geom_vline(xintercept = 0, linewidth = 0.3, colour = "grey65") +
-    geom_linerange(data = itpa.imb[.measure == "d_cohen"],
-                   aes(xmin = raw, xmax = effective, y = cov.label),
-                   colour = "grey35") +
-    geom_point(aes(x = imbalance, y = cov.label,
-                   colour = imb.type.label),
-               size = 0.8, shape = 19) +
-    scale_colour_manual(values = col.imb) +
-    scale_x_continuous(limits = lim.smd, expand = expansion(mult = 0.1)) +
-    scale_y_discrete(limits = rev) +
-    facet_grid(rows = vars(cat.label), cols = vars(imb.measure.label)) +
-    labs(colour = "Condition", y = "", x = "Imbalance") +
-    imb_theme
-
-plots.ten.itpa$vr <-
-  ggplot(itpa.imb.l[.measure == "var_ratio"]) +
-    geom_vline(xintercept = 0, linewidth = 0.3, colour = "grey65") +
-    geom_linerange(data = itpa.imb[.measure == "var_ratio"],
-                   aes(xmin = log(raw), xmax = log(effective), y = cov.label),
-                   colour = "grey35") +
-    geom_point(aes(x = log(imbalance), y = cov.label,
-                   colour = imb.type.label),
-               size = 0.8, shape = 19) +
-    scale_colour_manual(values = col.imb) +
-    scale_x_continuous(limits = lim.vr,
-                       expand = expansion(mult = 0.1)) +
-    scale_y_discrete(limits = rev) +
-    facet_grid(rows = vars(cat.label), cols = vars(imb.measure.label)) +
-    labs(colour = "Condition", y = "", x = "Imbalance") +
-    imb_theme
-
-plots.ten.itpa$ks <-
-  ggplot(itpa.imb.l[.measure == "ks_stat"]) +
-    geom_vline(xintercept = 0, linewidth = 0.3, colour = "grey65") +
-    geom_linerange(data = itpa.imb[.measure == "ks_stat"],
-                   aes(xmin = raw, xmax = effective, y = cov.label),
-                   colour = "grey35") +
-    geom_point(aes(x = imbalance, y = cov.label,
-                   colour = imb.type.label),
-               size = 0.8, shape = 19) +
-    scale_colour_manual(values = col.imb) +
-    scale_x_continuous(limits = lim.ks, expand = expansion(mult = 0.1)) +
-    scale_y_discrete(limits = rev) +
-    facet_grid(rows = vars(cat.label), cols = vars(imb.measure.label)) +
-    labs(colour = "Condition", y = "", x = "Imbalance") +
-    imb_theme
+  adm.foc <- adm0.lev[i]
 
 
-p.imb.ten.itpa <-
-  (plots.ten.itpa$smd +
-   theme(strip.text.y = element_blank(),
-         plot.margin = margin(r = 5))) +
-  (plots.ten.itpa$vr +
-   theme(strip.text.y = element_blank(),
-         plot.margin = margin(l = 5, r = 5))) +
-  (plots.ten.itpa$ks +
-   theme(plot.margin = margin(l = 5))) +
-  plot_layout(axes = "collect", guides = "collect")
+  if(is.na(adm.foc)) {
+    file.fig.imb.itpa <- paste0(path.figures, "imb.itpa.", region, hurr_suf, ".png")
+    group.idx <- cf.ten.itpa$groups[is.na(adm0) & !is.na(it_type) & !is.na(pa_type), group.id]
+    group.cols <- with(cf.ten.itpa, c(group.var, group.by.c))
+    message("Processing study region, output: `", file.fig.imb.itpa, "` …")
+  } else {
+    file.fig.imb.itpa <- paste0(path.figures, "imb.itpa.", adm.foc, hurr_suf, ".png")
+    group.idx <- cf.ten.itpa$groups[adm0 == adm.foc & !is.na(it_type) & !is.na(pa_type), group.id]
+    group.cols <- with(cf.ten.itpa, c(group.var, group.by.c))
+    message("Processing administrative region ", adm.foc, ", output: `", file.fig.imb.itpa, "` …")
+  }
+
+  group.idx <- cf.ten.itpa$groups[is.na(adm0) & !is.na(it_type) & !is.na(pa_type), group.id]
+  group.cols <- with(cf.ten.itpa, c(group.var, group.by.c))
+
+  itpa.imb <-
+    egp_imbalance(data.proc,
+                  variables = cov,
+                  cf = cf.ten.itpa,
+                  group = group.idx,
+                  measure = img.measures)
+
+  itpa.imb <-
+    merge(cat.lab,
+          cf.ten.itpa$groups[group.id %in% group.idx, ..group.cols], sort = FALSE) |>
+    merge(itpa.imb)
+
+  itpa.imb[, cov.label := cov.labs[as.character(.variable)]]
+  itpa.imb[, imb.measure.label := imb.measure.labs[as.character(.measure)]]
+
+  itpa.imb.l <-
+    melt(itpa.imb,
+         measure.vars = c("raw", "effective"), 
+         variable.name = "imb.type",
+         value.name = "imbalance")
+
+  itpa.imb.l[, imb.type.label := imb.type.labs[as.character(imb.type)]]
 
 
-png(file.fig.imb.itpa, width = 7, height = 8.5, unit = "in", res = 600)
-  p.imb.ten.itpa
-dev.off()
+  lim.smd <- c(-1, 1) * rep(itpa.imb.l[.measure == "d_cohen", max(abs(range(imbalance)))], 2)
+  lim.vr <- c(-1, 1) * rep(itpa.imb.l[.measure == "var_ratio", max(abs(range(log(imbalance))))], 2)
+  lim.ks <- c(0, 1)
+
+  plots.ten.itpa <- list()
+
+  plots.ten.itpa$smd <-
+    ggplot(itpa.imb.l[.measure == "d_cohen"]) +
+      geom_vline(xintercept = 0, linewidth = 0.3, colour = "grey65") +
+      geom_linerange(data = itpa.imb[.measure == "d_cohen"],
+                     aes(xmin = raw, xmax = effective, y = cov.label),
+                     colour = "grey35") +
+      geom_point(aes(x = imbalance, y = cov.label,
+                     colour = imb.type.label),
+                 size = 0.8, shape = 19) +
+      scale_colour_manual(values = col.imb) +
+      scale_x_continuous(limits = lim.smd, expand = expansion(mult = 0.1)) +
+      scale_y_discrete(limits = rev) +
+      facet_grid(rows = vars(cat.label), cols = vars(imb.measure.label)) +
+      labs(colour = "Condition", y = "", x = "Imbalance") +
+      imb_theme
+
+  plots.ten.itpa$vr <-
+    ggplot(itpa.imb.l[.measure == "var_ratio"]) +
+      geom_vline(xintercept = 0, linewidth = 0.3, colour = "grey65") +
+      geom_linerange(data = itpa.imb[.measure == "var_ratio"],
+                     aes(xmin = log(raw), xmax = log(effective), y = cov.label),
+                     colour = "grey35") +
+      geom_point(aes(x = log(imbalance), y = cov.label,
+                     colour = imb.type.label),
+                 size = 0.8, shape = 19) +
+      scale_colour_manual(values = col.imb) +
+      scale_x_continuous(limits = lim.vr,
+                         expand = expansion(mult = 0.1)) +
+      scale_y_discrete(limits = rev) +
+      facet_grid(rows = vars(cat.label), cols = vars(imb.measure.label)) +
+      labs(colour = "Condition", y = "", x = "Imbalance") +
+      imb_theme
+
+  plots.ten.itpa$ks <-
+    ggplot(itpa.imb.l[.measure == "ks_stat"]) +
+      geom_vline(xintercept = 0, linewidth = 0.3, colour = "grey65") +
+      geom_linerange(data = itpa.imb[.measure == "ks_stat"],
+                     aes(xmin = raw, xmax = effective, y = cov.label),
+                     colour = "grey35") +
+      geom_point(aes(x = imbalance, y = cov.label,
+                     colour = imb.type.label),
+                 size = 0.8, shape = 19) +
+      scale_colour_manual(values = col.imb) +
+      scale_x_continuous(limits = lim.ks, expand = expansion(mult = 0.1)) +
+      scale_y_discrete(limits = rev) +
+      facet_grid(rows = vars(cat.label), cols = vars(imb.measure.label)) +
+      labs(colour = "Condition", y = "", x = "Imbalance") +
+      imb_theme
+
+
+  p.imb.ten.itpa <-
+    (plots.ten.itpa$smd +
+     theme(strip.text.y = element_blank(),
+           plot.margin = margin(r = 5))) +
+    (plots.ten.itpa$vr +
+     theme(strip.text.y = element_blank(),
+           plot.margin = margin(l = 5, r = 5))) +
+    (plots.ten.itpa$ks +
+     theme(plot.margin = margin(l = 5))) +
+    plot_layout(axes = "collect", guides = "collect")
+
+
+  png(file.fig.imb.itpa, width = 7, height = 8.5, unit = "in", res = 600)
+    print(p.imb.ten.itpa)
+  dev.off()
+
+  rm(itpa.imb, itpa.imb.l)
+  gc()
+
+}
 
 

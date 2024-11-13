@@ -33,3 +33,9 @@ Rscript 7_figures_cov.R amz def
 Rscript 7_figures_cov.R amz deg
 Rscript 7_figures_cov.R cam def
 Rscript 7_figures_cov.R cam deg
+
+
+Rscript 7_figures_ten_full.R no_hurr TRUE
+Rscript 7_figures_ten_full.R hurr TRUE
+Rscript 7_figures_ten_comp.R no_hurr TRUE
+Rscript 7_figures_ten_comp.R hurr TRUE

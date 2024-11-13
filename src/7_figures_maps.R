@@ -21,9 +21,8 @@ if(is.na(overwrite)) {
 }
 
 # hurr_type <- "no_hurr"
+# hurr_type <- "hurr"
 # overwrite <- TRUE
-
-# hurr_type <- "no_hurr"
 # overwrite <- FALSE
 
 path.base <- "/home/schoed/scratch/fcne_analysis/"
@@ -57,7 +56,6 @@ file.hurr.lf <- paste0(path.data.proc, "cam.hurr.landfall.gpkg")
 file.data.vis <- paste0(path.data.vis, "maps", hurr_suf, ".rds")
 file.fig.maps <- paste0(path.figures, "maps", hurr_suf, ".png")
 file.fig.maps.press <- paste0(path.figures, "maps.press", hurr_suf, ".png")
-file.fig.areas <- paste0(path.figures, "areas", hurr_suf, ".png")
 file.fig.dist.amz <- paste0(path.figures, "maps.dist.amz", hurr_suf, ".png")
 file.fig.press.amz <- paste0(path.figures, "maps.press.amz", hurr_suf, ".png")
 file.fig.area.amz <- paste0(path.figures, "maps.area.amz", hurr_suf, ".png")
@@ -126,6 +124,7 @@ map_theme <-
         plot.tag.location = "margin"
         )
 
+
 map_guide_fill <-
   guides(fill = guide_colorbar(theme = theme(legend.ticks = element_line(colour = "grey5",
                                                                          linewidth = 0.2),
@@ -134,12 +133,22 @@ map_guide_fill <-
                                              legend.text = element_text(hjust = 1),
                                              legend.text.position = "right",
                                              legend.key.width = unit(7.5, "pt"),
-                                             legend.key.height = unit(65, "pt"),
+                                             legend.key.height = unit(45, "pt"),
                                              legend.ticks.length = unit(2, "pt")),
                                draw.ulim = TRUE,
-                               draw.llim = TRUE
-                               ))
+                               draw.llim = TRUE,
+                               order = 1))
 
+map_guide_alpha <-
+  guides(alpha = guide_bins(theme = theme(
+                                          legend.ticks = element_blank(),
+                                          legend.frame = element_blank(),
+                                          legend.text = element_text(hjust = 1),
+                                          legend.text.position = "right",
+                                          legend.key.width = unit(7.5, "pt"),
+                                          legend.key.height = unit(7.5, "pt")
+                                          ),
+                            order = 2))
 dist.lab <-
   data.table(dist_type = c("def", "deg"),
              dist.label = c("Long-term disturbance (deforestation)",
@@ -180,10 +189,12 @@ wrap_title <- function(x, width = 25, ...) {
 }
 
 
-dist.title <- "Disturbance risk"
-mar.title.av.l <- "Absolute marginal difference in area affected by disturbances (km² per pixel)"
-mar.title.av.2l <- "Absolute marginal difference in\narea affected by disturbances (km² per pixel)"
+dist.title <- "Disturbance probability"
+mar.title.av.l <- "Marginal difference between actual and expected disturbances (km² per pixel)"
+mar.title.av.2l <- "Marginal difference between actual and\nexpected disturbances (km² per pixel)"
 mar.title.av <- wrap_title(mar.title.av.l)
+prob.title.l <- "Posterior probability that marginal difference is < 0 or > 0"
+prob.title <- wrap_title(prob.title.l)
 cf.title.av.l <- "Area affected by disturbances under counterfactual conditions (km² per pixel)"
 cf.title.av.2l <- "Area affected by disturbances under\ncounterfactual conditions (km² per pixel)"
 cf.title.av <- wrap_title(cf.title.av.l)
@@ -395,6 +406,18 @@ if(!file.exists(file.data.vis) | overwrite == TRUE) {
                  mar.prob.pos = sum(marginal > 0)/.N,
                  mar.prob.neg = sum(marginal < 0)/.N),
                by = c("dist_type", "group.id", "ea_east.bin", "ea_north.bin")]
+
+
+    # mar.geo <- geo.sum[[region]]$mar
+    mar.geo[, mar.prob.bs := max(c(mar.prob.pos, mar.prob.neg)), by = .I]
+    mar.geo[, mar.un := fcase(
+                              mar.prob.bs < 0.75, "high",
+                              mar.prob.bs >= 0.75 & mar.prob.bs < 0.95, "moderate",
+                              mar.prob.bs >= 0.95, "high")]
+    mar.geo[, mar.un := factor(mar.un, levels = c("high", "moderate", "low"))]
+    # setcolorder(mar.geo, c("dist.label", "dist.label2"), after = "mar.un")
+    # setcolorder(mar.geo, c("mar.un", "dist.label", "dist.label2"), after = "mar.prob.bs")
+    # geo.sum[[region]]$mar <- mar.geo
 
     geo.sum[[region]]$mar <- merge(mar.geo, dist.lab)
 
@@ -660,7 +683,7 @@ for(i in seq_along(regions)) {
                      style = "ticks", text_cex = 0.5,
                      line_width = 0.5, text_family = "IBMPlexSansCondensed") +
     map_guide_fill +
-    labs(fill = mar.title.av, x = NULL, y = NULL) +
+    labs(fill = cf.title.av, x = NULL, y = NULL) +
     map_theme
 
 
@@ -668,12 +691,13 @@ for(i in seq_along(regions)) {
   # Absolute change in long-term disturbance (median)
 
   maps[[region]]$mar.def <- 
-    geo.sum[[region]]$mar[dist_type == "def" & n.fac >= 10] |>
+    geo.sum[[region]]$mar[dist_type == "def"] |>
     ggplot() +
     geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.3) +
-    geom_sf(data = poly[[region]]$areas, fill = "grey65", colour = "grey65", size = 0.5) +
+    geom_sf(data = poly[[region]]$areas, fill = "grey90", colour = NA) +
     geom_raster(mapping = aes(fill = as.numeric(area.mar.median),
-                              x = ea_east.bin, y = ea_north.bin),
+                              x = ea_east.bin, y = ea_north.bin,
+                              alpha = mar.prob.bs),
                 interpolate = FALSE) +
     # geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
     geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.01) +
@@ -685,17 +709,21 @@ for(i in seq_along(regions)) {
                                  labels = area.labels[[region]],
                                  oob = scales::squish
                                  ) +
+    scale_alpha_binned(limits = c(0.5, 1), range = c(0.1, 1), breaks = c(0.5, 0.75, 0.95, 1)) +
     coord_sf(crs = crs.ea[[region]], expand = FALSE, 
              xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
-    scale_x_continuous(breaks = seq(-170, 0, 10)) +
+    scale_x_continuous(breaks = seq(-100, 0, 10)) +
     scale_y_continuous(breaks = seq(-80, 30, 10)) +
     annotation_scale(width_hint = 0.125, height = unit(2, "mm"),
                      style = "ticks", text_cex = 0.5,
                      line_width = 0.5, text_family = "IBMPlexSansCondensed") +
     map_guide_fill +
+    map_guide_alpha +
     labs(
          subtitle = "Long-term disturbance (deforestation)",
-         fill = mar.title.av, x = NULL, y = NULL) +
+         fill = mar.title.av,
+         alpha = prob.title,
+         x = NULL, y = NULL) +
     map_theme
 
 
@@ -705,9 +733,10 @@ for(i in seq_along(regions)) {
     geo.sum[[region]]$mar[dist_type == "deg" & n.fac >= 10] |>
     ggplot() +
     geom_sf(data = poly[[region]]$bg, fill = "grey30", colour = "grey50", size = 0.3) +
-    geom_sf(data = poly[[region]]$areas, fill = "grey65", colour = "grey65", size = 0.5) +
+    geom_sf(data = poly[[region]]$areas, fill = "grey90", colour = NA) +
     geom_raster(mapping = aes(fill = as.numeric(area.mar.median),
-                              x = ea_east.bin, y = ea_north.bin),
+                              x = ea_east.bin, y = ea_north.bin,
+                              alpha = mar.prob.bs),
                 interpolate = FALSE) +
     # geom_sf(data = poly[[region]]$bg, fill = NA, colour = "grey50", size = 0.15) +
     geom_sf(data = poly[[region]]$bg_coasts, fill = NA, colour = "grey35", size = 0.01) +
@@ -719,6 +748,7 @@ for(i in seq_along(regions)) {
                                  labels = area.labels[[region]],
                                  oob = scales::squish
                                  ) +
+    scale_alpha_binned(limits = c(0.5, 1), range = c(0.1, 1), breaks = c(0.5, 0.75, 0.95, 1)) +
     coord_sf(crs = crs.ea[[region]], expand = FALSE, 
              xlim = map_xlim[[region]], ylim = map_ylim[[region]]) +
     scale_x_continuous(breaks = seq(-170, 0, 10)) +
@@ -727,8 +757,11 @@ for(i in seq_along(regions)) {
                      style = "ticks", text_cex = 0.5,
                      line_width = 0.5, text_family = "IBMPlexSansCondensed") +
     map_guide_fill +
+    map_guide_alpha +
     labs(subtitle = "Short-term disturbance (not followed by deforestation)",
-         fill = mar.title.av, x = NULL, y = NULL) +
+         fill = mar.title.av,
+         alpha = prob.title,
+         x = NULL, y = NULL) +
     map_theme
 
 
@@ -805,57 +838,74 @@ for(i in seq_along(regions)) {
 message("Exporting figures …")
 
 
-maps.dist.c <-
-  with(maps,
-       ((amz$mar.def + labs(title = "Amazon") +
-         theme(plot.margin = margin(b = 20, r = 10))) +
+maps.c <-
+  (with(maps,
+       (((amz$areas +
+         theme(plot.margin = margin(b = 10, r = 5))) +
+        (cam$areas +
+         theme(plot.margin = margin(b = 10, l = 5))) +
+        plot_layout(guides = "collect")) /
+       ((amz$mar.def +
+         theme(plot.margin = margin(b = 10, r = 5))) +
         (amz$mar.deg +
-         theme(plot.margin = margin(b = 20, l = 10))) +
+         theme(plot.margin = margin(b = 10, l = 5))) +
         plot_layout(guides = "collect")) /
-       ((cam$mar.def + labs(title = "Central America") +
-         theme(plot.margin = margin(b = 20, r = 10))) +
+       ((cam$mar.def +
+         theme(plot.margin = margin(b = 10, r = 5))) +
         (cam$mar.deg +
-         theme(plot.margin = margin(b = 20, l = 10))) +
-        plot_layout(guides = "collect")) /
-       plot_layout(guides = "keep") 
-       )
+         theme(plot.margin = margin(b = 10, l = 5))) +
+        plot_layout(guides = "collect")))) +
+       plot_layout(guides = "keep", tag_level = "new") +
+       plot_annotation(tag_levels = "A") &
+       theme(
+             legend.margin = margin(0, 7/2, 0, 7/2),
+             plot.tag = element_text(size = rel(1.15),
+                                     family = "IBMPlexSansCondensed",
+                                     face = "bold",
+                                     margin = margin(
+                                                     0,
+                                                     7/2,
+                                                     7,
+                                                     0
+                                                     )),
+             plot.subtitle = element_text(margin = margin(t = 0, b = 7/2))))
 
-png(file.fig.maps, width = 7, height = 5.25, unit = "in", res = 600)
-maps.dist.c
+png(file.fig.maps, width = 7, height = 7.5, unit = "in", res = 600)
+maps.c
 dev.off()
+
 
 maps.press.c <-
   with(maps,
-       ((amz$cf.def + labs(title = "Amazon") +
+       (((amz$cf.def +
          theme(plot.margin = margin(b = 20, r = 10))) +
         (amz$cf.deg +
          theme(plot.margin = margin(b = 20, l = 10))) +
         plot_layout(guides = "collect")) /
-       ((cam$cf.def + labs(title = "Central America") +
+       ((cam$cf.def +
          theme(plot.margin = margin(b = 20, r = 10))) +
         (cam$cf.deg +
          theme(plot.margin = margin(b = 20, l = 10))) +
-        plot_layout(guides = "collect")) /
-       plot_layout(guides = "keep") 
+        plot_layout(guides = "collect"))) +
+       plot_layout(guides = "keep", tag_level = "new") +
+       plot_annotation(tag_levels = "A") &
+       theme(plot.tag = element_text(size = rel(1.15),
+                                     family = "IBMPlexSansCondensed",
+                                     face = "bold",
+                                     margin = margin(
+                                                     0,
+                                                     7/2,
+                                                     7,
+                                                     0
+                                                     )),
+             plot.subtitle = element_text(margin = margin(t = 0, b = 7/2)))
        )
 
-png(file.fig.maps.press, width = 7, height = 5.25, unit = "in", res = 600)
+png(file.fig.maps.press, width = 7, height = 5, unit = "in", res = 600)
 maps.press.c
 dev.off()
 
 if(hurr_type == "hurr") {
-
-  maps.areas <-
-    with(maps,
-         ((amz$areas) +
-           theme(plot.margin = margin(b = 20, r = 10))) +
-          (cam$areas +
-           theme(plot.margin = margin(b = 20, l = 10))) +
-          plot_layout(guides = "collect"))
-
-  png(file.fig.areas, width = 7, height = 2.5, unit = "in", res = 600)
-  print(maps.areas)
-  dev.off()
 
   png(file.fig.dist.amz, width = 7, height = 8.5, unit = "in", res = 600)
   print(maps$amz$dist.post)
@@ -917,6 +967,8 @@ for(i in seq_along(regions)){
               ][mar.grid, on = c("ea_east.bin", "ea_north.bin")
                 ][, .(ea_east.bin, ea_north.bin,
                       area.mar.median, area.mar.q5, area.mar.q95,
+                      area.fac.median, area.fac.q5, area.fac.q95,
+                      area.cf.median, area.cf.q5, area.cf.q95,
                       mar.median, mar.q5, mar.q95)] |>
       st_as_stars(dims = c("ea_east.bin", "ea_north.bin")) |>
       st_set_crs(crs.ea[[region]]) |>
