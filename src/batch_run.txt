@@ -1,16 +1,31 @@
-# To re-run
+# To run
+
+sbatch cc_6_marginal_ten_comp_no_drought_AMZ.sh
+sbatch cc_6_marginal_ten_itpa_no_drought_AMZ.sh
+sbatch cc_6_marginal_ten_it_ov_no_drought_AMZ.sh
+sbatch cc_6_marginal_ten_pa_ov_no_drought_AMZ.sh
+sbatch cc_6_marginal_ten_comp_no_hurr_no_drought_CAM.sh
+sbatch cc_6_marginal_ten_itpa_no_hurr_no_drought_CAM.sh
+sbatch cc_6_marginal_ten_it_ov_no_hurr_no_drought_CAM.sh
+sbatch cc_6_marginal_ten_pa_ov_no_hurr_no_drought_CAM.sh
 
 
 
 # Running
 
+sbatch cc_5_counterfactual_ten_no_drought_AMZ.sh
+sbatch cc_5_counterfactual_ten_comp_no_drought_AMZ.sh
+sbatch cc_5_counterfactual_ten_no_hurr_no_drought_CAM.sh
+sbatch cc_5_counterfactual_ten_comp_no_hurr_no_drought_CAM.sh
+
+
+# Done
+
+
 sbatch cc_6_aggregate_all_AMZ.sh
 sbatch cc_6_aggregate_geo_AMZ.sh
 sbatch cc_6_aggregate_noitpa_AMZ.sh
 sbatch cc_6_aggregate_som_AMZ.sh
-
-
-# Done
 
 sbatch cc_5_counterfactual_geo_AMZ.sh
 sbatch cc_5_counterfactual_ten_AMZ.sh
